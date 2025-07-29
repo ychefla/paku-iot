@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  core_service:
+    image: core_image
+    container_name: core_service
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - MQTT_BROKER_URL=tcp://mosquitto:1883
+    depends_on:
+      - influxdb2
+      - mosquitto
+    volumes:
+      - core_data:/var/lib/core_service
+    networks:
+      - paku_network
+
+  influxdb2:
+    image: influxdb:2
+    container_name: influxdb2
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
+      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password 
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
+      DOCKER_INFLUXDB_INIT_ORG: Paku
+      DOCKER_INFLUXDB_INIT_BUCKET: core_data
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - type: volume
+        source: influxdb2_data
+        target: /var/lib/influxdb2
+      - type: volume
+        source: influxdb2_config
+        target: /etc/influxdb2
+    networks:
+      - paku_network
+
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_config:/mosquitto/config
+      - mosquitto_logs:/mosquitto/log
+      - ./mosquitto/config:/mosquitto/config
+    networks:
+      - paku_network
+
+networks:
+  paku_network:
+    driver: bridge
+    name: paku_network
+
+secrets:
+  influxdb2-admin-username:
+    file:  /home/CORE_project/influx/secrets/influxdb2-admin-username
+  influxdb2-admin-password:
+    file:  /home/CORE_project/influx/secrets/influxdb2-admin-password
+  influxdb2-admin-token:
+    file:  /home/CORE_project/influx/secrets/influxdb2-admin-token
+
+volumes:
+  core_data:
+    name: core_data
+  influxdb2_data:
+    name: influxdb2_data
+  influxdb2_config:
+    name: influxdb2_config
+  mosquitto_data:
+    name: mosquitto_data
+  mosquitto_config:
+    name: mosquitto_config
+  mosquitto_logs:
+    name: mosquitto_logs
+  grafana_data:
+    name: grafana_data
+    external: true

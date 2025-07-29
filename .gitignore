@@ -1,0 +1,18 @@
+# Docker volumes
+*/data/
+*/grafana_data/
+*/prom_data/
+
+# Python venv
+venv/
+__pycache__/
+
+# Secrets
+*.crt
+*.key
+*.token
+*.password
+*.env
+
+# Logs
+*.log
