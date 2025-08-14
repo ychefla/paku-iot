@@ -1,9 +1,10 @@
-FROM mcr.microsoft.com/devcontainers/python:3.12
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 
 # Asenna perus työkalut ilman docker-compose-plugin
 RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-venv \
+    docker.io docker-compose \
     git curl wget build-essential \
-    python3-venv \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Asenna Docker CLI ja Compose v2 GitHubin virallisesta binääristä
@@ -16,6 +17,9 @@ RUN curl -fsSL https://get.docker.com | sh && \
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # Copilot/Codex valmius
-RUN pip install --upgrade pip \
-    && pip install jupyter ipykernel
+RUN pip install --upgrade pip && \
+    pip install jupyter ipykernel
+
+# Käyttäjä docker-ryhmään (Codespaces)
+RUN groupadd docker || true && usermod -aG docker vscode || true
 
