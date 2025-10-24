@@ -16,3 +16,9 @@ __pycache__/
 
 # Logs
 *.log
+
+# local secrets
+include/secrets.h
+secrets.h
+.env
+.env.*
