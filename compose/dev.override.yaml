@@ -1,0 +1,6 @@
+services:
+  grafana:
+    volumes:
+      - paku-grafana:/var/lib/grafana
+volumes:
+  paku-grafana:

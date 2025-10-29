@@ -1,0 +1,7 @@
+apiVersion: 1
+orgs:
+  - name: Main Org.
+    preferences:
+      homeDashboardUID: paku-ruuvi
+      timezone: browser
+      theme: light
