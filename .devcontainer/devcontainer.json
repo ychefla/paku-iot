@@ -17,9 +17,6 @@
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-#  "features": {
-#    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-#  },
   "forwardPorts": [3000, 9090, 9091, 9101],
   "postCreateCommand": "pip install -r ecoflow-monitor/requirements.txt || true"
 }

@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: paku-postgres
+    uid: paku-pg
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: paku
+    isDefault: true
+    jsonData:
+      database: paku
+      sslmode: "disable"
+      postgresVersion: 1500
+    secureJsonData:
+      password: paku

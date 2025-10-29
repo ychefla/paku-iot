@@ -1,0 +1,43 @@
+{
+  "uid": "paku-overview",
+  "title": "Paku Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from":"now-6h","to":"now"},
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Messages per 5m",
+      "id": 1,
+      "gridPos": {"h":8,"w":24,"x":0,"y":0},
+      "datasource": {"type":"postgres","uid":"paku-pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type":"postgres","uid":"paku-pg"},
+          "rawSql": "SELECT $__timeBucket(ts, '5m') AS time, COUNT(*) AS count FROM measurements WHERE $__timeFilter(ts) GROUP BY 1 ORDER BY 1;",
+          "editorMode": "code"
+        }
+      ],
+      "options": {"legend":{"displayMode":"list","placement":"bottom"},"tooltip":{"mode":"single"}}
+    },
+    {
+      "type": "table",
+      "title": "Latest messages",
+      "id": 2,
+      "gridPos": {"h":10,"w":24,"x":0,"y":8},
+      "datasource": {"type":"postgres","uid":"paku-pg"},
+      "targets": [
+        {
+          "refId": "B",
+          "datasource": {"type":"postgres","uid":"paku-pg"},
+          "rawSql": "SELECT ts, topic, payload::text AS payload FROM measurements WHERE $__timeFilter(ts) ORDER BY ts DESC LIMIT 50;",
+          "editorMode": "code",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "templating": {"list":[]}
+}

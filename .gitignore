@@ -22,3 +22,4 @@ include/secrets.h
 secrets.h
 .env
 .env.*
+data/

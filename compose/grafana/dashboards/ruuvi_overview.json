@@ -1,0 +1,63 @@
+{
+  "uid": "paku-ruuvi",
+  "title": "Ruuvi Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Temperature (°C)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "paku-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'temperature')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Humidity (%)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "paku-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'humidity')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Battery (V)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "paku-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'battery')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "RSSI (dBm)",
+      "type": "timeseries",
+      "datasource": { "type": "postgres", "uid": "paku-pg" },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'rssi')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
+        }
+      ]
+    }
+  ]
+}
