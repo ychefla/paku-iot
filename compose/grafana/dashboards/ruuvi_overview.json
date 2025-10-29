@@ -1,63 +1,406 @@
 {
-  "uid": "paku-ruuvi",
-  "title": "Ruuvi Overview",
-  "timezone": "browser",
-  "schemaVersion": 39,
-  "version": 1,
-  "refresh": "5s",
-  "time": { "from": "now-6h", "to": "now" },
-  "panels": [
-    {
-      "id": 1,
-      "title": "Temperature (°C)",
-      "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "paku-pg" },
-      "targets": [
+    "annotations": {
+      "list": [
         {
-          "refId": "A",
-          "format": "time_series",
-          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'temperature')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
         }
       ]
     },
-    {
-      "id": 2,
-      "title": "Humidity (%)",
-      "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "paku-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "time_series",
-          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'humidity')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
-        }
-      ]
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 3,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "paku_pg"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 11,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.3.0",
+        "targets": [
+          {
+            "format": "time_series",
+            "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'temperature')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi'\n  AND $__timeFilter(ts)\nORDER BY 1;",
+            "refId": "A"
+          }
+        ],
+        "title": "Temperature (°C)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "paku_pg"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "humidity"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 12,
+          "x": 11,
+          "y": 0
+        },
+        "id": 2,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.3.0",
+        "targets": [
+          {
+            "format": "time_series",
+            "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'humidity')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi'\n  AND $__timeFilter(ts)\nORDER BY 1;",
+            "refId": "A"
+          }
+        ],
+        "title": "Humidity (%)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "paku_pg"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 11,
+          "x": 0,
+          "y": 5
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.3.0",
+        "targets": [
+          {
+            "format": "time_series",
+            "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'battery')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi'\n  AND $__timeFilter(ts)\nORDER BY 1;",
+            "refId": "A"
+          }
+        ],
+        "title": "Battery (V)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "paku_pg"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "dBm"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 5,
+          "w": 12,
+          "x": 11,
+          "y": 5
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.3.0",
+        "targets": [
+          {
+            "format": "time_series",
+            "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'rssi')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi'\n  AND $__timeFilter(ts)\nORDER BY 1;",
+            "refId": "A"
+          }
+        ],
+        "title": "RSSI (dBm)",
+        "type": "timeseries"
+      }
+    ],
+    "preload": false,
+    "refresh": "5s",
+    "schemaVersion": 40,
+    "tags": [],
+    "templating": {
+      "list": []
     },
-    {
-      "id": 3,
-      "title": "Battery (V)",
-      "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "paku-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "time_series",
-          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'battery')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
-        }
-      ]
+    "time": {
+      "from": "now-2d",
+      "to": "now"
     },
-    {
-      "id": 4,
-      "title": "RSSI (dBm)",
-      "type": "timeseries",
-      "datasource": { "type": "postgres", "uid": "paku-pg" },
-      "targets": [
-        {
-          "refId": "A",
-          "format": "time_series",
-          "rawSql": "SELECT\n  $__time(ts),\n  (payload->>'rssi')::numeric AS value,\n  payload->>'tag' AS metric\nFROM public.measurements\nWHERE topic LIKE 'paku/%/sens/ruuvi/%'\n  AND $__timeFilter(ts)\nORDER BY 1;"
-        }
-      ]
-    }
-  ]
-}
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Ruuvi Overview",
+    "uid": "paku-ruuvi",
+    "version": 8,
+    "weekStart": ""
+  }
