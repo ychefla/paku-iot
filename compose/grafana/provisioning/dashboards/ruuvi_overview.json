@@ -7,7 +7,32 @@
     "version": 1,
     "refresh": "30s",
     "time": { "from": "now-6h", "to": "now" },
-    "panels": [],
+    "panels": [
+      {
+        "id": 1,
+        "type": "timeseries",
+        "title": "Ruuvi Temperature (°C)",
+        "datasource": null,
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "ruuvi_temperature_celsius",
+            "legendFormat": "{{device}}",
+            "editorMode": "code",
+            "range": true
+          }
+        ],
+        "options": {
+          "legend": { "displayMode": "list", "placement": "bottom" },
+          "tooltip": { "mode": "single" }
+        },
+        "fieldConfig": {
+          "defaults": { "unit": "celsius" },
+          "overrides": []
+        }
+      }
+    ],
     "templating": { "list": [] },
     "annotations": {
       "list": [
@@ -18,8 +43,7 @@
           "hide": true,
           "iconColor": "rgba(0, 211, 255, 1)",
           "name": "Annotations & Alerts",
-          "type": "dashboard",
-          "dashboardUID": "paku-ruuvi"
+          "type": "dashboard"
         }
       ]
     }
