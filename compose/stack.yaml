@@ -1,0 +1,75 @@
+version: "3.9"
+
+# ------------------------------------------------------------
+# PAKU IoT – UNIFIED STACK
+#
+# This compose file starts the full lightweight environment:
+#   ruuvi-emulator → mosquitto → collector → postgres → grafana
+#
+# Each service has its own directory under stack/.
+# In this sprint the goal is only to bring up an empty, clean
+# environment without implementing actual service logic yet.
+# ------------------------------------------------------------
+
+services:
+  # ------------------------------------------------------------
+  # RUUVITAG EMULATOR
+  # Sends fake sensor data to MQTT for testing.
+  # Not implemented yet — only a placeholder Dockerfile.
+  # ------------------------------------------------------------
+  ruuvi-emulator:
+    build: ../stack/ruuvi-emulator
+    container_name: paku_ruuvi_emulator
+
+  # ------------------------------------------------------------
+  # MOSQUITTO MQTT BROKER
+  # Receives messages from the ruuvi-emulator.
+  # The collector service will subscribe here.
+  # ------------------------------------------------------------
+  mosquitto:
+    build: ../stack/mosquitto
+    container_name: paku_mosquitto
+
+  # ------------------------------------------------------------
+  # COLLECTOR
+  # Reads MQTT messages from Mosquitto and writes them to Postgres.
+  # No implementation yet — placeholder only.
+  # ------------------------------------------------------------
+  collector:
+    build: ../stack/collector
+    container_name: paku_collector
+    depends_on:
+      - mosquitto
+      - postgres
+
+  # ------------------------------------------------------------
+  # POSTGRES – PERSISTENT STORAGE
+  # Stores all sensor data.
+  # The paku_pgdata volume ensures data persists across restarts.
+  # ------------------------------------------------------------
+  postgres:
+    build: ../stack/postgres
+    container_name: paku_postgres
+    volumes:
+      - paku_pgdata:/var/lib/postgresql/data
+
+  # ------------------------------------------------------------
+  # GRAFANA
+  # Visualization layer that reads from Postgres.
+  # The paku_grafana volume stores dashboards and Grafana state.
+  # ------------------------------------------------------------
+  grafana:
+    build: ../stack/grafana
+    container_name: paku_grafana
+    volumes:
+      - paku_grafana:/var/lib/grafana
+    depends_on:
+      - postgres
+
+# ------------------------------------------------------------
+# VOLUMES
+# Centralized definitions for all persistent data directories.
+# ------------------------------------------------------------
+volumes:
+  paku_pgdata:
+  paku_grafana:
