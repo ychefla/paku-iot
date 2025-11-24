@@ -1,6 +1,9 @@
-FROM alpine:3.19
+FROM postgres:16-alpine
 
-# Placeholder service for Paku IoT unified stack.
-# Logic will be implemented in sprint 2.
+# Default configuration for development.
+ENV POSTGRES_USER=paku
+ENV POSTGRES_PASSWORD=paku
+ENV POSTGRES_DB=paku
 
-CMD ["sleep", "infinity"]
+# Keep the container running for now.
+CMD ["postgres"]

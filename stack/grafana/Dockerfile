@@ -1,6 +1,3 @@
-FROM alpine:3.19
+FROM grafana/grafana:11.0.0
 
-# Placeholder service for Paku IoT unified stack.
-# Logic will be implemented in sprint 2.
-
-CMD ["sleep", "infinity"]
+# Placeholder – provisioning later.
