@@ -22,6 +22,13 @@ DB_PASSWORD="paku"
 TIMEOUT_SECONDS=60
 CHECK_INTERVAL=5
 
+# Container names (must match compose/stack.yaml)
+CONTAINER_EMULATOR="paku_ruuvi_emulator"
+CONTAINER_COLLECTOR="paku_collector"
+CONTAINER_MOSQUITTO="paku_mosquitto"
+CONTAINER_POSTGRES="paku_postgres"
+CONTAINER_GRAFANA="paku_grafana"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -74,12 +81,17 @@ fi
 print_success "psql is installed"
 echo ""
 
+# Function to stop the stack
+stop_stack() {
+    docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
+}
+
 # Clean up function
 cleanup() {
     echo ""
     print_info "Cleaning up..."
     cd "$(dirname "$0")/.."
-    docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
+    stop_stack
     print_success "Cleanup completed"
 }
 
@@ -89,7 +101,7 @@ trap cleanup EXIT
 # Step 2: Start the stack
 echo "Step 2: Starting the Docker Compose stack..."
 cd "$(dirname "$0")/.."
-docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
+stop_stack
 docker compose -f "$COMPOSE_FILE" up --build -d
 
 if [ $? -ne 0 ]; then
@@ -160,13 +172,13 @@ if [ "$row_count" -eq 0 ]; then
     print_info "Checking container logs for debugging..."
     echo ""
     echo "=== Ruuvi Emulator Logs ==="
-    docker logs paku_ruuvi_emulator 2>&1 | tail -20
+    docker logs "$CONTAINER_EMULATOR" 2>&1 | tail -20
     echo ""
     echo "=== Collector Logs ==="
-    docker logs paku_collector 2>&1 | tail -20
+    docker logs "$CONTAINER_COLLECTOR" 2>&1 | tail -20
     echo ""
     echo "=== Mosquitto Logs ==="
-    docker logs paku_mosquitto 2>&1 | tail -20
+    docker logs "$CONTAINER_MOSQUITTO" 2>&1 | tail -20
     exit 1
 fi
 echo ""

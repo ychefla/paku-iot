@@ -267,10 +267,10 @@ The E2E test can be integrated into CI/CD pipelines. Example GitHub Actions work
 
 ```yaml
 - name: Run E2E Test
-  run: |
-    chmod +x tests/e2e_test.sh
-    ./tests/e2e_test.sh
+  run: ./tests/e2e_test.sh
 ```
+
+**Note**: The test script has execute permissions set in the repository (`chmod +x`), so no additional permission changes are needed in CI.
 
 ## Test Maintenance
 
@@ -294,9 +294,9 @@ Future enhancements may include:
 
 ## References
 
-- [Requirements Document](requirements.md)
-- [MQTT Schema](mqtt_schema.md)
-- [Docker Compose Stack](../compose/stack.yaml)
+- [Requirements Document](requirements.md) - Functional and non-functional requirements
+- [MQTT Schema](mqtt_schema.md) - Message format specification
+- [Docker Compose Stack](../compose/stack.yaml) - Stack configuration
 
 ## Support
 
