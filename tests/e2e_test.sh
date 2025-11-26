@@ -66,8 +66,9 @@ if ! command_exists docker; then
 fi
 print_success "Docker is installed"
 
-if ! command_exists docker-compose && ! docker compose version >/dev/null 2>&1; then
+if ! docker compose version >/dev/null 2>&1; then
     print_error "Docker Compose is not installed"
+    echo "Install Docker Compose v2+ with your Docker installation"
     exit 1
 fi
 print_success "Docker Compose is installed"
@@ -81,6 +82,9 @@ fi
 print_success "psql is installed"
 echo ""
 
+# Change to repository root
+cd "$(dirname "$0")/.."
+
 # Function to stop the stack
 stop_stack() {
     docker compose -f "$COMPOSE_FILE" down -v >/dev/null 2>&1 || true
@@ -90,7 +94,6 @@ stop_stack() {
 cleanup() {
     echo ""
     print_info "Cleaning up..."
-    cd "$(dirname "$0")/.."
     stop_stack
     print_success "Cleanup completed"
 }
@@ -100,7 +103,6 @@ trap cleanup EXIT
 
 # Step 2: Start the stack
 echo "Step 2: Starting the Docker Compose stack..."
-cd "$(dirname "$0")/.."
 stop_stack
 docker compose -f "$COMPOSE_FILE" up --build -d
 
