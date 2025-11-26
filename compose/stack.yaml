@@ -1,5 +1,3 @@
-version: "3.9"
-
 # ------------------------------------------------------------
 # PAKU IoT – UNIFIED STACK
 #
@@ -23,11 +21,6 @@ services:
     restart: unless-stopped
     ports:
       - "1883:1883"
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "1883"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ------------------------------------------------------------
   # POSTGRES – PERSISTENT STORAGE
@@ -82,7 +75,7 @@ services:
     restart: unless-stopped
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
@@ -100,7 +93,7 @@ services:
     restart: unless-stopped
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
       postgres:
         condition: service_healthy
     environment:
