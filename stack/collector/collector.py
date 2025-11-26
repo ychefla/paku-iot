@@ -9,7 +9,7 @@ import os
 import json
 import signal
 import sys
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 import psycopg
 import paho.mqtt.client as mqtt
 
@@ -26,7 +26,7 @@ MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
 rejected_message_count = 0
 
 
-def validate_message(payload: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+def validate_message(payload: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """
     Validate MQTT message against the RuuviTag schema.
     
@@ -105,7 +105,7 @@ def insert_measurement(conn: psycopg.Connection, payload: Dict[str, Any]) -> Non
         """, payload)
 
 
-def on_connect(client: mqtt.Client, userdata: Any, flags: Any, rc: int, properties: Any = None) -> None:
+def on_connect(client: mqtt.Client, userdata: Any, rc: int, properties: Any = None) -> None:
     """MQTT connection callback."""
     print(f'Collector connected to MQTT broker (rc={rc})', flush=True)
     client.subscribe('paku/#', qos=0)
