@@ -142,8 +142,10 @@ def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> Non
         insert_measurement(conn, payload)
         print(f'[INFO] Inserted measurement from {payload.get("sensor_id")} (topic: {msg.topic})', flush=True)
     except Exception as e:
+        rejected_message_count += 1
         print(f'[ERROR] Database insertion failed: {e}', flush=True)
         print(f'[ERROR] Payload: {json.dumps(payload)}', flush=True)
+        print(f'[INFO] Total rejected messages: {rejected_message_count}', flush=True)
 
 
 def main():
@@ -183,6 +185,7 @@ def main():
         print('\nShutting down collector...', flush=True)
         print(f'Total rejected messages: {rejected_message_count}', flush=True)
         client.loop_stop()
+        client.disconnect()
         conn.close()
         sys.exit(0)
     
