@@ -82,10 +82,12 @@ def insert_measurement(data):
         if battery_mv is None and 'battery' in data:
             battery_val = data.get('battery')
             # If battery value is < 10, assume it's in volts and convert to millivolts
-            if battery_val and battery_val < 10:
+            if battery_val is not None and battery_val < 10:
                 battery_mv = int(battery_val * 1000)
+            elif battery_val is not None:
+                battery_mv = int(battery_val)
             else:
-                battery_mv = int(battery_val) if battery_val else None
+                battery_mv = None
         
         # Use provided timestamp or current time
         timestamp = data.get('timestamp') or data.get('ts')
