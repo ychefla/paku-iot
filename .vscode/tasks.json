@@ -1,0 +1,136 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker up",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml up --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "detail": "Start the PAKU IoT unified Docker stack (ruuvi-emulator, mosquitto, collector, postgres, grafana)"
+    },
+    {
+      "label": "docker down",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "detail": "Stop the PAKU IoT unified Docker stack"
+    },
+    {
+      "label": "docker logs: collector",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f collector",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the collector service"
+    },
+    {
+      "label": "docker logs: emulator",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f ruuvi-emulator",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the ruuvi-emulator service"
+    },
+    {
+      "label": "docker logs: mosquitto",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f mosquitto",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the mosquitto MQTT broker"
+    },
+    {
+      "label": "docker logs: postgres",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f postgres",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the postgres database"
+    },
+    {
+      "label": "docker logs: grafana",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f grafana",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the grafana visualization service"
+    }
+  ]
+}
