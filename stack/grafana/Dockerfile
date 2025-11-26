@@ -1,3 +1,4 @@
 FROM grafana/grafana:11.0.0
 
-# Placeholder – provisioning later.
+# Copy Grafana provisioning files
+COPY provisioning /etc/grafana/provisioning
