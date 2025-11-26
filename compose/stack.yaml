@@ -15,7 +15,7 @@ services:
   # ------------------------------------------------------------
   # RUUVITAG EMULATOR
   # Sends fake sensor data to MQTT for testing.
-  # Not implemented yet — only a placeholder Dockerfile.
+  # Publishes to paku/ruuvi/van_inside every 5-10 seconds.
   # ------------------------------------------------------------
   ruuvi-emulator:
     build: ../stack/ruuvi-emulator
