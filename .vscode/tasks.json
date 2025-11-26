@@ -17,10 +17,6 @@
         "showReuseMessage": false,
         "clear": false
       },
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
       "detail": "Start the PAKU IoT unified Docker stack (ruuvi-emulator, mosquitto, collector, postgres, grafana)"
     },
     {
@@ -39,16 +35,12 @@
         "showReuseMessage": false,
         "clear": false
       },
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
       "detail": "Stop the PAKU IoT unified Docker stack"
     },
     {
       "label": "docker logs: collector",
       "type": "shell",
-      "command": "docker logs -f paku_collector",
+      "command": "docker compose -f compose/stack.yaml logs -f collector",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -67,7 +59,7 @@
     {
       "label": "docker logs: emulator",
       "type": "shell",
-      "command": "docker logs -f paku_ruuvi_emulator",
+      "command": "docker compose -f compose/stack.yaml logs -f ruuvi-emulator",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -86,7 +78,7 @@
     {
       "label": "docker logs: mosquitto",
       "type": "shell",
-      "command": "docker logs -f paku_mosquitto",
+      "command": "docker compose -f compose/stack.yaml logs -f mosquitto",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -105,7 +97,7 @@
     {
       "label": "docker logs: postgres",
       "type": "shell",
-      "command": "docker logs -f paku_postgres",
+      "command": "docker compose -f compose/stack.yaml logs -f postgres",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -124,7 +116,7 @@
     {
       "label": "docker logs: grafana",
       "type": "shell",
-      "command": "docker logs -f paku_grafana",
+      "command": "docker compose -f compose/stack.yaml logs -f grafana",
       "options": {
         "cwd": "${workspaceFolder}"
       },
