@@ -20,6 +20,11 @@ services:
   ruuvi-emulator:
     build: ../stack/ruuvi-emulator
     container_name: paku_ruuvi_emulator
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+    depends_on:
+      - mosquitto
 
   # ------------------------------------------------------------
   # MOSQUITTO MQTT BROKER

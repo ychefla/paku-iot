@@ -1,6 +1,10 @@
-FROM alpine:3.19
+FROM eclipse-mosquitto:2.0
 
-# Placeholder service for Paku IoT unified stack.
-# Logic will be implemented in sprint 2.
+# Copy custom configuration if needed
+# For now, use default configuration which allows anonymous connections
+# and listens on port 1883
 
-CMD ["sleep", "infinity"]
+# Enable anonymous connections for development
+RUN echo "listener 1883" > /mosquitto/config/mosquitto.conf && \
+    echo "allow_anonymous true" >> /mosquitto/config/mosquitto.conf && \
+    echo "persistence false" >> /mosquitto/config/mosquitto.conf
