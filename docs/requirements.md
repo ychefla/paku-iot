@@ -1,145 +1,217 @@
-# paku-iot — Backend Requirements
+# paku-iot — Backend Requirements (Current Plan)
 
 ## Purpose & Scope
-The **paku-iot** repo hosts the backend that connects and manages paku devices (firmware = “edge/core”). It must:
-- Accept telemetry + status from devices.
-- Send commands + configuration to devices.
-- Provide OTA firmware distribution.
-- Persist data for dashboards/analysis.
-- Expose simple APIs for apps and admin tools.
-- Be easy to run locally (Docker) and on a small VM (Hetzner).
+The **paku-iot** repo hosts the backend stack for the Paku project. In the **current phase**, the scope is intentionally small and focused:
 
-> Naming: we use **edge** when referring to the device/firmware (repo: `paku-core`). This backend is **paku-iot**.
+- Ingest environmental telemetry (temperature, humidity, etc.) from a single van environment.
+- Persist measurements in a simple Postgres schema.
+- Visualize data in Grafana dashboards.
+- Run everything locally using a single Docker Compose stack.
+
+Future phases (not part of the current sprint) may add:
+- Multiple devices and a proper device registry.
+- Commands / configuration downlink to devices.
+- OTA firmware distribution.
+- Remote deployment on a small VM.
+
+> Naming: we use **edge** for the device/firmware side (repo: `paku-core`). This backend is **paku-iot**.
 
 ---
 
-## MVP Functional Requirements
-1. **Ingest telemetry**
-   - Protocol: MQTT.
-   - Topics (proposal):
-     - `paku/<deviceId>/telemetry` (JSON payload)
-     - `paku/<deviceId>/state` (online/offline, rssi, fwVersion)
-     - `paku/<deviceId>/event/<name>` (button, error, etc.)
-2. **Downlink / control**
-   - `paku/<deviceId>/cmd` (JSON commands; device ACK on `/state` or `/event/ack`).
-3. **Device provisioning**
-   - Create device ID + credentials.
-   - Optional one-time claim code flow.
-4. **OTA**
-   - Host firmware files and a manifest:
-     - `GET /ota/manifest.json` → list of `{model, version, url, sha256}`.
-     - Firmware files served via HTTP(S).
-5. **Storage**
-   - Time-series telemetry.
+## MVP Functional Requirements (current phase)
+
+1. **Ingest telemetry via MQTT**
+   - MQTT broker: Mosquitto (running in the unified stack).
+   - Primary topic (current focus):
+     - `paku/ruuvi/van_inside`
+   - Payload: RuuviTag-style JSON as documented in `docs/mqtt_schema.md`.
+
+2. **Store measurements in Postgres**
+   - Simple `measurements` table, including at least:
+     - `id` (primary key)
+     - `sensor_id`
+     - timestamp
+     - temperature, humidity, pressure, battery
+   - Schema created automatically when Postgres container starts (init script or similar).
+
+3. **Collector service (MQTT → Postgres)**
+   - Subscribes to the Ruuvi topic.
+   - Validates incoming JSON against the documented schema.
+   - Inserts valid measurements into Postgres.
+   - Logs and skips malformed messages without crashing.
+
+4. **Basic dashboards in Grafana**
+   - Visualize at least:
+     - Temperature over time.
+     - Humidity over time.
+     - Table view of the last N measurements.
+   - Dashboards should persist across container restarts via named volumes.
+
+5. **Minimal observability for this stack**
+   - Container logs for all services (broker, collector, Postgres, Grafana).
+   - Simple end-to-end test: one MQTT message results in one DB row.
+
+---
+
+## Future Functional Requirements (not in current sprint)
+
+These are explicitly **future** items. They influence some design choices but are not to be implemented now:
+
+1. **Generalized device topics and registry**
+   - Topics like `paku/<deviceId>/telemetry`, `paku/<deviceId>/state`, `paku/<deviceId>/event/<name>`.
    - Device registry (id, model, secrets, metadata).
-6. **APIs**
-   - `GET /health`
-   - `GET /devices`, `GET /devices/<id>`
-   - `POST /devices` (provision)
-   - `GET /ota/manifest.json`
-7. **Admin UI (optional for MVP)**
-   - Minimal dashboard (device list, last seen, fw version).
+
+2. **Downlink / control**
+   - `paku/<deviceId>/cmd` (JSON commands).
+   - Device ACK via `/state` or `/event/ack`.
+
+3. **OTA firmware distribution**
+   - Host firmware files + manifest (e.g. `GET /ota/manifest.json`).
+   - Firmware download over HTTP(S) or similar.
+
+4. **HTTP APIs and admin tools**
+   - Basic APIs for devices and measurements.
+   - Lightweight admin UI.
+
+These should remain parked until the single-van telemetry pipeline is stable and useful.
 
 ---
 
 ## Non-Functional Requirements
-- **Small footprint:** runs on a 1–2 vCPU VM, 1–2 GB RAM.
-- **Portable dev env:** `docker compose up` works on macOS/Linux.
-- **Observability:** logs for each service; simple metrics endpoint.
-- **Backups:** DB snapshot script (cron/`scripts/backup.sh`).
-- **Security:** no secrets in git; per-device MQTT creds; TLS ready.
+
+- **Small footprint:**
+  - Should run comfortably on a small dev machine and a small VM (1–2 vCPU, 1–2 GB RAM) if needed.
+
+- **Simple local setup:**
+  - `docker compose -f compose/stack.yaml up --build` should start the full stack.
+  - No separate dev/prod compose layers in the current phase.
+
+- **Observability:**
+  - Logs available for all containers.
+  - Ability to manually inspect data in Postgres.
+
+- **Security baseline:**
+  - No real secrets in git.
+  - Environment variables loaded from `.env` (local only).
+  - MQTT broker is open and simple for local dev; hardening (auth/TLS) is documented separately as future work in `AI_COLLAB.md`.
 
 ---
 
-## Proposed Minimal Stack
-- **MQTT broker:** Eclipse Mosquitto.
-- **Collector/Bridge:** small service that validates messages and writes to DB (language TBD; Node/Go/Python—keep simple).
-- **DB:** 
-  - Option A (simple): PostgreSQL (JSONB for telemetry).
-  - Option B (timeseries): Postgres + Timescale or InfluxDB.
-- **API:** lightweight HTTP service (can be same as Collector at first).
-- **OTA:** static file server (nginx) + `manifest.json`.
-- **Optional dashboards:** Grafana (if we go Postgres/Influx).
+## Minimal Stack (current implementation)
+
+- **MQTT broker:** Mosquitto (plain, local dev configuration).
+- **Emulator:** Ruuvi emulator that publishes RuuviTag-style JSON.
+- **Collector:** Python-based service consuming MQTT and inserting into Postgres.
+- **DB:** PostgreSQL with a simple `measurements` table.
+- **Dashboard:** Grafana, reading from Postgres.
+
+All of these run via a **single Docker Compose stack** in `compose/stack.yaml`.
 
 ---
 
 ## Data Model (initial)
-- **Device**
-  - `id`, `model`, `createdAt`, `fwVersion`, `lastSeenAt`, `notes`
-- **Credential**
-  - per-device mqtt username/password or token
+
 - **Measurement**
-  - `deviceId`, `ts`, `payload` (JSON)
-- **Event**
-  - `deviceId`, `ts`, `type`, `payload` (JSON)
+  - `id` — integer primary key.
+  - `sensor_id` — logical sensor identifier (e.g. `van_inside`).
+  - `ts` — timestamp with timezone (measurement time).
+  - `temperature_c` — numeric.
+  - `humidity_percent` — numeric.
+  - `pressure_hpa` — numeric.
+  - `battery_mv` — integer.
+  - Optionally: raw payload or extra fields as needed.
+
+Future models (device, events, etc.) can be added later once needed.
 
 ---
 
-## MQTT Details (baseline)
-- QoS: 1 for telemetry/events; 0 acceptable for state.
-- Retain: `state` retained; telemetry/events not retained.
-- Auth: unique username/password per device. ACL: device can publish only to its own topics; backend can publish to `/cmd`.
+## MQTT Details (current)
 
----
+- Broker: Mosquitto instance running in the unified stack.
+- Main topic:
+  - `paku/ruuvi/van_inside` (single Ruuvi sensor inside the van).
+- Payload:
+  - RuuviTag-style JSON as described in `docs/mqtt_schema.md`.
+- QoS/retain:
+  - QoS 0 or 1 acceptable; no strict requirement in current phase.
+  - No retained telemetry needed at this stage.
 
-## OTA Flow (baseline)
-1. CI (or manual) uploads `firmware.bin` and updates `manifest.json`.
-2. Device periodically checks `GET /ota/manifest.json?model=<m>&current=<v>`.
-3. If newer version found, device downloads from `url`.
-4. (Future) Optional signature verification.
+Future multi-device topic structure (e.g. `paku/<deviceId>/...`) is out of scope for now.
 
 ---
 
 ## Secrets & Config
-- Commit **`example`** files only:
-  - `.env.example` for compose environment.
-  - `config.example.yml` for service defaults.
-- Real secrets go to `.env` / `config.yml` (git-ignored).
-- Use `trufflehog` locally before pushes.
+
+- Commit **example** files only:
+  - `.env.example` for compose environment variables.
+- Real secrets go to `.env` (git-ignored).
+- The `.env.example` file should document:
+  - DB credentials (user, password, database).
+  - MQTT host/port if needed.
+- Follow the general secrets guidance in `AI_COLLAB.md` (no real secrets in chat or git).
 
 ---
 
-## Directory Layout (target)
+## Directory Layout (current target)
+
+```text
 paku-iot/
-compose/          # docker compose files (dev, prod)
-services/
-api/
-collector/
-ota/            # static files + manifest.json
-config/
-config.example.yml
-docs/
-scripts/
-backup.sh
+  compose/
+    stack.yaml          # Single unified docker-compose stack
+  stack/
+    mosquitto/          # MQTT broker container
+    ruuvi-emulator/     # Ruuvi emulator container
+    collector/          # Collector (MQTT → Postgres)
+    postgres/           # Postgres container + init scripts
+    grafana/            # Grafana container and provisioning
+  docs/
+    requirements.md     # This file
+    mqtt_schema.md      # Ruuvi payload + topic schema
+  _archive/
+    legacy_compose/     # Old dev/prod compose structure (kept for reference)
+    services/           # Old service implementations (kept for reference)
+```
+
+This layout reflects the simplified, unified stack. Older `services/` and multi-file compose setups are archived and should not be extended.
 
 ---
 
-## Local Development (goal)
-- Requirements: Docker, Docker Compose.
-- Commands:
-  - `docker compose -f compose/dev.yaml up -d`
-  - Logs: `docker compose -f compose/dev.yaml logs -f`
-  - Tear down: `docker compose -f compose/dev.yaml down -v`
+## Local Development
+
+Requirements:
+- Docker and Docker Compose installed on the host.
+- Devcontainer is optional but recommended for editing and tooling.
+
+Typical workflow:
+
+```bash
+cd /Users/jossu/GIT/paku/paku-iot
+
+# Start stack (host terminal, not inside devcontainer)
+docker compose -f compose/stack.yaml up --build
+
+# Stop stack
+docker compose -f compose/stack.yaml down
+```
+
+Logs can be viewed using `docker logs` for each service or via a terminal that shows compose output.
 
 ---
 
-## Deployment (Hetzner VM)
-- Single-host docker deployment using `compose/prod.yaml`.
-- Bind mounts for persistent volumes.
-- Reverse proxy/TLS can be Caddy/Traefik (future).
+## Deployment (future)
+
+Future goal (not current sprint):
+- Run the same stack (or a slightly adapted version) on a small VM (e.g. Hetzner).
+- Use a similar compose file, with additional hardening (MQTT auth/TLS, backups, ingress).
+
+Details for remote deployment will be specified once the local stack is stable and useful.
 
 ---
 
-## Acceptance Criteria (MVP)
-- Device connects, authenticates, publishes telemetry.
-- Telemetry persisted and queryable via API.
-- `/health` returns 200 for all services.
-- OTA manifest served; device downloads file.
-- No secrets in repo (`trufflehog` clean).
+## Acceptance Criteria (for current MVP)
 
----
-
-## Next Steps
-1. Add `compose/dev.yaml` skeleton.
-2. Add `.env.example` with required variables.
-3. Implement a minimal collector + API (single process is fine).
+- Ruuvitag-style emulator publishes JSON to the agreed MQTT topic.
+- Collector consumes messages, validates payloads and writes rows into Postgres.
+- Grafana dashboard shows live and historical measurements from Postgres.
+- The unified stack can be started and stopped with a single compose command.
+- No secrets are committed to git; `.env.example` exists and is usable as a template.
