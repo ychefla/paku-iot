@@ -63,23 +63,32 @@ def insert_measurement(data):
     
     Args:
         data: Dictionary containing sensor data with fields:
-              - sensor_id
-              - temperature_c
-              - humidity_percent
-              - pressure_hpa
-              - battery_mv
-              - timestamp (optional)
+              - sensor_id (or 'tag' for compatibility with legacy format)
+              - temperature_c (or 'temperature' for compatibility)
+              - humidity_percent (or 'humidity' for compatibility)
+              - pressure_hpa (optional)
+              - battery_mv (or 'battery' for compatibility)
+              - timestamp (or 'ts' for compatibility)
     """
     try:
-        # Extract fields from the payload
-        sensor_id = data.get('sensor_id', 'unknown')
-        temperature_c = data.get('temperature_c')
-        humidity_percent = data.get('humidity_percent')
-        pressure_hpa = data.get('pressure_hpa')
+        # Extract fields from the payload, with fallback for legacy field names
+        sensor_id = data.get('sensor_id') or data.get('tag', 'unknown')
+        temperature_c = data.get('temperature_c') or data.get('temperature')
+        humidity_percent = data.get('humidity_percent') or data.get('humidity')
+        pressure_hpa = data.get('pressure_hpa') or data.get('pressure')
         battery_mv = data.get('battery_mv')
         
+        # Handle legacy battery format (convert from volts to millivolts if needed)
+        if battery_mv is None and 'battery' in data:
+            battery_val = data.get('battery')
+            # If battery value is < 10, assume it's in volts and convert to millivolts
+            if battery_val and battery_val < 10:
+                battery_mv = int(battery_val * 1000)
+            else:
+                battery_mv = int(battery_val) if battery_val else None
+        
         # Use provided timestamp or current time
-        timestamp = data.get('timestamp')
+        timestamp = data.get('timestamp') or data.get('ts')
         if timestamp:
             # Parse ISO 8601 timestamp
             ts = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
