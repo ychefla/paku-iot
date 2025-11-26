@@ -20,3 +20,15 @@ Example JSON payload (full RuuviTag-style data):
   "timestamp": "2025-11-25T09:30:00Z"
 }
 ```
+
+## Storage
+
+The collector service persists the following fields to the `measurements` table in Postgres:
+- `sensor_id`
+- `temperature_c`
+- `humidity_percent`
+- `pressure_hpa`
+- `battery_mv`
+- `ts` (mapped from `timestamp`)
+
+For complete database schema details, see [database_schema.md](database_schema.md).
