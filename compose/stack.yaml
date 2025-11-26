@@ -20,6 +20,9 @@ services:
   ruuvi-emulator:
     build: ../stack/ruuvi-emulator
     container_name: paku_ruuvi_emulator
+    environment:
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
 
   # ------------------------------------------------------------
   # MOSQUITTO MQTT BROKER
@@ -42,6 +45,14 @@ services:
     depends_on:
       - mosquitto
       - postgres
+    environment:
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - POSTGRES_USER=${POSTGRES_USER:-paku}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-paku}
+      - POSTGRES_DB=${POSTGRES_DB:-paku}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
 
   # ------------------------------------------------------------
   # POSTGRES – PERSISTENT STORAGE
@@ -51,6 +62,10 @@ services:
   postgres:
     build: ../stack/postgres
     container_name: paku_postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-paku}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-paku}
+      - POSTGRES_DB=${POSTGRES_DB:-paku}
     volumes:
       - paku_pgdata:/var/lib/postgresql/data
     ports:
@@ -64,6 +79,13 @@ services:
   grafana:
     build: ../stack/grafana
     container_name: paku_grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=postgres:5432
+      - GF_DATABASE_NAME=${POSTGRES_DB:-paku}
+      - GF_DATABASE_USER=${POSTGRES_USER:-paku}
+      - GF_DATABASE_PASSWORD=${POSTGRES_PASSWORD:-paku}
     volumes:
       - paku_grafana:/var/lib/grafana
     depends_on:

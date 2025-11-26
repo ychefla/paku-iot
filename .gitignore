@@ -22,4 +22,5 @@ include/secrets.h
 secrets.h
 .env
 .env.*
+!.env.example
 data/
