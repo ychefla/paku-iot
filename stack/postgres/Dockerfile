@@ -9,5 +9,8 @@ FROM postgres:16-alpine
 # Copy initialization script
 COPY init.sql /docker-entrypoint-initdb.d/
 
-# Keep the container running for now.
+# Copy the initialization script
+# Postgres will automatically execute .sql files in /docker-entrypoint-initdb.d/
+COPY init.sql /docker-entrypoint-initdb.d/
+
 CMD ["postgres"]

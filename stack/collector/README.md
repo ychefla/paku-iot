@@ -1,134 +1,175 @@
-# Paku IoT Collector Service
+version: "3.9"
 
-## Overview
+# ------------------------------------------------------------
+# PAKU IoT – UNIFIED STACK
+#
+# This compose file starts the full lightweight environment:
+#   ruuvi-emulator → mosquitto → collector → postgres → grafana
+#
+# Each service has its own directory under stack/.
+# In this phase the goal is to run a clean end-to-end pipeline.
+# ------------------------------------------------------------
 
-The collector service subscribes to MQTT topics and stores validated sensor measurements in PostgreSQL. It implements structured validation against the RuuviTag schema to ensure data quality and service reliability.
+services:
+  # ------------------------------------------------------------
+  # MOSQUITTO MQTT BROKER
+  # Receives messages from the Ruuvi emulator.
+  # The collector service subscribes here.
+  # ------------------------------------------------------------
+  mosquitto:
+    build:
+      context: ../stack/mosquitto
+    container_name: paku_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1883"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-## Features
+  # ------------------------------------------------------------
+  # POSTGRES – PERSISTENT STORAGE
+  # Stores all sensor data.
+  # The paku_pgdata volume ensures data persists across restarts.
+  # ------------------------------------------------------------
+  postgres:
+    build:
+      context: ../stack/postgres
+    container_name: paku_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - paku_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-- **Schema Validation**: Validates incoming MQTT messages against the documented RuuviTag schema (see `docs/mqtt_schema.md`)
-- **Required Fields**: Validates presence of sensor_id, temperature_c, humidity_percent, pressure_hpa, and battery_mv
-- **Type Checking**: Ensures field types match expectations (strings, numbers, integers)
-- **Graceful Error Handling**: Logs validation errors with payload details but does not crash the service
-- **Observability**: Tracks and reports count of rejected messages
+  # ------------------------------------------------------------
+  # GRAFANA
+  # Visualization layer that reads from Postgres.
+  # The paku_grafana volume stores dashboards and Grafana state.
+  # ------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: paku_grafana
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+    volumes:
+      - paku_grafana:/var/lib/grafana
 
-## Required Fields
+  # ------------------------------------------------------------
+  # RUUVITAG EMULATOR
+  # Sends fake sensor data to MQTT for testing.
+  # ------------------------------------------------------------
+  ruuvi-emulator:
+    build:
+      context: ../stack/ruuvi-emulator
+    container_name: paku_ruuvi_emulator
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sensor_id | string | Logical sensor identifier |
-| temperature_c | int/float | Temperature in Celsius |
-| humidity_percent | int/float | Humidity percentage |
-| pressure_hpa | int/float | Atmospheric pressure in hPa |
-| battery_mv | int | Battery voltage in millivolts |
+  # ------------------------------------------------------------
+  # COLLECTOR
+  # Reads MQTT messages from Mosquitto and writes them to Postgres.
+  # Subscribes to paku/ruuvi/van_inside and inserts data into the
+  # measurements table.
+  # ------------------------------------------------------------
+  collector:
+    build:
+      context: ../stack/collector
+    container_name: paku_collector
+    restart: unless-stopped
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: paku/ruuvi/van_inside
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
 
-## Optional Fields
+# ------------------------------------------------------------
+# VOLUMES
+# Centralized definitions for all persistent data directories.
+# ------------------------------------------------------------
+volumes:
+  paku_pgdata:
+  paku_grafana:
 
-The collector also accepts and stores additional RuuviTag fields:
-- acceleration_x_mg, acceleration_y_mg, acceleration_z_mg
-- acceleration_total_mg
-- tx_power_dbm
-- movement_counter
-- measurement_sequence
-- mac
-- timestamp
+FROM python:3.12-alpine
 
-## Configuration
+# Install system dependencies required by psycopg[binary]
+RUN apk add --no-cache gcc musl-dev libpq-dev
 
-The service is configured via environment variables:
+WORKDIR /app
 
-- `MQTT_HOST`: MQTT broker hostname (default: mosquitto)
-- `MQTT_PORT`: MQTT broker port (default: 1883)
-- `PGHOST`: PostgreSQL hostname (default: postgres)
-- `PGUSER`: PostgreSQL username (default: paku)
-- `PGPASSWORD`: PostgreSQL password (default: paku)
-- `PGDATABASE`: PostgreSQL database name (default: paku)
+# Install Python dependencies first (better layer caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-## Error Handling
+# Copy collector source code
+COPY collector.py .
 
-When a message fails validation:
-1. A detailed error message is logged including the validation failure reason
-2. The complete payload is logged for debugging
-3. The rejected message counter is incremented
-4. The message is skipped (not inserted into the database)
-5. The service continues running normally
+# Default command: run the collector
+CMD ["python", "collector.py"]
 
-## Testing
+# Paku Collector Service
 
-Run the validation tests:
+The collector is a small Python service that:
 
-```bash
-python3 test_validation.py
-```
+- subscribes to MQTT messages from the Ruuvi emulator
+- validates and parses the JSON payload
+- inserts measurements into the Postgres database
 
-The test suite includes:
-- Valid message acceptance
-- Missing required field detection
-- Type validation for all required fields
-- Support for both integer and float numeric types
+## Runtime flow
 
-## Database Schema
+1. Connect to Postgres using environment variables:
+   - `PGHOST`
+   - `PGPORT`
+   - `PGUSER`
+   - `PGPASSWORD`
+   - `PGDATABASE`
 
-The collector inserts validated measurements into the `measurements` table:
+2. Connect to Mosquitto using:
+   - `MQTT_HOST`
+   - `MQTT_PORT`
+   - `MQTT_TOPIC`
 
-```sql
-CREATE TABLE measurements (
-    id BIGSERIAL PRIMARY KEY,
-    sensor_id TEXT NOT NULL,
-    ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    temperature_c NUMERIC(5, 2) NOT NULL,
-    humidity_percent NUMERIC(5, 2) NOT NULL,
-    pressure_hpa NUMERIC(6, 2) NOT NULL,
-    battery_mv INTEGER NOT NULL,
-    -- Optional fields...
-);
-```
+3. Subscribe to `MQTT_TOPIC` (currently `paku/ruuvi/van_inside`).
 
-## Logging
+4. For each message:
+   - decode JSON
+   - validate against the schema defined in `docs/mqtt_schema.md`
+   - insert a row into the `measurements` table
+   - log errors but do not crash on malformed messages
 
-The collector provides structured logging:
-- `[INFO]`: Successful message insertion
-- `[ERROR]`: Validation failures, JSON parse errors, database errors
-- On shutdown: Total count of rejected messages
+## Environment
 
-## Example Valid Message
+The collector is run as part of the unified stack defined in `compose/stack.yaml`.
 
-```json
-{
-  "sensor_id": "van_inside",
-  "temperature_c": 21.5,
-  "humidity_percent": 45.2,
-  "pressure_hpa": 1003.2,
-  "battery_mv": 2870,
-  "mac": "AA:BB:CC:DD:EE:FF",
-  "timestamp": "2025-11-25T09:30:00Z"
-}
-```
-
-## Example Error Scenarios
-
-### Missing Required Field
-```
-[ERROR] Validation failed for topic paku/ruuvi/van_inside: Missing required field: sensor_id
-[ERROR] Payload: {"temperature_c": 21.5, ...}
-[INFO] Total rejected messages: 1
-```
-
-### Type Mismatch
-```
-[ERROR] Validation failed for topic paku/ruuvi/van_inside: Field 'temperature_c' has incorrect type: expected int or float, got str
-[ERROR] Payload: {"sensor_id": "van_inside", "temperature_c": "21.5", ...}
-[INFO] Total rejected messages: 2
-```
-
-### Invalid JSON
-```
-[ERROR] Invalid JSON on topic paku/ruuvi/van_inside: Expecting value: line 1 column 1 (char 0)
-[ERROR] Payload: {invalid json}
-[INFO] Total rejected messages: 3
-```
-
-## Dependencies
-
-- `paho-mqtt==2.1.0`: MQTT client library
-- `psycopg[binary]==3.2.3`: PostgreSQL adapter for Python
+The base image and dependencies are defined in `stack/collector/Dockerfile`.

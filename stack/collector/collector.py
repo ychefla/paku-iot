@@ -1,200 +1,226 @@
 #!/usr/bin/env python3
 """
 Paku IoT Collector Service
-===========================
-Subscribes to MQTT topics and stores validated measurements in Postgres.
+Subscribes to MQTT topics and writes sensor data to Postgres.
 """
 
 import os
+import sys
 import json
 import signal
-import sys
-from typing import Dict, Any, Optional, Tuple
-import psycopg
+import logging
+from datetime import datetime
+
 import paho.mqtt.client as mqtt
+import psycopg
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('collector')
 
-# Environment configuration
+# Configuration from environment variables
+MQTT_HOST = os.getenv('MQTT_HOST', 'mosquitto')
+MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
+MQTT_TOPIC = os.getenv('MQTT_TOPIC', 'paku/ruuvi/van_inside')
+
 PGHOST = os.getenv('PGHOST', 'postgres')
+PGPORT = int(os.getenv('PGPORT', '5432'))
 PGUSER = os.getenv('PGUSER', 'paku')
 PGPASSWORD = os.getenv('PGPASSWORD', 'paku')
 PGDATABASE = os.getenv('PGDATABASE', 'paku')
-MQTT_HOST = os.getenv('MQTT_HOST', 'mosquitto')
-MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
 
-# Global counter for observability
-rejected_message_count = 0
-
-
-def validate_message(payload: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
-    """
-    Validate MQTT message against the RuuviTag schema.
-    
-    Args:
-        payload: Parsed JSON payload
-        
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
-    required_fields = {
-        'sensor_id': str,
-        'temperature_c': (int, float),
-        'humidity_percent': (int, float),
-        'pressure_hpa': (int, float),
-        'battery_mv': int,
-    }
-    
-    # Check for missing required fields
-    for field, expected_type in required_fields.items():
-        if field not in payload:
-            return False, f"Missing required field: {field}"
-        
-        # Validate type
-        if not isinstance(payload[field], expected_type):
-            actual_type = type(payload[field]).__name__
-            if isinstance(expected_type, tuple):
-                expected_names = ' or '.join(t.__name__ for t in expected_type)
-            else:
-                expected_names = expected_type.__name__
-            return False, f"Field '{field}' has incorrect type: expected {expected_names}, got {actual_type}"
-    
-    return True, None
+# Global connection object
+db_conn = None
+mqtt_client = None
 
 
-def insert_measurement(conn: psycopg.Connection, payload: Dict[str, Any]) -> None:
-    """
-    Insert validated measurement into Postgres.
-    
-    Args:
-        conn: Postgres connection
-        payload: Validated payload
-    """
-    with conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO measurements (
-                sensor_id,
-                ts,
-                temperature_c,
-                humidity_percent,
-                pressure_hpa,
-                battery_mv,
-                acceleration_x_mg,
-                acceleration_y_mg,
-                acceleration_z_mg,
-                acceleration_total_mg,
-                tx_power_dbm,
-                movement_counter,
-                measurement_sequence,
-                mac
-            ) VALUES (
-                %(sensor_id)s,
-                COALESCE(%(timestamp)s::timestamptz, NOW()),
-                %(temperature_c)s,
-                %(humidity_percent)s,
-                %(pressure_hpa)s,
-                %(battery_mv)s,
-                %(acceleration_x_mg)s,
-                %(acceleration_y_mg)s,
-                %(acceleration_z_mg)s,
-                %(acceleration_total_mg)s,
-                %(tx_power_dbm)s,
-                %(movement_counter)s,
-                %(measurement_sequence)s,
-                %(mac)s
-            )
-        """, payload)
-
-
-def on_connect(client: mqtt.Client, userdata: Any, rc: int, properties: Any = None) -> None:
-    """MQTT connection callback."""
-    print(f'Collector connected to MQTT broker (rc={rc})', flush=True)
-    client.subscribe('paku/#', qos=0)
-
-
-def on_message(client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
-    """MQTT message callback with validation."""
-    global rejected_message_count
-    
-    conn = userdata['conn']
-    payload_str = msg.payload.decode('utf-8', 'replace')
-    
-    # Parse JSON
+def connect_to_database():
+    """Establish connection to PostgreSQL database."""
+    global db_conn
     try:
-        payload = json.loads(payload_str)
-    except json.JSONDecodeError as e:
-        rejected_message_count += 1
-        print(f'[ERROR] Invalid JSON on topic {msg.topic}: {e}', flush=True)
-        print(f'[ERROR] Payload: {payload_str}', flush=True)
-        print(f'[INFO] Total rejected messages: {rejected_message_count}', flush=True)
-        return
-    
-    # Validate against schema
-    is_valid, error_msg = validate_message(payload)
-    if not is_valid:
-        rejected_message_count += 1
-        print(f'[ERROR] Validation failed for topic {msg.topic}: {error_msg}', flush=True)
-        print(f'[ERROR] Payload: {json.dumps(payload)}', flush=True)
-        print(f'[INFO] Total rejected messages: {rejected_message_count}', flush=True)
-        return
-    
-    # Insert into database
-    try:
-        insert_measurement(conn, payload)
-        print(f'[INFO] Inserted measurement from {payload.get("sensor_id")} (topic: {msg.topic})', flush=True)
-    except Exception as e:
-        rejected_message_count += 1
-        print(f'[ERROR] Database insertion failed: {e}', flush=True)
-        print(f'[ERROR] Payload: {json.dumps(payload)}', flush=True)
-        print(f'[INFO] Total rejected messages: {rejected_message_count}', flush=True)
-
-
-def main():
-    """Main entry point for the collector service."""
-    print('Starting Paku IoT Collector...', flush=True)
-    
-    # Connect to Postgres
-    try:
-        conn = psycopg.connect(
+        logger.info(f"Connecting to PostgreSQL at {PGHOST}:{PGPORT}...")
+        db_conn = psycopg.connect(
             host=PGHOST,
+            port=PGPORT,
             user=PGUSER,
             password=PGPASSWORD,
             dbname=PGDATABASE,
             autocommit=True
         )
-        print(f'Connected to Postgres at {PGHOST}', flush=True)
+        logger.info("Successfully connected to PostgreSQL")
+        return db_conn
     except Exception as e:
-        print(f'[ERROR] Failed to connect to Postgres: {e}', flush=True)
+        logger.error(f"Failed to connect to PostgreSQL: {e}")
         sys.exit(1)
+
+
+def insert_measurement(data):
+    """
+    Insert a measurement into the database.
     
-    # Set up MQTT client
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    client.user_data_set({'conn': conn})
-    client.on_connect = on_connect
-    client.on_message = on_message
-    
+    Args:
+        data: Dictionary containing sensor data with fields:
+              - sensor_id (or 'tag' for compatibility with legacy format)
+              - temperature_c (or 'temperature' for compatibility)
+              - humidity_percent (or 'humidity' for compatibility)
+              - pressure_hpa (optional)
+              - battery_mv (or 'battery' for compatibility)
+              - timestamp (or 'ts' for compatibility)
+    """
     try:
-        client.connect(MQTT_HOST, MQTT_PORT, 60)
-        print(f'Connecting to MQTT broker at {MQTT_HOST}:{MQTT_PORT}', flush=True)
+        # Extract fields from the payload, with fallback for legacy field names
+        sensor_id = data.get('sensor_id') or data.get('tag', 'unknown')
+        temperature_c = data.get('temperature_c') or data.get('temperature')
+        humidity_percent = data.get('humidity_percent') or data.get('humidity')
+        pressure_hpa = data.get('pressure_hpa') or data.get('pressure')
+        battery_mv = data.get('battery_mv')
+        
+        # Handle legacy battery format (convert from volts to millivolts if needed)
+        if battery_mv is None and 'battery' in data:
+            battery_val = data.get('battery')
+            # If battery value is < 10, assume it's in volts and convert to millivolts
+            if battery_val is not None and battery_val < 10:
+                battery_mv = int(battery_val * 1000)
+            elif battery_val is not None:
+                battery_mv = int(battery_val)
+            else:
+                battery_mv = None
+        
+        # Use provided timestamp or current time
+        timestamp = data.get('timestamp') or data.get('ts')
+        if timestamp:
+            # Parse ISO 8601 timestamp
+            ts = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        else:
+            ts = None  # Will use database default (now())
+        
+        # Insert into database
+        with db_conn.cursor() as cur:
+            if ts:
+                cur.execute(
+                    """
+                    INSERT INTO measurements 
+                    (sensor_id, ts, temperature_c, humidity_percent, pressure_hpa, battery_mv)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (sensor_id, ts, temperature_c, humidity_percent, pressure_hpa, battery_mv)
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO measurements 
+                    (sensor_id, temperature_c, humidity_percent, pressure_hpa, battery_mv)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (sensor_id, temperature_c, humidity_percent, pressure_hpa, battery_mv)
+                )
+        
+        logger.info(
+            f"Inserted measurement: sensor_id={sensor_id}, "
+            f"temp={temperature_c}°C, humidity={humidity_percent}%, "
+            f"pressure={pressure_hpa}hPa, battery={battery_mv}mV"
+        )
+        
     except Exception as e:
-        print(f'[ERROR] Failed to connect to MQTT broker: {e}', flush=True)
-        conn.close()
-        sys.exit(1)
+        logger.error(f"Failed to insert measurement: {e}")
+        # Don't re-raise - we want to continue processing other messages
+
+
+def on_connect(client, userdata, flags, rc, properties=None):
+    """Callback when the client connects to the MQTT broker."""
+    if rc == 0:
+        logger.info(f"Connected to MQTT broker at {MQTT_HOST}:{MQTT_PORT}")
+        logger.info(f"Subscribing to topic: {MQTT_TOPIC}")
+        client.subscribe(MQTT_TOPIC, qos=0)
+    else:
+        logger.error(f"Failed to connect to MQTT broker, return code: {rc}")
+
+
+def on_message(client, userdata, msg):
+    """
+    Callback when a message is received from the MQTT broker.
     
-    # Handle shutdown gracefully
-    def shutdown_handler(sig, frame):
-        print('\nShutting down collector...', flush=True)
-        print(f'Total rejected messages: {rejected_message_count}', flush=True)
-        client.loop_stop()
-        client.disconnect()
-        conn.close()
-        sys.exit(0)
+    Args:
+        client: MQTT client instance
+        userdata: User data
+        msg: MQTT message with topic and payload
+    """
+    try:
+        # Decode the payload
+        payload_str = msg.payload.decode('utf-8')
+        logger.debug(f"Received message on topic {msg.topic}: {payload_str}")
+        
+        # Parse JSON
+        try:
+            data = json.loads(payload_str)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON payload on topic {msg.topic}: {e}")
+            logger.debug(f"Malformed payload: {payload_str}")
+            return  # Skip this message and continue
+        
+        # Insert into database
+        insert_measurement(data)
+        
+    except Exception as e:
+        logger.error(f"Error processing message from topic {msg.topic}: {e}")
+        # Continue processing other messages
+
+
+def on_disconnect(client, userdata, rc, properties=None):
+    """Callback when the client disconnects from the MQTT broker."""
+    if rc != 0:
+        logger.warning(f"Unexpected disconnect from MQTT broker, return code: {rc}")
+
+
+def shutdown_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info(f"Received signal {signum}, shutting down...")
     
+    if mqtt_client:
+        mqtt_client.loop_stop()
+        mqtt_client.disconnect()
+    
+    if db_conn:
+        db_conn.close()
+    
+    sys.exit(0)
+
+
+def main():
+    """Main entry point for the collector service."""
+    global mqtt_client
+    
+    logger.info("Starting Paku IoT Collector Service")
+    logger.info(f"MQTT: {MQTT_HOST}:{MQTT_PORT}, Topic: {MQTT_TOPIC}")
+    logger.info(f"PostgreSQL: {PGHOST}:{PGPORT}/{PGDATABASE}")
+    
+    # Set up signal handlers for graceful shutdown
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)
     
-    # Run forever
-    print('Collector is running and listening for messages...', flush=True)
-    client.loop_forever()
+    # Connect to database
+    connect_to_database()
+    
+    # Set up MQTT client
+    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
+    mqtt_client.on_disconnect = on_disconnect
+    
+    # Connect to MQTT broker
+    try:
+        logger.info(f"Connecting to MQTT broker at {MQTT_HOST}:{MQTT_PORT}...")
+        mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
+    except Exception as e:
+        logger.error(f"Failed to connect to MQTT broker: {e}")
+        sys.exit(1)
+    
+    # Start the MQTT loop (blocking)
+    logger.info("Collector service is running. Press Ctrl+C to stop.")
+    mqtt_client.loop_forever()
 
 
 if __name__ == '__main__':
