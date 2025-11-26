@@ -34,11 +34,18 @@ services:
   # ------------------------------------------------------------
   # COLLECTOR
   # Reads MQTT messages from Mosquitto and writes them to Postgres.
-  # No implementation yet — placeholder only.
+  # Validates messages against the RuuviTag schema.
   # ------------------------------------------------------------
   collector:
     build: ../stack/collector
     container_name: paku_collector
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - PGHOST=postgres
+      - PGUSER=paku
+      - PGPASSWORD=paku
+      - PGDATABASE=paku
     depends_on:
       - mosquitto
       - postgres
