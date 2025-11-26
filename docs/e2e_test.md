@@ -198,6 +198,8 @@ PGPASSWORD=paku psql -h localhost -p 5432 -U paku -d paku -c "SELECT * FROM meas
 
 **Expected result**: A row with sensor data including `sensor_id`, `temperature_c`, `humidity_percent`, etc.
 
+**Security Note**: The `PGPASSWORD` environment variable exposes the password in process listings. For local development and testing, this is acceptable. For production use, consider using a `.pgpass` file or PostgreSQL connection URIs instead.
+
 ### Step 7: Stop the Stack
 
 ```bash

@@ -115,6 +115,8 @@ Default database credentials (development only):
 - User: `paku`
 - Password: `paku`
 
+**Security Note**: The default credentials are for local development only. In production environments, use strong passwords and consider using `.pgpass` files or connection URIs instead of command-line password arguments.
+
 ### Logs
 
 View logs for specific services:
