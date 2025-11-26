@@ -12,7 +12,6 @@ __pycache__/
 *.key
 *.token
 *.password
-*.env
 
 # Logs
 *.log
@@ -22,4 +21,5 @@ include/secrets.h
 secrets.h
 .env
 .env.*
+!.env.example
 data/
