@@ -1,4 +1,6 @@
 apiVersion: 1
+# Note: These credentials match the defaults in stack/postgres/Dockerfile
+# for local development. For production, use environment variables or secrets.
 datasources:
   - name: paku-postgres
     uid: paku-pg
