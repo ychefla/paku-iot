@@ -1,6 +1,14 @@
-FROM alpine:3.19
+FROM python:3.12-alpine
 
-# Placeholder service for Paku IoT unified stack.
-# Logic will be implemented in sprint 2.
+# Install dependencies
+WORKDIR /app
 
-CMD ["sleep", "infinity"]
+# Copy requirements and install Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the collector script
+COPY collector.py .
+
+# Run the collector service
+CMD ["python", "collector.py"]

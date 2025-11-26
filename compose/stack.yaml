@@ -34,7 +34,7 @@ services:
   # ------------------------------------------------------------
   # COLLECTOR
   # Reads MQTT messages from Mosquitto and writes them to Postgres.
-  # No implementation yet — placeholder only.
+  # Subscribes to paku/ruuvi/van_inside and inserts data into measurements table.
   # ------------------------------------------------------------
   collector:
     build: ../stack/collector
@@ -42,6 +42,15 @@ services:
     depends_on:
       - mosquitto
       - postgres
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=paku/ruuvi/van_inside
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGUSER=paku
+      - PGPASSWORD=paku
+      - PGDATABASE=paku
 
   # ------------------------------------------------------------
   # POSTGRES – PERSISTENT STORAGE

@@ -5,5 +5,8 @@ ENV POSTGRES_USER=paku
 ENV POSTGRES_PASSWORD=paku
 ENV POSTGRES_DB=paku
 
-# Keep the container running for now.
+# Copy the initialization script
+# Postgres will automatically execute .sql files in /docker-entrypoint-initdb.d/
+COPY init.sql /docker-entrypoint-initdb.d/
+
 CMD ["postgres"]
