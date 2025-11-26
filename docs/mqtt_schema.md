@@ -1,6 +1,41 @@
-Topic: `paku/ruuvi/van_inside`
+# MQTT Schema for RuuviTag-style Telemetry
 
-Example JSON payload (full RuuviTag-style data):
+## Topic
+
+**Topic name:** `paku/ruuvi/van_inside`
+
+This topic is used for publishing telemetry data from a RuuviTag sensor inside the van environment.
+
+---
+
+## Payload Schema
+
+The payload is a JSON object containing RuuviTag-style sensor measurements. All fields are required unless specified otherwise.
+
+### Field Definitions
+
+| Field | Type | Unit | Description |
+|-------|------|------|-------------|
+| `sensor_id` | string | - | Logical identifier for the sensor (e.g., "van_inside") |
+| `temperature_c` | float | °C | Temperature in degrees Celsius |
+| `humidity_percent` | float | % | Relative humidity as a percentage (0-100) |
+| `pressure_hpa` | float | hPa | Atmospheric pressure in hectopascals |
+| `acceleration_x_mg` | integer | mg | Acceleration on X-axis in milligravity (1 mg = 0.001 g) |
+| `acceleration_y_mg` | integer | mg | Acceleration on Y-axis in milligravity |
+| `acceleration_z_mg` | integer | mg | Acceleration on Z-axis in milligravity |
+| `acceleration_total_mg` | integer | mg | Total acceleration magnitude in milligravity |
+| `tx_power_dbm` | integer | dBm | Radio transmission power in decibels-milliwatt |
+| `movement_counter` | integer | - | Cumulative count of detected movements |
+| `measurement_sequence` | integer | - | Sequential measurement number (increments with each reading) |
+| `battery_mv` | integer | mV | Battery voltage in millivolts |
+| `mac` | string | - | MAC address of the sensor (format: AA:BB:CC:DD:EE:FF) |
+| `timestamp` | string | - | Timestamp in ISO 8601 format (e.g., "2025-11-25T09:30:00Z") |
+
+---
+
+## Example Payload
+
+Below is a complete example of a valid JSON payload:
 
 ```json
 {
@@ -20,3 +55,13 @@ Example JSON payload (full RuuviTag-style data):
   "timestamp": "2025-11-25T09:30:00Z"
 }
 ```
+
+---
+
+## Notes
+
+- The schema is designed to be compatible with RuuviTag sensor data format.
+- All numeric values should use appropriate precision for their respective sensors.
+- The `timestamp` field should be in UTC timezone (indicated by "Z" suffix).
+- The `sensor_id` field provides logical identification independent of the MAC address.
+- The `acceleration_total_mg` typically represents the vector magnitude: √(x² + y² + z²).
