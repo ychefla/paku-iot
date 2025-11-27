@@ -1,3 +1,7 @@
+# Ignore system files
+.DS_Store
+Thumbs.db  
+
 # Docker volumes
 */data/
 */grafana_data/
