@@ -33,7 +33,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  CAST(payload->>'temperature_c' AS NUMERIC) AS \"temperature\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND payload ? 'temperature_c'\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  temperature_c AS \"temperature\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\nORDER BY ts",
           "editorMode": "code"
         }
       ],
@@ -120,7 +120,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  CAST(payload->>'humidity_percent' AS NUMERIC) AS \"humidity\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND payload ? 'humidity_percent'\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  humidity_percent AS \"humidity\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\nORDER BY ts",
           "editorMode": "code"
         }
       ],
@@ -207,7 +207,7 @@
             "uid": "paku-pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  ts,\n  topic,\n  CAST(payload->>'sensor_id' AS TEXT) AS sensor_id,\n  CAST(payload->>'temperature_c' AS NUMERIC) AS temperature_c,\n  CAST(payload->>'humidity_percent' AS NUMERIC) AS humidity_percent,\n  CAST(payload->>'pressure_hpa' AS NUMERIC) AS pressure_hpa,\n  CAST(payload->>'battery_mv' AS INTEGER) AS battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\nORDER BY ts DESC\nLIMIT 50",
+          "rawSql": "SELECT\n  ts,\n  sensor_id,\n  temperature_c,\n  humidity_percent,\n  pressure_hpa,\n  battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\nORDER BY ts DESC\nLIMIT 50",
           "editorMode": "code"
         }
       ],

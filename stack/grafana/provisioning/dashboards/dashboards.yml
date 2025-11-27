@@ -8,4 +8,4 @@ providers:
     allowUiUpdates: true
     updateIntervalSeconds: 10
     options:
-      path: /etc/grafana/provisioning/dashboards
+      path: /etc/grafana/dashboards
