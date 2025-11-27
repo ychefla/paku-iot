@@ -143,9 +143,9 @@ Future multi-device topic structure (e.g. `paku/<deviceId>/...`) is out of scope
 ## Secrets & Config
 
 - Commit **example** files only:
-  - `.env.example` for compose environment variables.
+  - `compose/.env.example` for compose environment variables.
 - Real secrets go to `.env` (git-ignored).
-- The `.env.example` file should document:
+- The `compose/.env.example` file should document:
   - DB credentials (user, password, database).
   - MQTT host/port if needed.
 - Follow the general secrets guidance in `AI_COLLAB.md` (no real secrets in chat or git).
@@ -214,4 +214,4 @@ Details for remote deployment will be specified once the local stack is stable a
 - Collector consumes messages, validates payloads and writes rows into Postgres.
 - Grafana dashboard shows live and historical measurements from Postgres.
 - The unified stack can be started and stopped with a single compose command.
-- No secrets are committed to git; `.env.example` exists and is usable as a template.
+- No secrets are committed to git; `compose/.env.example` exists and is usable as a template.

@@ -64,7 +64,7 @@ This script is copied to `/docker-entrypoint-initdb.d/` in the container, where 
 
 ## Connection Details (Development)
 
-Credentials for local development are configured via environment variables (see `.env.example`):
+Credentials for local development are configured via environment variables (see `compose/.env.example`):
 
 - **Host:** localhost (or `postgres` from within the Docker network)
 - **Port:** 5432

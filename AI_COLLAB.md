@@ -12,18 +12,18 @@ This document provides guidelines for AI-assisted development on the paku-iot pr
    - No secrets in issue comments or chat history
 
 2. **Use environment variables for all secrets**
-   - All sensitive configuration must be in `.env` (git-ignored)
-   - Use `.env.example` as a template showing required variables
+   - All sensitive configuration must be in `compose/.env` (git-ignored)
+   - Use `compose/.env.example` as a template showing required variables
    - Default values in code should be safe placeholders only
 
 3. **Environment File Management**
-   - `.env` is git-ignored and contains actual secrets
-   - `.env.example` is committed and documents required variables
-   - To set up locally: `cp .env.example .env` then edit `.env`
+   - `compose/.env` is git-ignored and contains actual secrets
+   - `compose/.env.example` is committed and documents required variables
+   - To set up locally: `cp compose/.env.example compose/.env` then edit `compose/.env`
 
 ### Required Environment Variables
 
-The stack requires the following environment variables (see `.env.example`):
+The stack requires the following environment variables (see `compose/.env.example`):
 
 ```bash
 # Database
@@ -43,7 +43,7 @@ GF_SECURITY_ADMIN_PASSWORD=admin  # Change in production!
 
 Before deploying to production:
 - Generate strong, unique passwords for all services
-- Use environment-specific `.env` files (never commit them)
+- Use environment-specific `compose/.env` files (never commit them)
 - Consider using secrets management tools (e.g., Docker secrets, vault)
 - Enable authentication and TLS for MQTT broker
 - Use HTTPS for Grafana and any web interfaces
@@ -53,7 +53,7 @@ Before deploying to production:
 ### Setting Up Local Environment
 
 1. Clone the repository
-2. Copy environment template: `cp .env.example .env`
+2. Copy environment template: `cp compose/.env.example compose/.env`
 3. Edit `.env` with your local configuration
 4. Start the stack: `docker compose -f compose/stack.yaml up --build`
 
@@ -61,7 +61,7 @@ Before deploying to production:
 
 1. Keep changes minimal and focused
 2. Test locally before committing
-3. Document environment variable changes in `.env.example`
+3. Document environment variable changes in `compose/.env.example`
 4. Update README.md if user-facing setup changes
 
 ### Adding New Services
@@ -74,7 +74,7 @@ When adding new services that require configuration:
      - MY_VAR=${MY_VAR:-default_value}
    ```
 
-2. Document the variable in `.env.example`:
+2. Document the variable in `compose/.env.example`:
    ```bash
    # Description of what this variable does
    MY_VAR=default_value
@@ -137,7 +137,7 @@ docker compose -f compose/stack.yaml config | grep -A 5 "environment:"
 - Review docker network with `docker network inspect compose_default`
 
 ### .env file ignored by git
-- This is intentional! Use `.env.example` as reference
+- This is intentional! Use `compose/.env.example` as reference
 - Never commit `.env` to version control
 - To force-add (not recommended): `git add -f .env`
 
