@@ -1,6 +1,6 @@
-# Ignore system files
+# macOS
 .DS_Store
-Thumbs.db  
+Thumbs.db
 
 # Docker volumes
 */data/
