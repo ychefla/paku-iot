@@ -1,14 +1,13 @@
 FROM postgres:16-alpine
 
-# Default configuration for development.
-ENV POSTGRES_USER=paku
-ENV POSTGRES_PASSWORD=paku
-ENV POSTGRES_DB=paku
+# Environment variables for database configuration are passed from docker-compose.
+# See .env.example for required variables:
+#   - POSTGRES_USER
+#   - POSTGRES_PASSWORD
+#   - POSTGRES_DB
 
-# Copy initialization script to be executed on first startup
-# Scripts in docker-entrypoint-initdb.d are automatically executed
-# in alphabetical order when the container starts for the first time.
+# Copy the initialization script
+# Postgres will automatically execute .sql files in /docker-entrypoint-initdb.d/
 COPY init.sql /docker-entrypoint-initdb.d/
 
-# Keep the container running for now.
 CMD ["postgres"]

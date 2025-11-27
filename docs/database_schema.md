@@ -12,21 +12,28 @@ The database stores sensor measurements from Ruuvi devices. The schema is automa
 
 Stores time-series sensor data from Ruuvi devices.
 
-| Column             | Type               | Nullable | Description                                      |
-|--------------------|--------------------|----------|--------------------------------------------------|
-| id                 | SERIAL             | No       | Primary key, auto-incrementing                   |
-| sensor_id          | TEXT               | No       | Logical sensor identifier (e.g., "van_inside")   |
-| ts                 | TIMESTAMPTZ        | No       | Measurement timestamp with timezone              |
-| temperature_c      | DOUBLE PRECISION   | Yes      | Temperature in degrees Celsius                   |
-| humidity_percent   | DOUBLE PRECISION   | Yes      | Relative humidity as a percentage                |
-| pressure_hpa       | DOUBLE PRECISION   | Yes      | Atmospheric pressure in hectopascals             |
-| battery_mv         | INTEGER            | Yes      | Battery voltage in millivolts                    |
-| created_at         | TIMESTAMPTZ        | No       | Record creation timestamp (defaults to now)      |
+| Column               | Type               | Nullable | Description                                      |
+|----------------------|--------------------|----------|--------------------------------------------------|
+| id                   | BIGSERIAL          | No       | Primary key, auto-incrementing                   |
+| sensor_id            | TEXT               | No       | Logical sensor identifier (e.g., "van_inside")   |
+| ts                   | TIMESTAMPTZ        | No       | Measurement timestamp (defaults to NOW())        |
+| temperature_c        | NUMERIC(5,2)       | No       | Temperature in degrees Celsius                   |
+| humidity_percent     | NUMERIC(5,2)       | No       | Relative humidity as a percentage                |
+| pressure_hpa         | NUMERIC(6,2)       | No       | Atmospheric pressure in hectopascals             |
+| battery_mv           | INTEGER            | No       | Battery voltage in millivolts                    |
+| acceleration_x_mg    | INTEGER            | Yes      | X-axis acceleration in milli-g                   |
+| acceleration_y_mg    | INTEGER            | Yes      | Y-axis acceleration in milli-g                   |
+| acceleration_z_mg    | INTEGER            | Yes      | Z-axis acceleration in milli-g                   |
+| acceleration_total_mg| INTEGER            | Yes      | Total acceleration magnitude in milli-g          |
+| tx_power_dbm         | INTEGER            | Yes      | Transmit power in dBm                            |
+| movement_counter     | INTEGER            | Yes      | Movement counter value                           |
+| measurement_sequence | INTEGER            | Yes      | Measurement sequence number                      |
+| mac                  | TEXT               | Yes      | Device MAC address                               |
 
 #### Indexes
 
 - **Primary key:** `id`
-- **idx_measurements_ts:** Index on `ts DESC` for efficient time-range queries
+- **idx_measurements_ts:** Index on `ts` for efficient time-range queries
 - **idx_measurements_sensor_id:** Index on `sensor_id` for filtering by sensor
 - **idx_measurements_sensor_ts:** Composite index on `(sensor_id, ts DESC)` for common queries
 
@@ -57,15 +64,15 @@ This script is copied to `/docker-entrypoint-initdb.d/` in the container, where 
 
 ## Connection Details (Development)
 
-Default credentials for local development (defined in `stack/postgres/Dockerfile`):
+Credentials for local development are configured via environment variables (see `.env.example`):
 
-- **Host:** localhost (or `paku_postgres` from within the Docker network)
+- **Host:** localhost (or `postgres` from within the Docker network)
 - **Port:** 5432
-- **Database:** paku
-- **User:** paku
-- **Password:** paku
+- **Database:** Set via `POSTGRES_DB` environment variable
+- **User:** Set via `POSTGRES_USER` environment variable
+- **Password:** Set via `POSTGRES_PASSWORD` environment variable
 
-⚠️ **Note:** These are development-only credentials. Production deployments should use secure credentials stored in environment variables or secrets management.
+⚠️ **Note:** Never commit real credentials. Use `.env` file (git-ignored) for local development and secrets management for production.
 
 ## Verifying Schema Creation
 

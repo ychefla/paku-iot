@@ -1,27 +1,25 @@
--- ============================================================
--- PAKU IoT - Postgres Schema Initialization
--- ============================================================
--- This script is automatically executed when the Postgres
--- container starts for the first time (via docker-entrypoint-initdb.d).
--- ============================================================
+-- Paku IoT Database Schema
+-- Create measurements table for storing sensor data
 
--- Create the measurements table to store Ruuvi sensor data
 CREATE TABLE IF NOT EXISTS measurements (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     sensor_id TEXT NOT NULL,
-    ts TIMESTAMPTZ NOT NULL,
-    temperature_c DOUBLE PRECISION,
-    humidity_percent DOUBLE PRECISION,
-    pressure_hpa DOUBLE PRECISION,
-    battery_mv INTEGER,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    temperature_c NUMERIC(5, 2) NOT NULL,
+    humidity_percent NUMERIC(5, 2) NOT NULL,
+    pressure_hpa NUMERIC(6, 2) NOT NULL,
+    battery_mv INTEGER NOT NULL,
+    acceleration_x_mg INTEGER,
+    acceleration_y_mg INTEGER,
+    acceleration_z_mg INTEGER,
+    acceleration_total_mg INTEGER,
+    tx_power_dbm INTEGER,
+    movement_counter INTEGER,
+    measurement_sequence INTEGER,
+    mac TEXT
 );
 
--- Create an index on ts for efficient time-range queries
-CREATE INDEX IF NOT EXISTS idx_measurements_ts ON measurements(ts DESC);
-
--- Create an index on sensor_id for efficient sensor filtering
+-- Create indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_measurements_ts ON measurements(ts);
 CREATE INDEX IF NOT EXISTS idx_measurements_sensor_id ON measurements(sensor_id);
-
--- Create a composite index for common queries (sensor + time)
 CREATE INDEX IF NOT EXISTS idx_measurements_sensor_ts ON measurements(sensor_id, ts DESC);
