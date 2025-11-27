@@ -65,3 +65,17 @@ Below is a complete example of a valid JSON payload:
 - The `timestamp` field should be in UTC timezone (indicated by "Z" suffix).
 - The `sensor_id` field provides logical identification independent of the MAC address.
 - The `acceleration_total_mg` typically represents the vector magnitude: √(x² + y² + z²).
+
+---
+
+## Storage
+
+The collector service persists the following fields to the `measurements` table in Postgres:
+- `sensor_id`
+- `temperature_c`
+- `humidity_percent`
+- `pressure_hpa`
+- `battery_mv`
+- `ts` (mapped from `timestamp`)
+
+For complete database schema details, see [database_schema.md](database_schema.md).
