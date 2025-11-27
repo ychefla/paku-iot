@@ -6,6 +6,8 @@
 #
 # Each service has its own directory under stack/.
 # In this phase the goal is to run a clean end-to-end pipeline.
+#
+# Environment variables are loaded from .env file in same directory
 # ------------------------------------------------------------
 
 services:
