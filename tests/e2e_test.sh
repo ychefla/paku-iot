@@ -207,8 +207,10 @@ verify_grafana() {
     
     # Query the Postgres datasource through Grafana to verify data is accessible
     # First, get a short time range that includes our test data
-    local from_time=$(date -u -d '1 hour ago' +%s%3N 2>/dev/null || date -u -v-1H +%s000)
-    local to_time=$(date -u +%s%3N 2>/dev/null || date -u +%s000)
+    # Use portable date command - get timestamp in seconds and append 000 for milliseconds
+    local current_epoch=$(date -u +%s)
+    local from_time=$((current_epoch - 3600))000
+    local to_time=${current_epoch}000
     
     local query_payload=$(cat <<EOF
 {
