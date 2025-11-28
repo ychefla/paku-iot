@@ -117,8 +117,23 @@ cleanup() {
 # Register cleanup on exit
 trap cleanup EXIT
 
-# Step 2: Start the stack
+# Step 2: Ensure environment file exists and start the stack
 echo "Step 2: Starting the Docker Compose stack..."
+
+# Ensure .env file exists (required for Docker Compose to read environment variables)
+ENV_FILE="compose/.env"
+ENV_EXAMPLE="compose/.env.example"
+if [ ! -f "$ENV_FILE" ]; then
+    if [ -f "$ENV_EXAMPLE" ]; then
+        print_info "Creating .env file from .env.example..."
+        cp "$ENV_EXAMPLE" "$ENV_FILE"
+        print_success ".env file created"
+    else
+        print_error ".env.example file not found"
+        exit 1
+    fi
+fi
+
 stop_stack
 docker compose -f "$COMPOSE_FILE" up --build -d
 
