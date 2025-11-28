@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: Paku Dashboards
+    orgId: 1
+    folder: Paku
+    type: file
+    allowUiUpdates: true
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards

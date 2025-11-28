@@ -1,0 +1,135 @@
+{
+  "uid": "paku-overview",
+  "title": "Paku Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-6h", "to": "now"},
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Temperature Over Time",
+      "id": 1,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "postgres", "uid": "paku_pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "postgres", "uid": "paku_pg"},
+          "rawSql": "SELECT ts AS time, temperature_c AS \"Temperature (°C)\" FROM measurements WHERE $__timeFilter(ts) ORDER BY ts;",
+          "editorMode": "code",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "single"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2},
+          "unit": "celsius"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity Over Time",
+      "id": 2,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "postgres", "uid": "paku_pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "postgres", "uid": "paku_pg"},
+          "rawSql": "SELECT ts AS time, humidity_percent AS \"Humidity (%)\" FROM measurements WHERE $__timeFilter(ts) ORDER BY ts;",
+          "editorMode": "code",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "single"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2},
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Pressure Over Time",
+      "id": 3,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "postgres", "uid": "paku_pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "postgres", "uid": "paku_pg"},
+          "rawSql": "SELECT ts AS time, pressure_hpa AS \"Pressure (hPa)\" FROM measurements WHERE $__timeFilter(ts) ORDER BY ts;",
+          "editorMode": "code",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "single"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2},
+          "unit": "pressurehpa"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Battery Voltage Over Time",
+      "id": 4,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "postgres", "uid": "paku_pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "postgres", "uid": "paku_pg"},
+          "rawSql": "SELECT ts AS time, battery_mv AS \"Battery (mV)\" FROM measurements WHERE $__timeFilter(ts) ORDER BY ts;",
+          "editorMode": "code",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "single"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2},
+          "unit": "mvolt"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Latest Measurements",
+      "id": 5,
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 16},
+      "datasource": {"type": "postgres", "uid": "paku_pg"},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "postgres", "uid": "paku_pg"},
+          "rawSql": "SELECT ts, sensor_id, temperature_c, humidity_percent, pressure_hpa, battery_mv FROM measurements WHERE $__timeFilter(ts) ORDER BY ts DESC LIMIT 20;",
+          "editorMode": "code",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "templating": {"list": []}
+}

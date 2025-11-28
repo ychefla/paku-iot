@@ -1,6 +1,10 @@
-FROM alpine:3.19
+FROM eclipse-mosquitto:2.0
 
-# Placeholder service for Paku IoT unified stack.
-# Logic will be implemented in sprint 2.
+# Copy configuration
+COPY config/mosquitto.conf /mosquitto/config/mosquitto.conf
 
-CMD ["sleep", "infinity"]
+# Expose MQTT port
+EXPOSE 1883
+
+# Run Mosquitto
+CMD ["mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
