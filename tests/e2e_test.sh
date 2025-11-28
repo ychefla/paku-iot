@@ -160,6 +160,13 @@ done
 
 if [ $elapsed -ge $TIMEOUT_SECONDS ]; then
     print_error "Postgres did not become ready in time"
+    print_info "Checking container status and logs for debugging..."
+    echo ""
+    echo "=== Docker Container Status ==="
+    docker ps -a --filter "name=paku_" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    echo ""
+    echo "=== Postgres Container Logs ==="
+    docker logs "$CONTAINER_POSTGRES" 2>&1 | tail -30
     exit 1
 fi
 echo ""
