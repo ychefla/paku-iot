@@ -8,6 +8,7 @@
 # Requirements:
 #   - Docker and Docker Compose installed
 #   - psql client (for Postgres verification)
+#   - curl (for Grafana API verification)
 
 set -e
 
@@ -21,6 +22,13 @@ DB_USER="paku"
 DB_PASSWORD="paku"
 TIMEOUT_SECONDS=60
 CHECK_INTERVAL=5
+
+# Grafana configuration
+GRAFANA_HOST="localhost"
+GRAFANA_PORT="3000"
+GRAFANA_USER="admin"
+GRAFANA_PASSWORD="admin"
+GRAFANA_DASHBOARD_UID="paku-ruuvi"
 
 # Container names (must match compose/stack.yaml)
 CONTAINER_EMULATOR="paku_ruuvi_emulator"
@@ -80,6 +88,14 @@ if ! command_exists psql; then
     exit 1
 fi
 print_success "psql is installed"
+
+if ! command_exists curl; then
+    print_error "curl is not installed (required for Grafana API verification)"
+    echo "Install it with: sudo apt-get install curl (Ubuntu/Debian)"
+    echo "             or: brew install curl (macOS)"
+    exit 1
+fi
+print_success "curl is installed"
 echo ""
 
 # Change to repository root
@@ -199,7 +215,78 @@ else
 fi
 echo ""
 
-# Step 7: Final summary
+# Step 7: Verify Grafana dashboard
+echo "Step 7: Verifying Grafana dashboard..."
+GRAFANA_URL="http://${GRAFANA_HOST}:${GRAFANA_PORT}"
+
+# Wait for Grafana to be ready
+print_info "Waiting for Grafana to be ready..."
+elapsed=0
+while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
+    if curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/health" 2>/dev/null | grep -q "200"; then
+        print_success "Grafana is ready"
+        break
+    fi
+    sleep $CHECK_INTERVAL
+    elapsed=$((elapsed + CHECK_INTERVAL))
+    print_info "Still waiting... (${elapsed}s/${TIMEOUT_SECONDS}s)"
+done
+
+if [ $elapsed -ge $TIMEOUT_SECONDS ]; then
+    print_error "Grafana did not become ready in time"
+    docker logs "$CONTAINER_GRAFANA" 2>&1 | tail -20
+    exit 1
+fi
+
+# Verify dashboard exists
+print_info "Verifying dashboard '${GRAFANA_DASHBOARD_UID}' exists..."
+DASHBOARD_RESPONSE=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
+    "${GRAFANA_URL}/api/dashboards/uid/${GRAFANA_DASHBOARD_UID}" 2>&1)
+
+if echo "$DASHBOARD_RESPONSE" | grep -q '"title"'; then
+    DASHBOARD_TITLE=$(echo "$DASHBOARD_RESPONSE" | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
+    print_success "Dashboard '${DASHBOARD_TITLE}' exists"
+else
+    print_error "Dashboard '${GRAFANA_DASHBOARD_UID}' not found"
+    echo "Response: $DASHBOARD_RESPONSE"
+    exit 1
+fi
+
+# Verify Grafana can query measurement data via datasource
+print_info "Verifying Grafana can query measurement data..."
+QUERY_RESPONSE=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
+    -H "Content-Type: application/json" \
+    -X POST "${GRAFANA_URL}/api/ds/query" \
+    -d '{
+        "queries": [
+            {
+                "refId": "A",
+                "datasource": {"uid": "paku-pg", "type": "postgres"},
+                "rawSql": "SELECT COUNT(*) as count FROM measurements",
+                "format": "table"
+            }
+        ],
+        "from": "now-1h",
+        "to": "now"
+    }' 2>&1)
+
+if echo "$QUERY_RESPONSE" | grep -q '"count"'; then
+    QUERY_COUNT=$(echo "$QUERY_RESPONSE" | grep -o '"count"[^}]*' | grep -o '[0-9]\+' | head -1)
+    if [ -n "$QUERY_COUNT" ] && [ "$QUERY_COUNT" -gt 0 ]; then
+        print_success "Grafana successfully queried $QUERY_COUNT measurement(s) from database"
+    else
+        print_error "Grafana query returned no measurements"
+        echo "Response: $QUERY_RESPONSE"
+        exit 1
+    fi
+else
+    print_error "Grafana failed to query measurement data"
+    echo "Response: $QUERY_RESPONSE"
+    exit 1
+fi
+echo ""
+
+# Step 8: Final summary
 echo "=========================================="
 echo "End-to-End Test Summary"
 echo "=========================================="
@@ -211,8 +298,10 @@ echo "  - Postgres ready: ✓"
 echo "  - measurements table exists: ✓"
 echo "  - At least one row inserted: ✓ ($row_count row(s) found)"
 echo "  - Data retrieval working: ✓"
+echo "  - Grafana dashboard accessible: ✓"
+echo "  - Grafana data query working: ✓"
 echo ""
-print_info "The full MQTT → Postgres pipeline is working correctly."
+print_info "The full MQTT → Postgres → Grafana pipeline is working correctly."
 echo "=========================================="
 
 exit 0

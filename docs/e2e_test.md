@@ -4,7 +4,7 @@
 
 This document describes the end-to-end (E2E) test for the Paku IoT stack. The test verifies the complete data pipeline from MQTT message publication to database persistence.
 
-**Purpose**: Validate that a message published to the MQTT broker by the Ruuvi emulator is correctly processed by the collector service and persisted as a row in the Postgres measurements table.
+**Purpose**: Validate that a message published to the MQTT broker by the Ruuvi emulator is correctly processed by the collector service, persisted as a row in the Postgres measurements table, and displayed correctly in the Grafana dashboard.
 
 ## Test Scope
 
@@ -15,7 +15,9 @@ The E2E test covers:
 3. ✓ Verifying the database schema is initialized
 4. ✓ Confirming at least one MQTT message is published
 5. ✓ Validating at least one row exists in the measurements table
-6. ✓ Cleaning up the test environment
+6. ✓ Verifying Grafana dashboard is accessible
+7. ✓ Validating Grafana can query and display measurement data
+8. ✓ Cleaning up the test environment
 
 ## Prerequisites
 
@@ -24,18 +26,19 @@ The E2E test covers:
 - **Docker**: Container runtime (version 20.10 or later)
 - **Docker Compose**: Container orchestration (version 2.0 or later)
 - **psql**: PostgreSQL client for database verification
+- **curl**: HTTP client for Grafana API verification
 
 ### Installation
 
 **Ubuntu/Debian:**
 ```bash
 sudo apt-get update
-sudo apt-get install docker.io docker-compose postgresql-client
+sudo apt-get install docker.io docker-compose postgresql-client curl
 ```
 
 **macOS:**
 ```bash
-brew install docker docker-compose postgresql
+brew install docker docker-compose postgresql curl
 ```
 
 **Verify installations:**
@@ -43,6 +46,7 @@ brew install docker docker-compose postgresql
 docker --version
 docker compose version
 psql --version
+curl --version
 ```
 
 ## Automated Test
@@ -69,6 +73,7 @@ Step 1: Checking prerequisites...
 ✓ Docker is installed
 ✓ Docker Compose is installed
 ✓ psql is installed
+✓ curl is installed
 
 Step 2: Starting the Docker Compose stack...
 ✓ Stack started successfully
@@ -92,6 +97,14 @@ Step 6: Verifying data content...
 ----+------------+------------------------+---------------+------------------
   1 | van_inside | 2025-11-26 12:30:00+00 |          21.5 |             45.2
 
+Step 7: Verifying Grafana dashboard...
+ℹ Waiting for Grafana to be ready...
+✓ Grafana is ready
+ℹ Verifying dashboard 'paku-ruuvi' exists...
+✓ Dashboard 'Ruuvi Overview' exists
+ℹ Verifying Grafana can query measurement data...
+✓ Grafana successfully queried 1 measurement(s) from database
+
 ==========================================
 End-to-End Test Summary
 ==========================================
@@ -103,8 +116,10 @@ Test results:
   - measurements table exists: ✓
   - At least one row inserted: ✓ (1 row(s) found)
   - Data retrieval working: ✓
+  - Grafana dashboard accessible: ✓
+  - Grafana data query working: ✓
 
-ℹ The full MQTT → Postgres pipeline is working correctly.
+ℹ The full MQTT → Postgres → Grafana pipeline is working correctly.
 ==========================================
 ```
 
@@ -121,6 +136,11 @@ The test script uses the following default configuration:
 | `DB_NAME` | `paku` | Database name |
 | `DB_USER` | `paku` | Database user |
 | `DB_PASSWORD` | `paku` | Database password |
+| `GRAFANA_HOST` | `localhost` | Grafana host |
+| `GRAFANA_PORT` | `3000` | Grafana port |
+| `GRAFANA_USER` | `admin` | Grafana admin user |
+| `GRAFANA_PASSWORD` | `admin` | Grafana admin password |
+| `GRAFANA_DASHBOARD_UID` | `paku-ruuvi` | Dashboard UID to verify |
 | `TIMEOUT_SECONDS` | `60` | Maximum wait time for operations |
 | `CHECK_INTERVAL` | `5` | Interval between status checks |
 
@@ -200,7 +220,35 @@ PGPASSWORD=paku psql -h localhost -p 5432 -U paku -d paku -c "SELECT * FROM meas
 
 **Security Note**: The `PGPASSWORD` environment variable exposes the password in process listings. For local development and testing, this is acceptable. For production use, consider using a `.pgpass` file or PostgreSQL connection URIs instead.
 
-### Step 7: Stop the Stack
+### Step 7: Verify Grafana Dashboard
+
+Check Grafana health:
+
+```bash
+curl -s http://localhost:3000/api/health
+```
+
+**Expected result**: `{"commit":"...","database":"ok","version":"..."}`
+
+Verify dashboard exists:
+
+```bash
+curl -s -u admin:admin http://localhost:3000/api/dashboards/uid/paku-ruuvi | head -c 200
+```
+
+**Expected result**: JSON response containing dashboard metadata with `"title":"Ruuvi Overview"`.
+
+Verify Grafana can query measurement data:
+
+```bash
+curl -s -u admin:admin -H "Content-Type: application/json" \
+  -X POST http://localhost:3000/api/ds/query \
+  -d '{"queries":[{"refId":"A","datasource":{"uid":"paku-pg","type":"postgres"},"rawSql":"SELECT COUNT(*) as count FROM measurements","format":"table"}],"from":"now-1h","to":"now"}'
+```
+
+**Expected result**: JSON response containing measurement count.
+
+### Step 8: Stop the Stack
 
 ```bash
 docker compose -f compose/stack.yaml down -v
@@ -252,6 +300,48 @@ docker compose -f compose/stack.yaml down -v
 - Ubuntu/Debian: `sudo apt-get install postgresql-client`
 - macOS: `brew install postgresql`
 
+### Issue: "curl: command not found"
+
+**Solution**: Install curl:
+- Ubuntu/Debian: `sudo apt-get install curl`
+- macOS: `brew install curl`
+
+### Issue: "Grafana did not become ready in time"
+
+**Possible causes**:
+- Grafana container failed to start
+- Port 3000 is already in use
+- Postgres datasource not configured correctly
+
+**Solutions**:
+1. Check Grafana logs: `docker logs paku_grafana`
+2. Verify port availability: `netstat -an | grep 3000`
+3. Verify Postgres is healthy before Grafana starts
+
+### Issue: "Dashboard 'paku-ruuvi' not found"
+
+**Possible causes**:
+- Dashboard provisioning failed
+- Dashboard JSON file is malformed
+
+**Solutions**:
+1. Check Grafana logs for provisioning errors: `docker logs paku_grafana`
+2. Verify dashboard file exists: `ls -la stack/grafana/dashboards/`
+3. Validate dashboard JSON syntax
+4. Rebuild Grafana container: `docker compose -f compose/stack.yaml build grafana`
+
+### Issue: "Grafana failed to query measurement data"
+
+**Possible causes**:
+- Postgres datasource not configured correctly
+- Datasource UID mismatch between dashboard and provisioning
+- Database connection issues
+
+**Solutions**:
+1. Check datasource configuration in `stack/grafana/provisioning/datasources/postgres.yaml`
+2. Verify datasource UID (`paku-pg`) matches the dashboard queries
+3. Test database connection manually: `docker exec paku_grafana curl -s postgres:5432`
+
 ## Definition of Done (Sprint 2)
 
 This E2E test serves as the "definition of done" for Sprint 2. The sprint is considered complete when:
@@ -260,6 +350,8 @@ This E2E test serves as the "definition of done" for Sprint 2. The sprint is con
 - [ ] At least one MQTT message is published by the emulator
 - [ ] At least one row exists in the measurements table
 - [ ] All data fields are correctly populated (sensor_id, temperature, humidity, etc.)
+- [ ] Grafana dashboard is accessible and displays measurement data
+- [ ] Grafana can query measurement data via API
 - [ ] The test can be repeated reliably
 - [ ] Documentation is clear and complete
 
@@ -292,7 +384,7 @@ Future enhancements may include:
 - Validating specific field values
 - Testing error handling (invalid messages)
 - Performance testing (message throughput)
-- Testing Grafana dashboard availability
+- Testing Grafana panel rendering and data visualization
 
 ## References
 
