@@ -223,7 +223,8 @@ GRAFANA_URL="http://${GRAFANA_HOST}:${GRAFANA_PORT}"
 print_info "Waiting for Grafana to be ready..."
 elapsed=0
 while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
-    if curl -s -o /dev/null -w "%{http_code}" "${GRAFANA_URL}/api/health" 2>/dev/null | grep -q "200"; then
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 "${GRAFANA_URL}/api/health" 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "200" ]; then
         print_success "Grafana is ready"
         break
     fi
@@ -240,8 +241,15 @@ fi
 
 # Verify dashboard exists
 print_info "Verifying dashboard '${GRAFANA_DASHBOARD_UID}' exists..."
-DASHBOARD_RESPONSE=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
+DASHBOARD_RESPONSE=$(curl -s --fail -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
     "${GRAFANA_URL}/api/dashboards/uid/${GRAFANA_DASHBOARD_UID}" 2>&1)
+CURL_EXIT=$?
+
+if [ $CURL_EXIT -ne 0 ]; then
+    print_error "Failed to connect to Grafana API"
+    echo "Response: $DASHBOARD_RESPONSE"
+    exit 1
+fi
 
 if echo "$DASHBOARD_RESPONSE" | grep -q '"title"'; then
     DASHBOARD_TITLE=$(echo "$DASHBOARD_RESPONSE" | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -254,7 +262,7 @@ fi
 
 # Verify Grafana can query measurement data via datasource
 print_info "Verifying Grafana can query measurement data..."
-QUERY_RESPONSE=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
+QUERY_RESPONSE=$(curl -s --fail -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
     -H "Content-Type: application/json" \
     -X POST "${GRAFANA_URL}/api/ds/query" \
     -d '{
@@ -269,9 +277,18 @@ QUERY_RESPONSE=$(curl -s -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
         "from": "now-1h",
         "to": "now"
     }' 2>&1)
+CURL_EXIT=$?
 
-if echo "$QUERY_RESPONSE" | grep -q '"count"'; then
-    QUERY_COUNT=$(echo "$QUERY_RESPONSE" | grep -o '"count"[^}]*' | grep -o '[0-9]\+' | head -1)
+if [ $CURL_EXIT -ne 0 ]; then
+    print_error "Failed to query Grafana datasource API"
+    echo "Response: $QUERY_RESPONSE"
+    exit 1
+fi
+
+# Parse count from JSON response - look for value in the values array
+if echo "$QUERY_RESPONSE" | grep -q '"values"'; then
+    # Extract count value from JSON - values array contains [[count]]
+    QUERY_COUNT=$(echo "$QUERY_RESPONSE" | grep -o '\[\[*[0-9]\+\]*\]' | grep -o '[0-9]\+' | head -1)
     if [ -n "$QUERY_COUNT" ] && [ "$QUERY_COUNT" -gt 0 ]; then
         print_success "Grafana successfully queried $QUERY_COUNT measurement(s) from database"
     else
