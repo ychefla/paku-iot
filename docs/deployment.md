@@ -105,6 +105,7 @@ ssh paku@<server-ip>
 2. Clone the repository:
 
 ```bash
+# Use your fork URL if you've forked the repository
 git clone https://github.com/ychefla/paku-iot.git
 cd paku-iot
 ```
