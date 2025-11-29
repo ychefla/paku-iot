@@ -102,9 +102,37 @@ The current schema includes a `measurements` table with:
 - `pressure_hpa` - Atmospheric pressure in hPa
 - `battery_mv` - Battery voltage in millivolts
 
+## Deployment
+
+The stack can be deployed to a Hetzner Cloud VM for production use.
+
+### Quick Production Deployment
+
+1. Set up a Hetzner Cloud VM (CX11 or CX21 recommended)
+2. Configure GitHub Secrets for automated deployment:
+   - `HETZNER_HOST` - Server IP address
+   - `HETZNER_SSH_KEY` - SSH private key for deployment
+   - `POSTGRES_PASSWORD` - Strong database password
+   - `GF_SECURITY_ADMIN_PASSWORD` - Strong Grafana admin password
+3. Push to `main` branch to trigger automatic deployment
+
+For detailed instructions, see [docs/deployment.md](docs/deployment.md).
+
+### Manual Production Deployment
+
+```bash
+# On the server
+git clone https://github.com/ychefla/paku-iot.git
+cd paku-iot
+cp compose/.env.example compose/.env
+# Edit compose/.env with production passwords
+docker compose -f compose/stack.prod.yaml up -d
+```
+
 ## Documentation
 
 - [Requirements](docs/requirements.md) - Detailed functional and non-functional requirements
+- [Deployment Guide](docs/deployment.md) - Hetzner deployment instructions
 - [E2E Test Guide](docs/e2e_test.md) - Complete testing documentation
 - [MQTT Schema](docs/mqtt_schema.md) - Message format and topic structure
 - [Database Schema](docs/database_schema.md) - Database structure and design
@@ -166,7 +194,6 @@ Planned for future sprints:
 - Downlink commands and configuration
 - OTA firmware distribution
 - HTTP APIs and admin UI
-- Remote deployment capabilities
 
 See [docs/requirements.md](docs/requirements.md) for detailed roadmap.
 

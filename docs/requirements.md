@@ -198,13 +198,25 @@ Logs can be viewed using `docker logs` for each service or via a terminal that s
 
 ---
 
-## Deployment (future)
+## Deployment
 
-Future goal (not current sprint):
-- Run the same stack (or a slightly adapted version) on a small VM (e.g. Hetzner).
-- Use a similar compose file, with additional hardening (MQTT auth/TLS, backups, ingress).
+The stack supports deployment to Hetzner Cloud VMs:
 
-Details for remote deployment will be specified once the local stack is stable and useful.
+- Production compose file: `compose/stack.prod.yaml`
+- Automated deployment via GitHub Actions (see `.github/workflows/deploy.yaml`)
+- Detailed instructions in `docs/deployment.md`
+
+The production stack includes:
+- Resource limits for all containers
+- Always restart policy
+- JSON-file logging with rotation
+- Health checks for all services
+- PostgreSQL only exposed on localhost
+
+Future hardening (not in current sprint):
+- MQTT authentication and TLS
+- Automated backups
+- HTTPS via reverse proxy
 
 ---
 
