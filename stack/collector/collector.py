@@ -24,6 +24,7 @@ import sys
 from typing import Any, Dict, Optional
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import CallbackAPIVersion
 import psycopg
 
 
@@ -182,7 +183,7 @@ class CollectorApp:
     def __init__(self, cfg: Dict[str, Any]) -> None:
         self.cfg = cfg
         self.conn: Optional[psycopg.Connection] = None
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
 
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
@@ -202,17 +203,17 @@ class CollectorApp:
         self.client.loop_forever()
 
     # MQTT callbacks ---------------------------------------------------
-    def on_connect(self, client, userdata, flags, rc):  # type: ignore[override]
-        if rc == 0:
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        if reason_code.is_failure:
+            logger.error("Failed to connect to MQTT broker: %s", reason_code)
+        else:
             logger.info("Connected to MQTT broker, subscribing to %s", self.cfg["mqtt_topic"])
             client.subscribe(self.cfg["mqtt_topic"])
-        else:
-            logger.error("Failed to connect to MQTT broker, rc=%s", rc)
 
-    def on_disconnect(self, client, userdata, rc):  # type: ignore[override]
-        logger.warning("Disconnected from MQTT broker, rc=%s", rc)
+    def on_disconnect(self, client, userdata, reason_code, properties):
+        logger.warning("Disconnected from MQTT broker, reason_code=%s", reason_code)
 
-    def on_message(self, client, userdata, msg):  # type: ignore[override]
+    def on_message(self, client, userdata, msg):
         payload_raw = msg.payload.decode("utf-8", errors="replace")
         logger.debug("Received MQTT message on %s: %s", msg.topic, payload_raw)
 

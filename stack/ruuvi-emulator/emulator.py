@@ -11,6 +11,7 @@ import time
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import CallbackAPIVersion
 
 
 def generate_sensor_data():
@@ -33,15 +34,15 @@ def generate_sensor_data():
     }
 
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, reason_code, properties):
     """Callback when client connects to broker."""
-    if rc == 0:
-        print("Connected to MQTT broker successfully")
+    if reason_code.is_failure:
+        print(f"Failed to connect to MQTT broker: {reason_code}")
     else:
-        print(f"Failed to connect to MQTT broker, return code: {rc}")
+        print("Connected to MQTT broker successfully")
 
 
-def on_publish(client, userdata, mid):
+def on_publish(client, userdata, mid, reason_code, properties):
     """Callback when message is published."""
     # Message published successfully (optional callback)
     pass
@@ -58,7 +59,7 @@ def main():
     print(f"Topic: {topic}")
     
     # Create MQTT client
-    client = mqtt.Client()
+    client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
     client.on_publish = on_publish
     
