@@ -1,17 +1,17 @@
 apiVersion: 1
-# Note: These credentials match the defaults in stack/postgres/Dockerfile
-# for local development. For production, use environment variables or secrets.
+# Note: Credentials are loaded from environment variables.
+# Set POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB in compose/.env
 datasources:
   - name: paku-postgres
     uid: paku-pg
     type: postgres
     access: proxy
     url: postgres:5432
-    user: paku
+    user: $POSTGRES_USER
     isDefault: true
     jsonData:
-      database: paku
+      database: $POSTGRES_DB
       sslmode: "disable"
       postgresVersion: 1600
     secureJsonData:
-      password: paku
+      password: $POSTGRES_PASSWORD
