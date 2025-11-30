@@ -273,6 +273,61 @@ docker ps -a
 docker exec -it paku_postgres psql -U paku -d paku -c "SELECT 1;"
 ```
 
+### Password Authentication Failed
+
+If you see errors like `FATAL: password authentication failed for user "paku"`, this typically happens when:
+
+1. The PostgreSQL database was initialized with one password
+2. The `POSTGRES_PASSWORD` in `.env` or GitHub secrets was later changed
+3. PostgreSQL ignores the new password because the database already exists
+
+**Automatic Fix (GitHub Actions)**:
+The deployment workflow automatically detects existing PostgreSQL volumes and updates the password to match the current secret. This happens transparently during deployment.
+
+**Manual Fix**:
+If you need to manually reset the password:
+
+```bash
+# SSH into the server
+ssh paku@<server-ip>
+
+# Stop all containers
+cd ~/paku-iot
+docker compose -f compose/stack.prod.yaml down
+
+# Start only PostgreSQL
+docker compose -f compose/stack.prod.yaml up -d postgres
+
+# Wait for it to be ready
+sleep 10
+
+# Temporarily enable trust authentication
+docker exec paku_postgres bash -c 'cp /var/lib/postgresql/data/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf.bak'
+docker exec paku_postgres bash -c 'echo "local all all trust" > /tmp/pg_hba.conf && cat /var/lib/postgresql/data/pg_hba.conf >> /tmp/pg_hba.conf && mv /tmp/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf'
+docker exec paku_postgres bash -c 'kill -HUP 1'
+sleep 2
+
+# Update the password (replace YOUR_NEW_PASSWORD with your actual password)
+docker exec paku_postgres psql -U paku -d paku -c "ALTER USER paku WITH PASSWORD 'YOUR_NEW_PASSWORD';"
+
+# Restore original authentication
+docker exec paku_postgres bash -c 'mv /var/lib/postgresql/data/pg_hba.conf.bak /var/lib/postgresql/data/pg_hba.conf'
+docker exec paku_postgres bash -c 'kill -HUP 1'
+
+# Restart the full stack
+docker compose -f compose/stack.prod.yaml down
+docker compose -f compose/stack.prod.yaml up -d
+```
+
+**Alternative: Fresh Start** (loses all data):
+```bash
+# Stop containers and remove volumes
+docker compose -f compose/stack.prod.yaml down -v
+
+# Start fresh
+docker compose -f compose/stack.prod.yaml up -d
+```
+
 ### MQTT Connection Issues
 
 ```bash

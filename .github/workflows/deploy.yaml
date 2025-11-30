@@ -70,6 +70,52 @@ jobs:
           
           chmod 600 compose/.env
           
+          # Check if PostgreSQL data volume already exists
+          # If so, we need to update the password to match the new secret
+          # Check for both possible volume names (with and without project prefix)
+          if docker volume ls --format '{{.Name}}' | grep -E "(compose_)?paku_pgdata" | head -1 | grep -q .; then
+            echo "Existing PostgreSQL data volume found, updating password..."
+            
+            # Stop any running containers first
+            docker compose -f compose/stack.prod.yaml down 2>/dev/null || true
+            
+            # Start only PostgreSQL
+            docker compose -f compose/stack.prod.yaml up -d postgres
+            
+            # Wait for PostgreSQL to be ready
+            echo "Waiting for PostgreSQL to be ready..."
+            for i in {1..30}; do
+              if docker exec paku_postgres pg_isready -U paku >/dev/null 2>&1; then
+                echo "PostgreSQL is ready"
+                break
+              fi
+              sleep 1
+            done
+            
+            # Temporarily modify pg_hba.conf to allow trust authentication
+            echo "Configuring temporary trust authentication..."
+            docker exec paku_postgres bash -c 'cp /var/lib/postgresql/data/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf.bak'
+            docker exec paku_postgres bash -c 'echo "local all all trust" > /var/lib/postgresql/data/pg_hba.conf.tmp && cat /var/lib/postgresql/data/pg_hba.conf >> /var/lib/postgresql/data/pg_hba.conf.tmp && mv /var/lib/postgresql/data/pg_hba.conf.tmp /var/lib/postgresql/data/pg_hba.conf'
+            
+            # Reload PostgreSQL configuration by sending SIGHUP to the main process
+            docker exec paku_postgres bash -c 'kill -HUP 1'
+            sleep 2
+            
+            # Update the password for the paku user using local trust authentication
+            echo "Updating PostgreSQL password..."
+            docker exec paku_postgres psql -U paku -d paku -c "ALTER USER paku WITH PASSWORD '${POSTGRES_PASSWORD}';" || {
+              echo "Warning: Could not update password. This may be a fresh install."
+            }
+            
+            # Restore original pg_hba.conf
+            echo "Restoring original authentication configuration..."
+            docker exec paku_postgres bash -c 'mv /var/lib/postgresql/data/pg_hba.conf.bak /var/lib/postgresql/data/pg_hba.conf'
+            docker exec paku_postgres bash -c 'kill -HUP 1'
+            
+            # Stop PostgreSQL - it will restart with normal auth during full deployment
+            docker compose -f compose/stack.prod.yaml down
+          fi
+          
           # Build and deploy
           echo "Building and starting services..."
           docker compose -f compose/stack.prod.yaml pull 2>/dev/null || true
