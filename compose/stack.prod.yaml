@@ -119,19 +119,21 @@ services:
   # Sends fake sensor data to MQTT for testing.
   # NOTE: In production, you may want to disable this and use
   # real IoT devices instead.
+  # Runs for 5 minutes then exits automatically.
   # Publishes to paku/ruuvi/van_inside every 5-10 seconds.
   # ------------------------------------------------------------
   ruuvi-emulator:
     build:
       context: ../stack/ruuvi-emulator
     container_name: paku_ruuvi_emulator
-    restart: always
+    restart: "no"
     depends_on:
       mosquitto:
         condition: service_healthy
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
     deploy:
       resources:
         limits:

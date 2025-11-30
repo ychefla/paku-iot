@@ -75,19 +75,21 @@ services:
   # ------------------------------------------------------------
   # RUUVITAG EMULATOR
   # Sends fake sensor data to MQTT for testing.
+  # Runs for 5 minutes then exits automatically.
   # Publishes to paku/ruuvi/van_inside every 5-10 seconds.
   # ------------------------------------------------------------
   ruuvi-emulator:
     build:
       context: ../stack/ruuvi-emulator
     container_name: paku_ruuvi_emulator
-    restart: unless-stopped
+    restart: "no"
     depends_on:
       mosquitto:
         condition: service_started
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
 
   # ------------------------------------------------------------
   # COLLECTOR
