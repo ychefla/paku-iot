@@ -10,16 +10,16 @@ This topic is used for publishing telemetry data from a RuuviTag sensor inside t
 
 ## Payload Schema
 
-The payload is a JSON object containing RuuviTag-style sensor measurements. All fields are required unless specified otherwise.
+The payload is a JSON object containing RuuviTag-style sensor measurements. Required fields are marked with (required); all other fields are optional.
 
 ### Field Definitions
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
-| `sensor_id` | string | - | Logical identifier for the sensor (e.g., "van_inside") |
-| `temperature_c` | float | °C | Temperature in degrees Celsius |
-| `humidity_percent` | float | % | Relative humidity as a percentage (0-100) |
-| `pressure_hpa` | float | hPa | Atmospheric pressure in hectopascals |
+| `sensor_id` | string | - | (required) Logical identifier for the sensor (e.g., "van_inside") |
+| `temperature_c` | float | °C | (required) Temperature in degrees Celsius |
+| `humidity_percent` | float | % | (required) Relative humidity as a percentage (0-100) |
+| `pressure_hpa` | float | hPa | (required) Atmospheric pressure in hectopascals |
 | `acceleration_x_mg` | integer | mg | Acceleration on X-axis in milligravity (1 mg = 0.001 g) |
 | `acceleration_y_mg` | integer | mg | Acceleration on Y-axis in milligravity |
 | `acceleration_z_mg` | integer | mg | Acceleration on Z-axis in milligravity |
@@ -27,7 +27,7 @@ The payload is a JSON object containing RuuviTag-style sensor measurements. All 
 | `tx_power_dbm` | integer | dBm | Radio transmission power in decibels-milliwatt |
 | `movement_counter` | integer | - | Cumulative count of detected movements |
 | `measurement_sequence` | integer | - | Sequential measurement number (increments with each reading) |
-| `battery_mv` | integer | mV | Battery voltage in millivolts |
+| `battery_mv` | integer | mV | (required) Battery voltage in millivolts |
 | `mac` | string | - | MAC address of the sensor (format: AA:BB:CC:DD:EE:FF) |
 | `timestamp` | string | - | Timestamp in ISO 8601 format (e.g., "2025-11-25T09:30:00Z") |
 
