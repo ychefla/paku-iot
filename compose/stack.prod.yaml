@@ -57,7 +57,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - paku_pgdata:.~/paku-data/postgresql/data
+      - paku_pgdata:~/paku-data/postgresql/data
     deploy:
       resources:
         limits:
