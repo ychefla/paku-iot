@@ -14,20 +14,34 @@ set -e
 
 # Configuration
 COMPOSE_FILE="compose/stack.yaml"
+ENV_FILE="compose/.env"
 MQTT_TOPIC="paku/ruuvi/van_inside"
 DB_HOST="localhost"
 DB_PORT="5432"
-DB_NAME="paku"
-DB_USER="paku"
-DB_PASSWORD="paku"
 TIMEOUT_SECONDS=60
 CHECK_INTERVAL=5
 
-# Grafana configuration
+# Load environment variables from .env file
+if [ -f "$ENV_FILE" ]; then
+    # Export variables from .env file, ignoring comments and empty lines
+    set -a
+    source <(grep -v '^#' "$ENV_FILE" | grep -v '^$')
+    set +a
+elif [ -f "compose/.env.example" ]; then
+    echo "ERROR: .env file not found. Please copy .env.example to .env and configure it."
+    exit 1
+fi
+
+# Database configuration (from environment)
+DB_NAME="${POSTGRES_DB:-paku}"
+DB_USER="${POSTGRES_USER:-paku}"
+DB_PASSWORD="${POSTGRES_PASSWORD}"
+
+# Grafana configuration (from environment)
 GRAFANA_HOST="localhost"
 GRAFANA_PORT="3000"
-GRAFANA_USER="admin"
-GRAFANA_PASSWORD="admin"
+GRAFANA_USER="${GF_SECURITY_ADMIN_USER:-admin}"
+GRAFANA_PASSWORD="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
 GRAFANA_DASHBOARD_UID="paku-ruuvi"
 
 # Container names (must match compose/stack.yaml)
