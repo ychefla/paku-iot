@@ -302,8 +302,18 @@ docker compose -f compose/stack.prod.yaml up -d postgres
 sleep 10
 
 # Temporarily enable trust authentication
-docker exec paku_postgres bash -c 'cp /var/lib/postgresql/data/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf.bak'
-docker exec paku_postgres bash -c 'echo "local all all trust" > /tmp/pg_hba.conf && cat /var/lib/postgresql/data/pg_hba.conf >> /tmp/pg_hba.conf && mv /tmp/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf'
+# Step 1: Backup original pg_hba.conf
+docker exec paku_postgres bash -c \
+  'cp /var/lib/postgresql/data/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf.bak'
+
+# Step 2: Add trust auth rule at the top of pg_hba.conf
+docker exec paku_postgres bash -c '
+  echo "local all all trust" > /tmp/pg_hba.conf
+  cat /var/lib/postgresql/data/pg_hba.conf >> /tmp/pg_hba.conf
+  mv /tmp/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf
+'
+
+# Step 3: Reload PostgreSQL configuration
 docker exec paku_postgres bash -c 'kill -HUP 1'
 sleep 2
 
@@ -311,7 +321,8 @@ sleep 2
 docker exec paku_postgres psql -U paku -d paku -c "ALTER USER paku WITH PASSWORD 'YOUR_NEW_PASSWORD';"
 
 # Restore original authentication
-docker exec paku_postgres bash -c 'mv /var/lib/postgresql/data/pg_hba.conf.bak /var/lib/postgresql/data/pg_hba.conf'
+docker exec paku_postgres bash -c \
+  'mv /var/lib/postgresql/data/pg_hba.conf.bak /var/lib/postgresql/data/pg_hba.conf'
 docker exec paku_postgres bash -c 'kill -HUP 1'
 
 # Restart the full stack

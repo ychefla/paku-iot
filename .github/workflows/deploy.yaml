@@ -72,8 +72,7 @@ jobs:
           
           # Check if PostgreSQL data volume already exists
           # If so, we need to update the password to match the new secret
-          # Check for both possible volume names (with and without project prefix)
-          if docker volume ls --format '{{.Name}}' | grep -E "(compose_)?paku_pgdata" | head -1 | grep -q .; then
+          if docker volume ls -q | grep -E '(compose_)?paku_pgdata' | head -1 | grep -q .; then
             echo "Existing PostgreSQL data volume found, updating password..."
             
             # Stop any running containers first
@@ -95,15 +94,22 @@ jobs:
             # Temporarily modify pg_hba.conf to allow trust authentication
             echo "Configuring temporary trust authentication..."
             docker exec paku_postgres bash -c 'cp /var/lib/postgresql/data/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf.bak'
-            docker exec paku_postgres bash -c 'echo "local all all trust" > /var/lib/postgresql/data/pg_hba.conf.tmp && cat /var/lib/postgresql/data/pg_hba.conf >> /var/lib/postgresql/data/pg_hba.conf.tmp && mv /var/lib/postgresql/data/pg_hba.conf.tmp /var/lib/postgresql/data/pg_hba.conf'
+            # Prepend trust auth rule for local connections
+            docker exec paku_postgres bash -c '
+              echo "local all all trust" > /var/lib/postgresql/data/pg_hba.conf.tmp
+              cat /var/lib/postgresql/data/pg_hba.conf >> /var/lib/postgresql/data/pg_hba.conf.tmp
+              mv /var/lib/postgresql/data/pg_hba.conf.tmp /var/lib/postgresql/data/pg_hba.conf
+            '
             
             # Reload PostgreSQL configuration by sending SIGHUP to the main process
             docker exec paku_postgres bash -c 'kill -HUP 1'
             sleep 2
             
             # Update the password for the paku user using local trust authentication
+            # Use environment variable to avoid exposing password in command line
             echo "Updating PostgreSQL password..."
-            docker exec paku_postgres psql -U paku -d paku -c "ALTER USER paku WITH PASSWORD '${POSTGRES_PASSWORD}';" || {
+            docker exec -e PGPASSWORD_NEW="${POSTGRES_PASSWORD}" paku_postgres bash -c \
+              'psql -U paku -d paku -c "ALTER USER paku WITH PASSWORD '"'"'$PGPASSWORD_NEW'"'"';"' || {
               echo "Warning: Could not update password. This may be a fresh install."
             }
             
