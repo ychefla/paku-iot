@@ -25,10 +25,17 @@ CHECK_INTERVAL=5
 if [ -f "$ENV_FILE" ]; then
     # Export variables from .env file, ignoring comments and empty lines
     set -a
-    source <(grep -v '^#' "$ENV_FILE" | grep -v '^$')
+    # Use a more portable approach that works in all shells
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        if [[ ! "$line" =~ ^[[:space:]]*# ]] && [[ -n "$line" ]]; then
+            eval "export $line"
+        fi
+    done < "$ENV_FILE"
     set +a
-elif [ -f "compose/.env.example" ]; then
-    echo "ERROR: .env file not found. Please copy .env.example to .env and configure it."
+else
+    echo "ERROR: .env file not found at $ENV_FILE"
+    echo "Please ensure compose/.env exists with your configuration."
     exit 1
 fi
 
@@ -43,6 +50,12 @@ GRAFANA_PORT="3000"
 GRAFANA_USER="${GF_SECURITY_ADMIN_USER:-admin}"
 GRAFANA_PASSWORD="${GF_SECURITY_ADMIN_PASSWORD:-admin}"
 GRAFANA_DASHBOARD_UID="paku-ruuvi"
+
+# Verify credentials were loaded
+if [ -z "$DB_PASSWORD" ]; then
+    echo "ERROR: POSTGRES_PASSWORD not found in .env file"
+    exit 1
+fi
 
 # Container names (must match compose/stack.yaml)
 CONTAINER_EMULATOR="paku_ruuvi_emulator"
