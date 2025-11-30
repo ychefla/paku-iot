@@ -41,7 +41,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - paku_pgdata:../../paku-data/postgresql/data
+      - paku_pgdata:~/GIT/paku-data/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -70,7 +70,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - paku_grafana:../../paku-data/grafana
+      - paku_grafana:~/GIT/paku-data/grafana
 
   # ------------------------------------------------------------
   # RUUVITAG EMULATOR
