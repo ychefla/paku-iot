@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS measurements (
     system TEXT NOT NULL,
     device_id TEXT NOT NULL,
     location TEXT,
+    mac TEXT,
     ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     metrics JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -28,6 +29,7 @@ COMMENT ON COLUMN measurements.site_id IS 'Installation identifier (e.g., paku, 
 COMMENT ON COLUMN measurements.system IS 'Functional system category (e.g., sensors, heater, power)';
 COMMENT ON COLUMN measurements.device_id IS 'Unique device identifier within the system';
 COMMENT ON COLUMN measurements.location IS 'Physical location description (optional)';
+COMMENT ON COLUMN measurements.mac IS 'BLE MAC address for wireless sensors (optional)';
 COMMENT ON COLUMN measurements.ts IS 'Measurement timestamp from device or ingestion time';
 COMMENT ON COLUMN measurements.metrics IS 'Device metrics as JSON object (flexible schema per device type)';
 COMMENT ON COLUMN measurements.created_at IS 'Record creation timestamp in database';

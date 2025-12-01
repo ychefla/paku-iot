@@ -12,9 +12,14 @@ Usage:
     python test_config.py
 """
 
+import hashlib
+import hmac
 import json
 import os
+import random
+import string
 import sys
+import time
 
 try:
     import requests
@@ -65,14 +70,30 @@ def test_api_connection():
     secret_key = os.getenv("ECOFLOW_SECRET_KEY")
     
     url = "https://api.ecoflow.com/iot-open/sign/certification"
-    headers = {
-        "Content-Type": "application/json",
+    
+    # Generate request parameters with signature
+    nonce = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+    timestamp = str(int(time.time() * 1000))  # milliseconds
+    
+    # Build parameters for signature
+    params = {
         "accessKey": access_key,
-        "secretKey": secret_key,
+        "nonce": nonce,
+        "timestamp": timestamp
     }
     
+    # Generate HMAC-SHA256 signature
+    sorted_params = sorted(params.items())
+    param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
+    sign = hmac.new(
+        secret_key.encode('utf-8'),
+        param_str.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    params["sign"] = sign
+    
     try:
-        response = requests.post(url, headers=headers, timeout=30)
+        response = requests.get(url, params=params, timeout=30)
         
         if response.status_code != 200:
             print(f"   ❌ HTTP {response.status_code}: {response.text}")

@@ -2,10 +2,16 @@
 
 This service connects to the EcoFlow Cloud API to collect real-time data from EcoFlow power stations (e.g., Delta Pro) and stores it in the paku-iot PostgreSQL database.
 
+## ⚠️ Recent Changes (December 2024)
+
+**EcoFlow API Authentication Updated**: The EcoFlow API changed from header-based POST authentication to query parameter-based GET authentication with HMAC-SHA256 signatures. The collector has been updated to support the new authentication method.
+
+If you encounter "HTTP 405 Method Not Allowed" errors, ensure you're using the latest version of this collector.
+
 ## Overview
 
 The EcoFlow collector:
-1. Authenticates with the EcoFlow Developer API using your credentials
+1. Authenticates with the EcoFlow Developer API using HMAC-SHA256 signed requests
 2. Obtains temporary MQTT credentials from the API
 3. Connects to EcoFlow's MQTT broker (`mqtt.ecoflow.com`)
 4. Subscribes to your device's data stream
@@ -88,17 +94,17 @@ CREATE TABLE ecoflow_measurements (
 
 ### With Docker Compose
 
-The service is integrated into the main stack. Simply add your credentials to `compose/.env` and start:
+**Important**: The EcoFlow collector uses a Docker Compose profile and requires the `--profile ecoflow` flag:
 
 ```bash
-docker compose -f compose/stack.yaml up ecoflow-collector
+# Start with the ecoflow profile enabled
+docker compose --profile ecoflow -f compose/stack.yaml up -d ecoflow-collector
+
+# Or start the full stack with ecoflow profile
+docker compose --profile ecoflow -f compose/stack.yaml up -d
 ```
 
-Or to start the full stack including EcoFlow collector:
-
-```bash
-docker compose -f compose/stack.yaml up
-```
+**Without the profile flag, the service will not start.** This is by design to keep the EcoFlow collector optional.
 
 ### Standalone Docker
 

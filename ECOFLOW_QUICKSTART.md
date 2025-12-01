@@ -28,6 +28,8 @@ ECOFLOW_DEVICE_SN=your_device_serial_number  # Optional
 
 ## Step 3: Start the Collector (1 minute)
 
+**Important**: The EcoFlow collector uses a Docker Compose profile and must be explicitly enabled with `--profile ecoflow`:
+
 ```bash
 # Start the full stack with EcoFlow collector
 docker compose --profile ecoflow -f compose/stack.yaml up -d
@@ -35,6 +37,8 @@ docker compose --profile ecoflow -f compose/stack.yaml up -d
 # Or just the collector if stack is already running
 docker compose --profile ecoflow -f compose/stack.yaml up -d ecoflow-collector
 ```
+
+**Note**: Without the `--profile ecoflow` flag, the collector will not start. This is by design to keep it optional.
 
 ## Step 4: Verify (1 minute)
 

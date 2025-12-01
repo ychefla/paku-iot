@@ -43,6 +43,7 @@ paku/power/ecoflow/data
   "timestamp": "2025-12-01T20:00:00Z",
   "device_id": "ruuvi_cabin",
   "location": "cabin",
+  "mac": "AA:BB:CC:DD:EE:FF",
   "metrics": {
     "temperature_c": 21.5,
     "humidity_percent": 45.2,
@@ -159,12 +160,14 @@ HVAC and climate control
 | `timestamp` | string | Yes | ISO 8601 timestamp in UTC (e.g., "2025-12-01T20:00:00Z") |
 | `device_id` | string | Yes | Unique device identifier matching topic |
 | `location` | string | No | Physical location description |
+| `mac` | string | No | BLE MAC address (for wireless sensors only) |
 
 ### Sensor-Specific Fields
 
 **Ruuvi/Moko sensors:**
 ```json
 {
+  "mac": "AA:BB:CC:DD:EE:FF",
   "metrics": {
     "temperature_c": 21.5,
     "humidity_percent": 45.2,
@@ -178,6 +181,8 @@ HVAC and climate control
   }
 }
 ```
+
+**Note:** The `mac` field contains the BLE MAC address for hardware identification and troubleshooting.
 
 **Power systems:**
 ```json
@@ -245,6 +250,7 @@ CREATE TABLE measurements (
     system TEXT NOT NULL,
     device_id TEXT NOT NULL,
     location TEXT,
+    mac TEXT,
     ts TIMESTAMPTZ NOT NULL,
     metrics JSONB NOT NULL
 );

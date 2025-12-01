@@ -57,15 +57,45 @@ The `raw_data` JSONB column stores the complete payload because:
 
 ### EcoFlow API
 
-**Endpoint**: `POST https://api.ecoflow.com/iot-open/sign/certification`
+**Endpoint**: `GET https://api.ecoflow.com/iot-open/sign/certification`
 
-**Headers**:
-```json
-{
-  "Content-Type": "application/json",
-  "accessKey": "<your_access_key>",
-  "secretKey": "<your_secret_key>"
+**Authentication**: HMAC-SHA256 signature
+
+**Query Parameters**:
+- `accessKey`: Your EcoFlow Developer API access key
+- `nonce`: Random 16-character string
+- `timestamp`: Current time in milliseconds (Unix epoch * 1000)
+- `sign`: HMAC-SHA256 signature of sorted parameters
+
+**Signature Generation**:
+```python
+# 1. Create parameter dict (without sign)
+params = {
+    "accessKey": "<your_access_key>",
+    "nonce": "<random_16_chars>",
+    "timestamp": "<current_time_ms>"
 }
+
+# 2. Sort parameters alphabetically and concatenate
+param_str = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+# Example: "accessKey=ak_xxx&nonce=abc123&timestamp=1733097600000"
+
+# 3. Generate HMAC-SHA256 signature using secret key
+import hmac
+import hashlib
+sign = hmac.new(
+    secret_key.encode('utf-8'),
+    param_str.encode('utf-8'),
+    hashlib.sha256
+).hexdigest()
+
+# 4. Add signature to parameters
+params["sign"] = sign
+```
+
+**Example Request**:
+```
+GET https://api.ecoflow.com/iot-open/sign/certification?accessKey=ak_us_xxx&nonce=abc123def456&timestamp=1733097600000&sign=sha256_hash_here
 ```
 
 **Response** (success):
@@ -83,6 +113,8 @@ The `raw_data` JSONB column stores the complete payload because:
   }
 }
 ```
+
+**Note**: The EcoFlow API changed from POST to GET with signature-based authentication in late 2024/early 2025. The old POST method with header-based auth is no longer supported (returns HTTP 405).
 
 ## MQTT Topics
 

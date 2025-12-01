@@ -18,10 +18,14 @@ Environment variables (set via docker compose):
     PGDATABASE
 """
 
+import hashlib
+import hmac
 import json
 import logging
 import os
+import random
 import ssl
+import string
 import sys
 import time
 from typing import Any, Dict, Optional
@@ -79,22 +83,50 @@ class EcoFlowAPI:
         self.access_key = access_key
         self.secret_key = secret_key
     
+    def _generate_sign(self, params: Dict[str, str]) -> str:
+        """
+        Generate HMAC-SHA256 signature for EcoFlow API request.
+        
+        The signature is computed from a sorted, concatenated string of parameters.
+        """
+        # Sort parameters by key
+        sorted_params = sorted(params.items())
+        # Concatenate as key=value pairs
+        param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
+        # Create HMAC-SHA256 signature
+        signature = hmac.new(
+            self.secret_key.encode('utf-8'),
+            param_str.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+        return signature
+    
     def get_mqtt_credentials(self) -> Dict[str, Any]:
         """
         Request MQTT credentials from EcoFlow API.
         
         Returns dict with: url, port, username, password, protocol, clientId
         """
-        url = f"{self.BASE_URL}/iot-open/sign/certification"
+        # Generate request parameters
+        nonce = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        timestamp = str(int(time.time() * 1000))  # milliseconds
         
-        headers = {
-            "Content-Type": "application/json",
+        # Build parameters for signature
+        params = {
             "accessKey": self.access_key,
-            "secretKey": self.secret_key,
+            "nonce": nonce,
+            "timestamp": timestamp
         }
         
+        # Generate signature
+        sign = self._generate_sign(params)
+        params["sign"] = sign
+        
+        # Make GET request with query parameters
+        url = f"{self.BASE_URL}/iot-open/sign/certification"
+        
         logger.info("Requesting MQTT credentials from EcoFlow API...")
-        response = requests.post(url, headers=headers, timeout=30)
+        response = requests.get(url, params=params, timeout=30)
         
         if response.status_code != 200:
             logger.error("Failed to get MQTT credentials: HTTP %s - %s", 

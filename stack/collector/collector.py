@@ -102,6 +102,7 @@ def insert_measurement(
         "timestamp": "2025-12-01T20:00:00Z",
         "device_id": "ruuvi_cabin",
         "location": "cabin",
+        "mac": "AA:BB:CC:DD:EE:FF",
         "metrics": {
             "temperature_c": 21.5,
             "humidity_percent": 45.2,
@@ -117,6 +118,7 @@ def insert_measurement(
                 system,
                 device_id,
                 location,
+                mac,
                 ts,
                 metrics
             )
@@ -125,6 +127,7 @@ def insert_measurement(
                 %(system)s,
                 %(device_id)s,
                 %(location)s,
+                %(mac)s,
                 COALESCE(%(timestamp)s::timestamptz, NOW()),
                 %(metrics)s::jsonb
             )
@@ -134,6 +137,7 @@ def insert_measurement(
                 "system": system,
                 "device_id": device_id,
                 "location": payload.get("location"),
+                "mac": payload.get("mac"),
                 "timestamp": payload.get("timestamp"),
                 "metrics": json.dumps(payload.get("metrics", {})),
             },
