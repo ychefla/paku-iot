@@ -33,7 +33,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  temperature_c AS \"temperature\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS \"temperature\",\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY ts",
           "editorMode": "code"
         }
       ],
@@ -120,7 +120,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  humidity_percent AS \"humidity\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS \"humidity\",\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY ts",
           "editorMode": "code"
         }
       ],
@@ -207,7 +207,7 @@
             "uid": "paku-pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  ts,\n  sensor_id,\n  temperature_c,\n  humidity_percent,\n  pressure_hpa,\n  battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\nORDER BY ts DESC\nLIMIT 50",
+          "rawSql": "SELECT\n  ts,\n  site_id,\n  system,\n  device_id,\n  location,\n  (metrics->>'temperature_c')::numeric AS temperature_c,\n  (metrics->>'humidity_percent')::numeric AS humidity_percent,\n  (metrics->>'pressure_hpa')::numeric AS pressure_hpa,\n  (metrics->>'battery_mv')::numeric AS battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\nORDER BY ts DESC\nLIMIT 50",
           "editorMode": "code"
         }
       ],
