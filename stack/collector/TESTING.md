@@ -126,28 +126,9 @@ mosquitto_pub -h localhost -p 1883 -t paku/ruuvi/van_inside -m '{}'
 ```
 
 Expected behavior:
-- Collector accepts the message
-- Inserts row with NULL values for missing fields
-- sensor_id defaults to "unknown"
-
-### Test 3: Legacy Format
-```bash
-mosquitto_pub -h localhost -p 1883 -t paku/ruuvi/van_inside -m '{
-  "tag": "test-sensor",
-  "temperature": 20.0,
-  "humidity": 50.0,
-  "battery": 3.2,
-  "ts": "2025-11-26T12:00:00Z"
-}'
-```
-
-Expected behavior:
-- Collector maps legacy fields to database schema
-- `tag` → `sensor_id`
-- `temperature` → `temperature_c`
-- `humidity` → `humidity_percent`
-- `battery` (3.2V) → `battery_mv` (3200mV)
-- `ts` → `ts`
+- Collector logs a warning about missing required fields
+- Message is rejected (not inserted into database)
+- Collector continues running (doesn't crash)
 
 ## Acceptance Criteria Validation
 
