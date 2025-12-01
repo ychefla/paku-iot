@@ -278,7 +278,7 @@ class EcoFlowCollectorApp:
                 logger.info("Subscribing to all devices: %s", topic)
                 client.subscribe(topic)
     
-    def on_disconnect(self, client, userdata, reason_code, properties):
+    def on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         logger.warning("Disconnected from EcoFlow MQTT broker, reason_code=%s", reason_code)
     
     def on_message(self, client, userdata, msg):
