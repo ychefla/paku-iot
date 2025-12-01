@@ -150,34 +150,34 @@ services:
   # Subscribes to paku/ruuvi/van_inside and inserts data into the
   # measurements table.
   # ------------------------------------------------------------
-  #collector:
-  #  build:
-  #    context: ../stack/collector
-  #  container_name: paku_collector
-  #  restart: always
-  #  depends_on:
-  #    mosquitto:
-  #      condition: service_healthy
-  #    postgres:
-  #      condition: service_healthy
-  #  environment:
-  #    MQTT_HOST: mosquitto
-  #    MQTT_PORT: 1883
-  #    MQTT_TOPIC: paku/ruuvi/van_inside
-  #    PGHOST: postgres
-  #    PGPORT: 5432
-  #    PGUSER: ${POSTGRES_USER:-paku}
-  #    PGPASSWORD: ${POSTGRES_PASSWORD}
-  #    PGDATABASE: ${POSTGRES_DB:-paku}
-  #  deploy:
-  #    resources:
-  #      limits:
-  #        memory: 128M
-  #  logging:
-  #    driver: "json-file"
-  #    options:
-  #      max-size: "10m"
-  #      max-file: "3"
+  collector:
+    build:
+      context: ../stack/collector
+    container_name: paku_collector
+    restart: always
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_TOPIC: paku/ruuvi/van_inside
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-paku}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-paku}
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 # ------------------------------------------------------------
 # VOLUMES
