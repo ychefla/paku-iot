@@ -23,3 +23,25 @@ CREATE TABLE IF NOT EXISTS measurements (
 CREATE INDEX IF NOT EXISTS idx_measurements_ts ON measurements(ts);
 CREATE INDEX IF NOT EXISTS idx_measurements_sensor_id ON measurements(sensor_id);
 CREATE INDEX IF NOT EXISTS idx_measurements_sensor_ts ON measurements(sensor_id, ts DESC);
+
+-- EcoFlow power station measurements table
+CREATE TABLE IF NOT EXISTS ecoflow_measurements (
+    id BIGSERIAL PRIMARY KEY,
+    device_sn TEXT NOT NULL,
+    ts TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    soc_percent INTEGER,
+    remain_time_min INTEGER,
+    watts_in_sum INTEGER,
+    watts_out_sum INTEGER,
+    ac_out_watts INTEGER,
+    dc_out_watts INTEGER,
+    typec_out_watts INTEGER,
+    usb_out_watts INTEGER,
+    pv_in_watts INTEGER,
+    raw_data JSONB
+);
+
+-- Create indexes for EcoFlow measurements
+CREATE INDEX IF NOT EXISTS idx_ecoflow_measurements_ts ON ecoflow_measurements(ts);
+CREATE INDEX IF NOT EXISTS idx_ecoflow_measurements_device_sn ON ecoflow_measurements(device_sn);
+CREATE INDEX IF NOT EXISTS idx_ecoflow_measurements_device_ts ON ecoflow_measurements(device_sn, ts DESC);

@@ -115,6 +115,32 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
 
+  # ------------------------------------------------------------
+  # ECOFLOW COLLECTOR (OPTIONAL)
+  # Connects to EcoFlow Cloud API to collect power station data.
+  # To enable: Set ECOFLOW_ACCESS_KEY and ECOFLOW_SECRET_KEY in .env
+  # Then run: docker compose -f compose/stack.yaml up ecoflow-collector
+  # ------------------------------------------------------------
+  ecoflow-collector:
+    build:
+      context: ../stack/ecoflow-collector
+    container_name: paku_ecoflow_collector
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ECOFLOW_ACCESS_KEY: ${ECOFLOW_ACCESS_KEY:-}
+      ECOFLOW_SECRET_KEY: ${ECOFLOW_SECRET_KEY:-}
+      ECOFLOW_DEVICE_SN: ${ECOFLOW_DEVICE_SN:-}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    profiles:
+      - ecoflow
+
 # ------------------------------------------------------------
 # VOLUMES
 # Centralized definitions for all persistent data directories.

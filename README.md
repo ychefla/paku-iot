@@ -9,6 +9,7 @@ The **paku-iot** repository hosts the backend infrastructure for collecting, sto
 ### Key Features
 
 - **MQTT Telemetry Ingestion**: Receives environmental sensor data via MQTT
+- **EcoFlow Integration**: Automatic data collection from EcoFlow power stations (Delta Pro, etc.)
 - **Persistent Storage**: Stores measurements in PostgreSQL
 - **Data Visualization**: Real-time dashboards in Grafana
 - **Docker-based Stack**: Complete environment runs via Docker Compose
@@ -58,6 +59,34 @@ The **paku-iot** repository hosts the backend infrastructure for collecting, sto
    docker compose -f compose/stack.yaml down
    ```
 
+## EcoFlow Integration (Optional)
+
+To enable automatic data collection from EcoFlow power stations (Delta Pro, Delta Max, etc.):
+
+1. **Get API Credentials:**
+   - Register at [EcoFlow Developer Portal](https://developer.ecoflow.com/)
+   - Create an application to get your `access_key` and `secret_key`
+
+2. **Configure:**
+   ```bash
+   # Add to compose/.env
+   ECOFLOW_ACCESS_KEY=your_access_key_here
+   ECOFLOW_SECRET_KEY=your_secret_key_here
+   ECOFLOW_DEVICE_SN=your_device_serial_number  # Optional
+   ```
+
+3. **Start with EcoFlow:**
+   ```bash
+   docker compose --profile ecoflow -f compose/stack.yaml up
+   ```
+
+4. **View Data:**
+   - Check logs: `docker logs paku_ecoflow_collector`
+   - Query database: `SELECT * FROM ecoflow_measurements ORDER BY ts DESC LIMIT 10;`
+   - Create Grafana dashboards for battery level, power flow, solar input, etc.
+
+For complete setup instructions, troubleshooting, and Grafana examples, see [EcoFlow Integration Guide](docs/ecoflow_integration.md).
+
 ## Testing
 
 ### End-to-End Test
@@ -78,16 +107,19 @@ For detailed testing documentation, see [docs/e2e_test.md](docs/e2e_test.md).
 
 ## Architecture
 
-The stack consists of five Docker containers:
+The stack consists of five core Docker containers, plus optional collectors:
 
 1. **Ruuvi Emulator**: Publishes simulated sensor data to MQTT
 2. **Mosquitto**: MQTT broker for message routing
 3. **Collector**: Consumes MQTT messages and writes to database
 4. **PostgreSQL**: Time-series data storage
 5. **Grafana**: Data visualization and dashboards
+6. **EcoFlow Collector** (optional): Collects data from EcoFlow power stations
 
 ```
 Ruuvi Emulator → Mosquitto (MQTT) → Collector → PostgreSQL → Grafana
+                                                      ↑
+EcoFlow Device → EcoFlow Cloud API → EcoFlow Collector
 ```
 
 ## Data Model
@@ -136,6 +168,7 @@ docker compose -f compose/stack.prod.yaml up -d
 - [E2E Test Guide](docs/e2e_test.md) - Complete testing documentation
 - [MQTT Schema](docs/mqtt_schema.md) - Message format and topic structure
 - [Database Schema](docs/database_schema.md) - Database structure and design
+- [EcoFlow Integration](docs/ecoflow_integration.md) - Complete guide for EcoFlow power station integration
 
 ## Development
 
