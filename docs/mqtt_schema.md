@@ -1,81 +1,265 @@
-# MQTT Schema for RuuviTag-style Telemetry
+# MQTT Topic Schema for Paku IoT
 
-## Topic
+## Overview
 
-**Topic name:** `paku/ruuvi/van_inside`
-
-This topic is used for publishing telemetry data from a RuuviTag sensor inside the van environment.
+This document defines the MQTT topic hierarchy and payload formats for the Paku IoT system. The design supports multiple installations (sites), diverse device types, and clear separation of concerns between data, control, status, and configuration.
 
 ---
 
-## Payload Schema
+## Topic Hierarchy
 
-The payload is a JSON object containing RuuviTag-style sensor measurements. All fields are required unless specified otherwise.
+```
+{site_id}/{system}/{device_id}/{topic_type}
+```
 
-### Field Definitions
+### Topic Levels
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `sensor_id` | string | - | Logical identifier for the sensor (e.g., "van_inside") |
-| `temperature_c` | float | °C | Temperature in degrees Celsius |
-| `humidity_percent` | float | % | Relative humidity as a percentage (0-100) |
-| `pressure_hpa` | float | hPa | Atmospheric pressure in hectopascals |
-| `acceleration_x_mg` | integer | mg | Acceleration on X-axis in milligravity (1 mg = 0.001 g) |
-| `acceleration_y_mg` | integer | mg | Acceleration on Y-axis in milligravity |
-| `acceleration_z_mg` | integer | mg | Acceleration on Z-axis in milligravity |
-| `acceleration_total_mg` | integer | mg | Total acceleration magnitude in milligravity |
-| `tx_power_dbm` | integer | dBm | Radio transmission power in decibels-milliwatt |
-| `movement_counter` | integer | - | Cumulative count of detected movements |
-| `measurement_sequence` | integer | - | Sequential measurement number (increments with each reading) |
-| `battery_mv` | integer | mV | Battery voltage in millivolts |
-| `mac` | string | - | MAC address of the sensor (format: AA:BB:CC:DD:EE:FF) |
-| `timestamp` | string | - | Timestamp in ISO 8601 format (e.g., "2025-11-25T09:30:00Z") |
+1. **`{site_id}`** - Installation identifier (e.g., `paku`, `car`, `home`)
+2. **`{system}`** - Functional system category (e.g., `sensors`, `heater`, `power`, `flow`)
+3. **`{device_id}`** - Unique device identifier (e.g., `ruuvi_cabin`, `ecoflow`, `webasto`)
+4. **`{topic_type}`** - Message purpose: `data`, `control`, `status`, `config`
 
 ---
 
-## Example Payload
+## Topic Types
 
-Below is a complete example of a valid JSON payload:
+### `/data` - Telemetry Data
 
+Real-time sensor measurements and device telemetry. Published by devices.
+
+**QoS:** 0 (at most once)  
+**Retained:** No
+
+**Example Topics:**
+```
+paku/sensors/ruuvi_cabin/data
+paku/heater/webasto/data
+paku/power/ecoflow/data
+```
+
+**Payload Format:**
 ```json
 {
-  "sensor_id": "van_inside",
-  "temperature_c": 21.5,
-  "humidity_percent": 45.2,
-  "pressure_hpa": 1003.2,
-  "acceleration_x_mg": -23,
-  "acceleration_y_mg": 5,
-  "acceleration_z_mg": 1015,
-  "acceleration_total_mg": 1016,
-  "tx_power_dbm": 4,
-  "movement_counter": 120,
-  "measurement_sequence": 34123,
-  "battery_mv": 2870,
-  "mac": "AA:BB:CC:DD:EE:FF",
-  "timestamp": "2025-11-25T09:30:00Z"
+  "timestamp": "2025-12-01T20:00:00Z",
+  "device_id": "ruuvi_cabin",
+  "location": "cabin",
+  "metrics": {
+    "temperature_c": 21.5,
+    "humidity_percent": 45.2,
+    "pressure_hpa": 1013.25,
+    "battery_mv": 2870
+  }
+}
+```
+
+### `/control` - Device Commands
+
+Commands sent to devices for control actions.
+
+**QoS:** 1 (at least once)  
+**Retained:** Yes (last command)
+
+**Example Topics:**
+```
+paku/heater/webasto/control
+paku/lighting/cabin/control
+```
+
+**Payload Format:**
+```json
+{
+  "command": "set_temperature",
+  "value": 22,
+  "timestamp": "2025-12-01T20:00:00Z"
+}
+```
+
+### `/status` - Device Health
+
+Device connectivity and health status. Published by devices.
+
+**QoS:** 1 (at least once)  
+**Retained:** Yes (last status)
+
+**Example Topics:**
+```
+paku/sensors/ruuvi_cabin/status
+paku/power/ecoflow/status
+```
+
+**Payload Format:**
+```json
+{
+  "online": true,
+  "last_seen": "2025-12-01T20:00:00Z",
+  "signal_strength_dbm": -65,
+  "uptime_seconds": 3600,
+  "firmware_version": "1.0.2"
+}
+```
+
+### `/config` - Device Configuration
+
+Device configuration settings.
+
+**QoS:** 1 (at least once)  
+**Retained:** Yes (current config)
+
+**Example Topics:**
+```
+paku/sensors/ruuvi_cabin/config
+paku/heater/webasto/config
+```
+
+**Payload Format:**
+```json
+{
+  "reporting_interval_seconds": 60,
+  "enabled": true,
+  "location": "cabin"
 }
 ```
 
 ---
 
-## Notes
+## System Categories
 
-- The schema is designed to be compatible with RuuviTag sensor data format.
-- All numeric values should use appropriate precision for their respective sensors.
-- The `timestamp` field should be in UTC timezone (indicated by "Z" suffix).
-- The `sensor_id` field provides logical identification independent of the MAC address.
-- The `acceleration_total_mg` typically represents the vector magnitude: √(x² + y² + z²).
+### sensors
+Environmental sensors (temperature, humidity, pressure)
+- Ruuvi tags: `paku/sensors/ruuvi_{location}/data`
+- Moko sensors: `paku/sensors/moko_{location}/data`
+
+### heater
+Heating system components
+- Diesel heater: `paku/heater/webasto/data`
+- Heater controller: `paku/heater/controller/data`
+
+### power
+Power systems and batteries
+- EcoFlow: `paku/power/ecoflow/data`
+- Leisure battery: `paku/power/leisure_battery/data`
+- Starter battery: `paku/power/starter_battery/data`
+
+### flow
+Flow measurement devices
+- Coolant flow: `paku/flow/coolant/data`
+
+### climate
+HVAC and climate control
+- Ventilation: `paku/climate/ventilation/data`
 
 ---
 
-## Storage
+## Payload Field Standards
 
-The collector service persists the following fields to the `measurements` table in Postgres:
-- `sensor_id`
-- `temperature_c`
-- `humidity_percent`
-- `pressure_hpa`
-- `battery_mv`
-- `ts` (mapped from `timestamp`)
+### Common Fields (all `/data` topics)
 
-For complete database schema details, see [database_schema.md](database_schema.md).
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timestamp` | string | Yes | ISO 8601 timestamp in UTC (e.g., "2025-12-01T20:00:00Z") |
+| `device_id` | string | Yes | Unique device identifier matching topic |
+| `location` | string | No | Physical location description |
+
+### Sensor-Specific Fields
+
+**Ruuvi/Moko sensors:**
+```json
+{
+  "metrics": {
+    "temperature_c": 21.5,
+    "humidity_percent": 45.2,
+    "pressure_hpa": 1013.25,
+    "battery_mv": 2870,
+    "acceleration_x_mg": -23,
+    "acceleration_y_mg": 5,
+    "acceleration_z_mg": 1015,
+    "tx_power_dbm": 4,
+    "movement_counter": 120
+  }
+}
+```
+
+**Power systems:**
+```json
+{
+  "metrics": {
+    "voltage_v": 13.2,
+    "current_a": 5.3,
+    "power_w": 69.96,
+    "state_of_charge_percent": 87,
+    "remaining_capacity_wh": 2610
+  }
+}
+```
+
+**Heater:**
+```json
+{
+  "metrics": {
+    "temperature_in_c": 18.5,
+    "temperature_out_c": 65.2,
+    "power_w": 2000,
+    "pump_speed_percent": 75,
+    "status": "heating"
+  }
+}
+```
+
+**Flow:**
+```json
+{
+  "metrics": {
+    "flow_rate_lpm": 4.2,
+    "total_volume_l": 156.8,
+    "pulse_count": 15680
+  }
+}
+```
+
+---
+
+## Subscription Patterns
+
+### Common Use Cases
+
+| Pattern | Description |
+|---------|-------------|
+| `paku/#` | All data from paku site |
+| `paku/sensors/#` | All sensor data |
+| `paku/sensors/+/data` | Only sensor telemetry (no control/status) |
+| `paku/+/ruuvi_cabin/data` | Specific device across all systems |
+| `+/sensors/#` | All sensors across all sites |
+| `paku/heater/+/control` | All heater control topics |
+
+---
+
+## Database Storage
+
+The collector service subscribes to `{site_id}/+/+/data` and stores telemetry in a normalized format:
+
+**measurements table:**
+```sql
+CREATE TABLE measurements (
+    id BIGSERIAL PRIMARY KEY,
+    site_id TEXT NOT NULL,
+    system TEXT NOT NULL,
+    device_id TEXT NOT NULL,
+    location TEXT,
+    ts TIMESTAMPTZ NOT NULL,
+    metrics JSONB NOT NULL
+);
+
+CREATE INDEX idx_measurements_site_device_ts 
+    ON measurements(site_id, device_id, ts DESC);
+CREATE INDEX idx_measurements_system_ts 
+    ON measurements(system, ts DESC);
+```
+
+---
+
+## Migration from Old Schema
+
+**Old format:** `paku/ruuvi/van_inside` with flat JSON  
+**New format:** `paku/sensors/ruuvi_van_inside/data` with nested metrics
+
+Both formats will be supported during migration period.

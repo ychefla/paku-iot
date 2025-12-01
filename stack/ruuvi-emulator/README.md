@@ -84,4 +84,4 @@ cd stack/ruuvi-emulator
 python3 emulator.py
 ```
 
-Note: Requires `paho-mqtt` to be installed (`pip install paho-mqtt>=1.6.1,<2.0.0`)
+Note: Requires `paho-mqtt` to be installed (`pip install paho-mqtt==2.1.0`)

@@ -53,10 +53,12 @@ def main():
     mqtt_host = os.getenv("MQTT_HOST", "mosquitto")
     mqtt_port = int(os.getenv("MQTT_PORT", "1883"))
     topic = "paku/ruuvi/van_inside"
+    max_runtime_seconds = int(os.getenv("MAX_RUNTIME_SECONDS", "300"))  # Default 5 minutes
     
     print(f"Starting Ruuvi emulator...")
     print(f"MQTT Broker: {mqtt_host}:{mqtt_port}")
     print(f"Topic: {topic}")
+    print(f"Max runtime: {max_runtime_seconds} seconds")
     
     # Create MQTT client
     client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
@@ -85,9 +87,16 @@ def main():
     # Give the client time to connect
     time.sleep(2)
     
-    # Main publishing loop
+    # Main publishing loop with runtime limit
+    start_time = time.time()
     try:
         while True:
+            # Check if max runtime has been reached
+            elapsed_time = time.time() - start_time
+            if elapsed_time >= max_runtime_seconds:
+                print(f"\nMax runtime of {max_runtime_seconds} seconds reached. Shutting down...")
+                break
+            
             # Generate and publish sensor data
             data = generate_sensor_data()
             payload = json.dumps(data, indent=2)
