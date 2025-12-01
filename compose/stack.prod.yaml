@@ -163,7 +163,7 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
-      MQTT_TOPIC: paku/ruuvi/van_inside
+      MQTT_TOPIC_PATTERN: "+/+/+/data"
       PGHOST: postgres
       PGPORT: 5432
       PGUSER: ${POSTGRES_USER:-paku}

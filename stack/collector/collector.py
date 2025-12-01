@@ -1,14 +1,16 @@
 """
 Paku Collector Service
 
-Subscribes to MQTT messages from the Ruuvi emulator and writes
-validated measurements into the Postgres `measurements` table.
+Subscribes to MQTT messages from IoT devices and writes validated measurements
+into the Postgres `measurements` table using the new hierarchical schema.
+
+Supports topic pattern: {site_id}/{system}/{device_id}/data
 
 Environment variables (set via docker compose):
 
     MQTT_HOST
     MQTT_PORT
-    MQTT_TOPIC
+    MQTT_TOPIC_PATTERN (default: +/+/+/data)
 
     PGHOST
     PGPORT
@@ -20,6 +22,7 @@ Environment variables (set via docker compose):
 import json
 import logging
 import os
+import re
 import sys
 from typing import Any, Dict, Optional
 
@@ -54,7 +57,7 @@ def load_config() -> Dict[str, Any]:
     return {
         "mqtt_host": get_env("MQTT_HOST", "mosquitto"),
         "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
-        "mqtt_topic": get_env("MQTT_TOPIC", "paku/ruuvi/van_inside"),
+        "mqtt_topic_pattern": get_env("MQTT_TOPIC_PATTERN", "+/+/+/data"),
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
         "pg_user": get_env("PGUSER"),
@@ -84,96 +87,105 @@ def connect_to_database(cfg: Dict[str, Any]) -> psycopg.Connection:
     return conn
 
 
-def insert_measurement(conn: psycopg.Connection, payload: Dict[str, Any]) -> None:
+def insert_measurement(
+    conn: psycopg.Connection,
+    site_id: str,
+    system: str,
+    device_id: str,
+    payload: Dict[str, Any]
+) -> None:
     """
-    Insert one measurement row into the database.
-
-    Expects payload to follow docs/mqtt_schema.md, i.e. at least:
-      sensor_id, temperature_c, humidity_percent, pressure_hpa, battery_mv
-    plus optional accel/tx/movement fields.
+    Insert one measurement row into the database using new schema.
+    
+    Expected payload structure:
+    {
+        "timestamp": "2025-12-01T20:00:00Z",
+        "device_id": "ruuvi_cabin",
+        "location": "cabin",
+        "metrics": {
+            "temperature_c": 21.5,
+            "humidity_percent": 45.2,
+            ...
+        }
+    }
     """
     with conn.cursor() as cur:
         cur.execute(
             """
             INSERT INTO measurements (
-                sensor_id,
+                site_id,
+                system,
+                device_id,
+                location,
                 ts,
-                temperature_c,
-                humidity_percent,
-                pressure_hpa,
-                battery_mv,
-                acceleration_x_mg,
-                acceleration_y_mg,
-                acceleration_z_mg,
-                acceleration_total_mg,
-                tx_power_dbm,
-                movement_counter,
-                measurement_sequence,
-                mac
+                metrics
             )
             VALUES (
-                %(sensor_id)s,
+                %(site_id)s,
+                %(system)s,
+                %(device_id)s,
+                %(location)s,
                 COALESCE(%(timestamp)s::timestamptz, NOW()),
-                %(temperature_c)s,
-                %(humidity_percent)s,
-                %(pressure_hpa)s,
-                %(battery_mv)s,
-                %(acceleration_x_mg)s,
-                %(acceleration_y_mg)s,
-                %(acceleration_z_mg)s,
-                %(acceleration_total_mg)s,
-                %(tx_power_dbm)s,
-                %(movement_counter)s,
-                %(measurement_sequence)s,
-                %(mac)s
+                %(metrics)s::jsonb
             )
             """,
-            payload,
+            {
+                "site_id": site_id,
+                "system": system,
+                "device_id": device_id,
+                "location": payload.get("location"),
+                "timestamp": payload.get("timestamp"),
+                "metrics": json.dumps(payload.get("metrics", {})),
+            },
         )
 
 
 # ---------------------------------------------------------------------
 # Payload validation
 # ---------------------------------------------------------------------
-REQUIRED_FIELDS = [
-    "sensor_id",
-    "temperature_c",
-    "humidity_percent",
-    "pressure_hpa",
-    "battery_mv",
-]
-
-
 def validate_payload(data: Dict[str, Any]) -> bool:
-    """Very simple schema validation against expected Ruuvi fields."""
-    missing = [f for f in REQUIRED_FIELDS if f not in data]
+    """
+    Validate payload structure for new schema.
+    
+    Required: timestamp, device_id, metrics
+    Optional: location
+    """
+    required_fields = ["timestamp", "device_id", "metrics"]
+    missing = [f for f in required_fields if f not in data]
+    
     if missing:
         logger.warning("Payload missing required fields %s: %s", missing, data)
         return False
-
-    # Type checks for main numeric fields (best-effort)
-    numeric_fields = [
-        "temperature_c",
-        "humidity_percent",
-        "pressure_hpa",
-        "battery_mv",
-        "acceleration_x_mg",
-        "acceleration_y_mg",
-        "acceleration_z_mg",
-        "acceleration_total_mg",
-        "tx_power_dbm",
-        "movement_counter",
-        "measurement_sequence",
-    ]
-    for field in numeric_fields:
-        if field in data and data[field] is not None:
-            try:
-                float(data[field])
-            except (TypeError, ValueError):
-                logger.warning("Invalid numeric field %s=%r in payload %s", field, data[field], data)
-                return False
-
+    
+    if not isinstance(data["metrics"], dict):
+        logger.warning("metrics field must be a dict, got: %s", type(data["metrics"]))
+        return False
+    
+    if not data["metrics"]:
+        logger.warning("metrics field is empty: %s", data)
+        return False
+    
     return True
+
+
+def parse_topic(topic: str) -> Optional[tuple[str, str, str, str]]:
+    """
+    Parse topic structure: {site_id}/{system}/{device_id}/{topic_type}
+    
+    Returns: (site_id, system, device_id, topic_type) or None if invalid
+    """
+    parts = topic.split("/")
+    if len(parts) != 4:
+        logger.warning("Invalid topic structure (expected 4 levels): %s", topic)
+        return None
+    
+    site_id, system, device_id, topic_type = parts
+    
+    if topic_type != "data":
+        # Only process /data topics
+        return None
+    
+    return (site_id, system, device_id, topic_type)
 
 
 # ---------------------------------------------------------------------
@@ -197,7 +209,7 @@ class CollectorApp:
             "Connecting to MQTT at %s:%s, subscribing to %s",
             self.cfg["mqtt_host"],
             self.cfg["mqtt_port"],
-            self.cfg["mqtt_topic"],
+            self.cfg["mqtt_topic_pattern"],
         )
         self.client.connect(self.cfg["mqtt_host"], self.cfg["mqtt_port"], keepalive=60)
         self.client.loop_forever()
@@ -207,24 +219,33 @@ class CollectorApp:
         if reason_code.is_failure:
             logger.error("Failed to connect to MQTT broker: %s", reason_code)
         else:
-            logger.info("Connected to MQTT broker, subscribing to %s", self.cfg["mqtt_topic"])
-            client.subscribe(self.cfg["mqtt_topic"])
+            logger.info("Connected to MQTT broker, subscribing to %s", self.cfg["mqtt_topic_pattern"])
+            client.subscribe(self.cfg["mqtt_topic_pattern"])
 
     def on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         logger.warning("Disconnected from MQTT broker, reason_code=%s", reason_code)
 
     def on_message(self, client, userdata, msg):
+        topic = msg.topic
         payload_raw = msg.payload.decode("utf-8", errors="replace")
-        logger.debug("Received MQTT message on %s: %s", msg.topic, payload_raw)
+        logger.debug("Received MQTT message on %s: %s", topic, payload_raw)
+
+        # Parse topic to extract site_id, system, device_id
+        parsed = parse_topic(topic)
+        if not parsed:
+            logger.debug("Ignoring non-data topic: %s", topic)
+            return
+        
+        site_id, system, device_id, _ = parsed
 
         try:
             data = json.loads(payload_raw)
         except json.JSONDecodeError:
-            logger.warning("Failed to decode JSON payload: %s", payload_raw)
+            logger.warning("Failed to decode JSON payload on %s: %s", topic, payload_raw)
             return
 
         if not isinstance(data, dict):
-            logger.warning("Expected JSON object, got: %r", data)
+            logger.warning("Expected JSON object on %s, got: %r", topic, data)
             return
 
         if not validate_payload(data):
@@ -232,14 +253,20 @@ class CollectorApp:
             return
 
         if self.conn is None:
-            logger.error("No DB connection available; dropping message")
+            logger.error("No DB connection available; dropping message from %s", topic)
             return
 
         try:
-            insert_measurement(self.conn, data)
-            logger.info("Inserted measurement for sensor_id=%s", data.get("sensor_id"))
+            insert_measurement(self.conn, site_id, system, device_id, data)
+            logger.info(
+                "Inserted measurement: %s/%s/%s location=%s",
+                site_id,
+                system,
+                device_id,
+                data.get("location", "N/A")
+            )
         except Exception as exc:
-            logger.exception("Failed to insert measurement: %s", exc)
+            logger.exception("Failed to insert measurement from %s: %s", topic, exc)
 
 
 # ---------------------------------------------------------------------
