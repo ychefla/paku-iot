@@ -141,7 +141,7 @@ Our implementation subscribes to: `/app/+/{device_sn}/+` (wildcard for flexibili
 | `remain_time_min` | `params.remainTime` | - | Estimated runtime |
 | `watts_in_sum` | `params.wattsInSum` | `params.inv.inputWatts` | Total input power |
 | `watts_out_sum` | `params.wattsOutSum` | `params.inv.outputWatts` | Total output power |
-| `ac_out_watts` | `params.invOutWatts` | `params.inv.cfgAcOutVol` | AC outlet power |
+| `ac_out_watts` | `params.invOutWatts` | - | AC outlet power |
 | `dc_out_watts` | `params.dcOutWatts` | - | DC outlet power |
 | `typec_out_watts` | `params.typecOutWatts` | - | USB-C power |
 | `usb_out_watts` | `params.usbOutWatts` | - | USB-A power |

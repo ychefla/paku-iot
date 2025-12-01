@@ -198,7 +198,7 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
         "remain_time_min": params.get("remainTime"),
         "watts_in_sum": params.get("wattsInSum") or params.get("inv", {}).get("inputWatts"),
         "watts_out_sum": params.get("wattsOutSum") or params.get("inv", {}).get("outputWatts"),
-        "ac_out_watts": params.get("invOutWatts") or params.get("inv", {}).get("cfgAcOutVol"),
+        "ac_out_watts": params.get("invOutWatts"),
         "dc_out_watts": params.get("dcOutWatts"),
         "typec_out_watts": params.get("typecOutWatts"),
         "usb_out_watts": params.get("usbOutWatts"),
@@ -242,9 +242,8 @@ class EcoFlowCollectorApp:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         
-        # Setup TLS
-        self.client.tls_set(cert_reqs=ssl.CERT_NONE)
-        self.client.tls_insecure_set(True)
+        # Setup TLS with proper certificate verification
+        self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
         
         # Setup credentials
         username = self.mqtt_credentials.get("username")
@@ -301,7 +300,7 @@ class EcoFlowCollectorApp:
         if not device_sn:
             # Try to extract from topic: /app/{user_id}/{device_sn}/...
             parts = msg.topic.split("/")
-            if len(parts) >= 3:
+            if len(parts) > 3:
                 device_sn = parts[3]
         
         if self.conn is None:
