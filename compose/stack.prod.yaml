@@ -122,27 +122,27 @@ services:
   # Runs for 5 minutes then exits automatically.
   # Publishes to paku/ruuvi/van_inside every 5-10 seconds.
   # ------------------------------------------------------------
-  ruuvi-emulator:
-    build:
-      context: ../stack/ruuvi-emulator
-    container_name: paku_ruuvi_emulator
-    restart: "no"
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      MQTT_HOST: mosquitto
-      MQTT_PORT: 1883
-      MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  #ruuvi-emulator:
+  #  build:
+  #    context: ../stack/ruuvi-emulator
+  #  container_name: paku_ruuvi_emulator
+  #  restart: "no"
+  #  depends_on:
+  #    mosquitto:
+  #      condition: service_healthy
+  #  environment:
+  #    MQTT_HOST: mosquitto
+  #    MQTT_PORT: 1883
+  #    MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
+  #  deploy:
+  #    resources:
+  #      limits:
+  #        memory: 64M
+  #  logging:
+  #    driver: "json-file"
+  #    options:
+  #      max-size: "10m"
+  #      max-file: "3"
 
   # ------------------------------------------------------------
   # COLLECTOR
