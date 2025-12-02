@@ -35,6 +35,7 @@ jobs:
           ECOFLOW_ACCESS_KEY: ${{ secrets.ECOFLOW_ACCESS_KEY }}
           ECOFLOW_SECRET_KEY: ${{ secrets.ECOFLOW_SECRET_KEY }}
           ECOFLOW_DEVICE_SN: ${{ secrets.ECOFLOW_DEVICE_SN }}
+          ECOFLOW_API_URL: ${{ secrets.ECOFLOW_API_URL }}
         run: |
           # Create deployment script
           cat > /tmp/deploy.sh << 'DEPLOY_SCRIPT'
@@ -75,6 +76,7 @@ jobs:
           ECOFLOW_ACCESS_KEY=__ECOFLOW_ACCESS_KEY__
           ECOFLOW_SECRET_KEY=__ECOFLOW_SECRET_KEY__
           ECOFLOW_DEVICE_SN=__ECOFLOW_DEVICE_SN__
+          ECOFLOW_API_URL=__ECOFLOW_API_URL__
           ENVFILE
           
           # Replace placeholders with actual values
@@ -83,6 +85,7 @@ jobs:
           sed -i "s|__ECOFLOW_ACCESS_KEY__|${ECOFLOW_ACCESS_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_SECRET_KEY__|${ECOFLOW_SECRET_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_DEVICE_SN__|${ECOFLOW_DEVICE_SN}|g" compose/.env
+          sed -i "s|__ECOFLOW_API_URL__|${ECOFLOW_API_URL}|g" compose/.env
           
           chmod 600 compose/.env
           
@@ -176,6 +179,7 @@ jobs:
             export ECOFLOW_ACCESS_KEY='${ECOFLOW_ACCESS_KEY}'
             export ECOFLOW_SECRET_KEY='${ECOFLOW_SECRET_KEY}'
             export ECOFLOW_DEVICE_SN='${ECOFLOW_DEVICE_SN}'
+            export ECOFLOW_API_URL='${ECOFLOW_API_URL}'
             chmod +x /tmp/deploy.sh
             /tmp/deploy.sh
             rm /tmp/deploy.sh
