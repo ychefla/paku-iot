@@ -179,6 +179,40 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ------------------------------------------------------------
+  # ECOFLOW COLLECTOR (OPTIONAL)
+  # Connects to EcoFlow Cloud API to collect power station data.
+  # Enabled via Docker Compose profile when credentials are set.
+  # ------------------------------------------------------------
+  ecoflow-collector:
+    build:
+      context: ../stack/ecoflow-collector
+    container_name: paku_ecoflow_collector
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ECOFLOW_ACCESS_KEY: ${ECOFLOW_ACCESS_KEY:-}
+      ECOFLOW_SECRET_KEY: ${ECOFLOW_SECRET_KEY:-}
+      ECOFLOW_DEVICE_SN: ${ECOFLOW_DEVICE_SN:-}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-paku}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-paku}
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - ecoflow
+
 # ------------------------------------------------------------
 # VOLUMES
 # Centralized definitions for all persistent data directories.
