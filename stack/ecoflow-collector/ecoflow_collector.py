@@ -286,9 +286,9 @@ class EcoFlowCollectorApp:
         # Setup TLS with proper certificate verification
         self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
         
-        # Setup credentials
-        username = self.mqtt_credentials.get("username")
-        password = self.mqtt_credentials.get("password")
+        # Setup credentials (certificateAccount and certificatePassword from API)
+        username = self.mqtt_credentials.get("certificateAccount") or self.mqtt_credentials.get("username")
+        password = self.mqtt_credentials.get("certificatePassword") or self.mqtt_credentials.get("password")
         self.client.username_pw_set(username, password)
         
         # Connect
