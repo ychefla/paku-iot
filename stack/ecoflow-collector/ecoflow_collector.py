@@ -120,13 +120,19 @@ class EcoFlowAPI:
         
         # Generate signature
         sign = self._generate_sign(params)
-        params["sign"] = sign
         
-        # Make GET request with query parameters
+        # Make GET request with parameters as headers (required by EU API)
         url = f"{self.base_url}/iot-open/sign/certification"
+        headers = {
+            "accessKey": self.access_key,
+            "nonce": nonce,
+            "timestamp": timestamp,
+            "sign": sign
+        }
         
         logger.info("Requesting MQTT credentials from EcoFlow API...")
-        response = requests.get(url, params=params, timeout=30)
+        logger.debug("API endpoint: %s", url)
+        response = requests.get(url, headers=headers, timeout=30)
         
         if response.status_code != 200:
             logger.error("Failed to get MQTT credentials: HTTP %s - %s", 
