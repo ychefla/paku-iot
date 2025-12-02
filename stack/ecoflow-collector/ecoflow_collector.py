@@ -77,11 +77,11 @@ def load_config() -> Dict[str, Any]:
 class EcoFlowAPI:
     """Helper class to interact with EcoFlow Developer API."""
     
-    BASE_URL = "https://api.ecoflow.com"
-    
-    def __init__(self, access_key: str, secret_key: str):
+    def __init__(self, access_key: str, secret_key: str, base_url: Optional[str] = None):
         self.access_key = access_key
         self.secret_key = secret_key
+        # Support regional endpoints: US (default), EU, or custom
+        self.base_url = base_url or "https://api.ecoflow.com"
     
     def _generate_sign(self, params: Dict[str, str]) -> str:
         """
@@ -123,7 +123,7 @@ class EcoFlowAPI:
         params["sign"] = sign
         
         # Make GET request with query parameters
-        url = f"{self.BASE_URL}/iot-open/sign/certification"
+        url = f"{self.base_url}/iot-open/sign/certification"
         
         logger.info("Requesting MQTT credentials from EcoFlow API...")
         response = requests.get(url, params=params, timeout=30)
@@ -257,9 +257,12 @@ class EcoFlowCollectorApp:
         self.conn = connect_to_database(self.cfg)
         
         # Get MQTT credentials from EcoFlow API
+        # Support regional API endpoints via ECOFLOW_API_URL environment variable
+        api_url = os.getenv("ECOFLOW_API_URL")  # Optional: can specify api-e.ecoflow.com for EU
         api = EcoFlowAPI(
             self.cfg["ecoflow_access_key"],
-            self.cfg["ecoflow_secret_key"]
+            self.cfg["ecoflow_secret_key"],
+            api_url
         )
         self.mqtt_credentials = api.get_mqtt_credentials()
         
