@@ -306,16 +306,26 @@ class EcoFlowCollectorApp:
             logger.info("Connected to EcoFlow MQTT broker")
             
             # Subscribe to device topic(s)
-            # EcoFlow actual topic format: /app/device/property/{device_sn}
+            # Try both specific topic and wildcard to catch messages
             if self.device_sn:
-                topic = f"/app/device/property/{self.device_sn}"
-                logger.info("Subscribing to device-specific topic: %s", topic)
-                client.subscribe(topic)
+                topic1 = f"/app/device/property/{self.device_sn}"
+                logger.info("Subscribing to device-specific topic: %s", topic1)
+                result1 = client.subscribe(topic1, qos=1)
+                logger.info("Subscribe result for %s: %s", topic1, result1)
+                
+                # Also subscribe to wildcard to catch anything
+                topic2 = "#"  # Wildcard for ALL topics
+                logger.info("Also subscribing to wildcard: %s", topic2)
+                result2 = client.subscribe(topic2, qos=1)
+                logger.info("Subscribe result for %s: %s", topic2, result2)
             else:
                 # Subscribe to all devices with wildcard
                 topic = "/app/device/property/+"
                 logger.info("Subscribing to all devices: %s", topic)
-                client.subscribe(topic)
+                client.subscribe(topic, qos=1)
+    
+    def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
+        logger.info("Subscription confirmed: mid=%s, codes=%s", mid, reason_code_list)
     
     def on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         logger.warning("Disconnected from EcoFlow MQTT broker, reason_code=%s", reason_code)
