@@ -306,16 +306,14 @@ class EcoFlowCollectorApp:
             logger.info("Connected to EcoFlow MQTT broker")
             
             # Subscribe to device topic(s)
-            # EcoFlow topic format: /app/{user_id}/{device_sn}/thing/property/set
-            # or /open/{user_id}/{device_sn}/quota
-            # We subscribe to a wildcard to catch all device messages
+            # EcoFlow actual topic format: /app/device/property/{device_sn}
             if self.device_sn:
-                topic = f"/app/+/{self.device_sn}/+"
+                topic = f"/app/device/property/{self.device_sn}"
                 logger.info("Subscribing to device-specific topic: %s", topic)
                 client.subscribe(topic)
             else:
-                # Subscribe to all devices for this user
-                topic = "/app/+/+/+"
+                # Subscribe to all devices with wildcard
+                topic = "/app/device/property/+"
                 logger.info("Subscribing to all devices: %s", topic)
                 client.subscribe(topic)
     
