@@ -322,7 +322,7 @@ class EcoFlowCollectorApp:
     
     def on_message(self, client, userdata, msg):
         payload_raw = msg.payload.decode("utf-8", errors="replace")
-        logger.debug("Received MQTT message on %s", msg.topic)
+        logger.info("Received MQTT message on topic: %s", msg.topic)
         
         try:
             data = json.loads(payload_raw)
