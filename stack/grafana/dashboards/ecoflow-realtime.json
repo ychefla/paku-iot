@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -78,7 +78,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "table",
@@ -110,7 +110,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -165,7 +165,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "table",
@@ -180,7 +180,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -235,7 +235,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "table",
@@ -250,7 +250,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -326,7 +326,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "time_series",
@@ -341,7 +341,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -427,7 +427,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "table",
@@ -442,7 +442,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -528,7 +528,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "editorMode": "code",
           "format": "table",
@@ -554,7 +554,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "postgres"
+          "uid": "paku-pg"
         },
         "definition": "SELECT DISTINCT device_sn FROM ecoflow_measurements ORDER BY device_sn",
         "hide": 0,

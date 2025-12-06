@@ -23,7 +23,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -90,7 +90,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -124,7 +124,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -179,7 +179,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -213,7 +213,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -287,7 +287,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "time_series",
           "group": [],
@@ -321,7 +321,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -368,7 +368,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -402,7 +402,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -449,7 +449,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -483,7 +483,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -586,7 +586,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "time_series",
           "group": [],
@@ -620,7 +620,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -675,7 +675,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -709,7 +709,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -756,7 +756,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -790,7 +790,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -845,7 +845,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -879,7 +879,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -952,7 +952,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "time_series",
           "group": [],
@@ -986,7 +986,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -1033,7 +1033,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -1067,7 +1067,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -1122,7 +1122,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -1156,7 +1156,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -1203,7 +1203,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -1237,7 +1237,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -1295,7 +1295,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "postgres"
+            "uid": "paku-pg"
           },
           "format": "table",
           "group": [],
@@ -1341,7 +1341,7 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "postgres"
+          "uid": "paku-pg"
         },
         "definition": "SELECT DISTINCT device_sn FROM ecoflow_measurements ORDER BY device_sn",
         "hide": 0,

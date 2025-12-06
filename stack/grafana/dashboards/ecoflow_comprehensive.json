@@ -11,7 +11,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "paku-pg"
       },
       "fieldConfig": {
         "defaults": {
@@ -45,7 +45,7 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "table",
           "group": [],
           "metricColumn": "none",
@@ -61,7 +61,7 @@
       "type": "gauge"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -97,7 +97,7 @@
       },
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "time_series",
           "group": [],
           "metricColumn": "none",
@@ -113,7 +113,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -135,7 +135,7 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "table",
           "group": [],
           "metricColumn": "none",
@@ -151,7 +151,7 @@
       "type": "stat"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -173,7 +173,7 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "table",
           "group": [],
           "metricColumn": "none",
@@ -189,7 +189,7 @@
       "type": "stat"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -211,7 +211,7 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "table",
           "group": [],
           "metricColumn": "none",
@@ -227,7 +227,7 @@
       "type": "stat"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -249,7 +249,7 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "table",
           "group": [],
           "metricColumn": "none",
@@ -265,7 +265,7 @@
       "type": "stat"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -301,7 +301,7 @@
       },
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "time_series",
           "group": [],
           "metricColumn": "none",
@@ -317,7 +317,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": {"type": "postgres", "uid": "postgres"},
+      "datasource": {"type": "postgres", "uid": "paku-pg"},
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -353,7 +353,7 @@
       },
       "targets": [
         {
-          "datasource": {"type": "postgres", "uid": "postgres"},
+          "datasource": {"type": "postgres", "uid": "paku-pg"},
           "format": "time_series",
           "group": [],
           "metricColumn": "none",
