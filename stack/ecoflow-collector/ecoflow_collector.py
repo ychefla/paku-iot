@@ -226,23 +226,58 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     """
     Parse EcoFlow MQTT payload into our database schema.
     
-    EcoFlow sends complex nested structures. We extract key metrics.
+    EcoFlow sends complex nested structures with dotted field names.
+    Example: {"params": {"bmsMaster.soc": 89, "bmsMaster.inputWatts": 0, ...}}
     """
     # EcoFlow typically nests data in a "params" or "data" field
     params = raw_payload.get("params", {})
     
-    # Common field mappings (may vary by device model)
+    # Extract values from dotted field names (e.g., "bmsMaster.soc")
+    # and also support legacy flat structures
     parsed = {
         "device_sn": device_sn or raw_payload.get("sn", "unknown"),
-        "soc_percent": params.get("soc") or params.get("bmsMaster", {}).get("soc"),
-        "remain_time_min": params.get("remainTime"),
-        "watts_in_sum": params.get("wattsInSum") or params.get("inv", {}).get("inputWatts"),
-        "watts_out_sum": params.get("wattsOutSum") or params.get("inv", {}).get("outputWatts"),
-        "ac_out_watts": params.get("invOutWatts"),
-        "dc_out_watts": params.get("dcOutWatts"),
-        "typec_out_watts": params.get("typecOutWatts"),
-        "usb_out_watts": params.get("usbOutWatts"),
-        "pv_in_watts": params.get("pvInWatts") or params.get("pv", {}).get("inputWatts"),
+        "soc_percent": (
+            params.get("bmsMaster.soc") or 
+            params.get("soc") or 
+            params.get("bmsMaster", {}).get("soc")
+        ),
+        "remain_time_min": (
+            params.get("pd.remainTime") or
+            params.get("remainTime")
+        ),
+        "watts_in_sum": (
+            params.get("bmsMaster.inputWatts") or
+            params.get("inv.inputWatts") or
+            params.get("wattsInSum") or 
+            params.get("inv", {}).get("inputWatts")
+        ),
+        "watts_out_sum": (
+            params.get("bmsMaster.outputWatts") or
+            params.get("inv.outputWatts") or
+            params.get("wattsOutSum") or 
+            params.get("inv", {}).get("outputWatts")
+        ),
+        "ac_out_watts": (
+            params.get("inv.acOutWatts") or
+            params.get("invOutWatts")
+        ),
+        "dc_out_watts": (
+            params.get("pd.dcOutWatts") or
+            params.get("dcOutWatts")
+        ),
+        "typec_out_watts": (
+            params.get("pd.typec2Watts") or  # or typec1Watts
+            params.get("typecOutWatts")
+        ),
+        "usb_out_watts": (
+            params.get("pd.usb1Watts") or  # might also be usb2Watts
+            params.get("usbOutWatts")
+        ),
+        "pv_in_watts": (
+            params.get("mppt.inWatts") or
+            params.get("pvInWatts") or 
+            params.get("pv", {}).get("inputWatts")
+        ),
         "raw_data": json.dumps(raw_payload),  # Store full payload for reference
     }
     
