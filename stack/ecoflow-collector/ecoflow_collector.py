@@ -301,31 +301,41 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
         "device_sn": device_sn or raw_payload.get("sn", "unknown"),
         "soc_percent": (
             params.get("bmsMaster.soc") or 
+            params.get("pd.soc") or
             params.get("soc") or 
             params.get("bmsMaster", {}).get("soc")
         ),
         "remain_time_min": (
             params.get("pd.remainTime") or
+            params.get("bmsMaster.remainTime") or
+            params.get("ems.chgRemainTime") or
             params.get("remainTime")
         ),
         "watts_in_sum": (
+            params.get("pd.wattsInSum") or
+            params.get("pd.chgPowerAc") or
             params.get("bmsMaster.inputWatts") or
             params.get("inv.inputWatts") or
             params.get("wattsInSum") or 
             params.get("inv", {}).get("inputWatts")
         ),
         "watts_out_sum": (
+            params.get("pd.wattsOutSum") or
+            params.get("pd.dsgPowerAc") or
             params.get("bmsMaster.outputWatts") or
             params.get("inv.outputWatts") or
             params.get("wattsOutSum") or 
             params.get("inv", {}).get("outputWatts")
         ),
         "ac_out_watts": (
+            params.get("inv.outputWatts") or
             params.get("inv.acOutWatts") or
             params.get("inv.outWatts") or
             params.get("invOutWatts")
         ),
         "dc_out_watts": (
+            params.get("mppt.carOutWatts") or
+            params.get("mppt.outWatts") or
             params.get("pd.dcOutWatts") or
             params.get("dcOutWatts")
         ),
