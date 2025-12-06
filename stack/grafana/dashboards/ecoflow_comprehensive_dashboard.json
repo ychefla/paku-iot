@@ -374,7 +374,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(watts_in_sum, \n    (raw_data->'params'->>'bmsMaster.inputWatts')::integer,\n    0\n  ) AS \"Input Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  COALESCE(watts_in_sum, \n    watts_in_sum,\n    0\n  ) AS \"Input Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -455,7 +455,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(watts_out_sum,\n    (raw_data->'params'->>'bmsMaster.outputWatts')::integer,\n    0\n  ) AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  COALESCE(watts_out_sum,\n    watts_out_sum,\n    0\n  ) AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -592,7 +592,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, (raw_data->'params'->>'bmsMaster.inputWatts')::integer, 0) AS \"Input\",\n  COALESCE(watts_out_sum, (raw_data->'params'->>'bmsMaster.outputWatts')::integer, 0) AS \"Output\"\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts)\n  AND device_sn = '$device_sn'\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, watts_in_sum, 0) AS \"Input\",\n  COALESCE(watts_out_sum, watts_out_sum, 0) AS \"Output\"\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts)\n  AND device_sn = '$device_sn'\nORDER BY ts",
           "refId": "A",
           "select": [
             [
@@ -1301,7 +1301,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"Time\",\n  soc_percent AS \"SoC %\",\n  COALESCE(watts_in_sum, (raw_data->'params'->>'bmsMaster.inputWatts')::integer) AS \"Input W\",\n  COALESCE(watts_out_sum, (raw_data->'params'->>'bmsMaster.outputWatts')::integer) AS \"Output W\",\n  COALESCE(bms_temp_c, (raw_data->'params'->>'bmsMaster.temp')::integer) AS \"Temp °C\",\n  COALESCE(bms_voltage_mv / 1000.0, 0) AS \"Voltage V\",\n  COALESCE(bms_amp_ma / 1000.0, 0) AS \"Current A\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 10",
+          "rawSql": "SELECT\n  ts AS \"Time\",\n  soc_percent AS \"SoC %\",\n  COALESCE(watts_in_sum, watts_in_sum) AS \"Input W\",\n  COALESCE(watts_out_sum, watts_out_sum) AS \"Output W\",\n  COALESCE(bms_temp_c, (raw_data->'params'->>'bmsMaster.temp')::integer) AS \"Temp °C\",\n  COALESCE(bms_voltage_mv / 1000.0, 0) AS \"Voltage V\",\n  COALESCE(bms_amp_ma / 1000.0, 0) AS \"Current A\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 10",
           "refId": "A",
           "select": [
             [
