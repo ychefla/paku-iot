@@ -40,7 +40,7 @@ import requests
 # Logging setup
 # ---------------------------------------------------------------------
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose output
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     stream=sys.stdout,
 )
@@ -283,6 +283,7 @@ class EcoFlowCollectorApp:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
+        self.client.on_subscribe = self.on_subscribe
         
         # Setup TLS with proper certificate verification
         self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
@@ -333,7 +334,8 @@ class EcoFlowCollectorApp:
     
     def on_message(self, client, userdata, msg):
         payload_raw = msg.payload.decode("utf-8", errors="replace")
-        logger.info("Received MQTT message on topic: %s", msg.topic)
+        logger.info("Received MQTT message on topic: %s (payload size: %d bytes)", msg.topic, len(payload_raw))
+        logger.debug("Payload preview: %s", payload_raw[:200])
         
         try:
             data = json.loads(payload_raw)
@@ -350,8 +352,10 @@ class EcoFlowCollectorApp:
         if not device_sn:
             # Try to extract from topic: /app/{user_id}/{device_sn}/...
             parts = msg.topic.split("/")
+            logger.debug("Topic parts: %s", parts)
             if len(parts) > 3:
                 device_sn = parts[3]
+                logger.info("Extracted device SN from topic: %s", device_sn)
         
         if self.conn is None:
             logger.error("No DB connection available; dropping message")
@@ -359,6 +363,7 @@ class EcoFlowCollectorApp:
         
         try:
             parsed_data = parse_ecoflow_payload(data, device_sn)
+            logger.info("Parsed data fields: %s", {k: v for k, v in parsed_data.items() if k != 'raw_data'})
             insert_ecoflow_measurement(self.conn, parsed_data)
             logger.info(
                 "Inserted EcoFlow measurement for device=%s, soc=%s%%",
