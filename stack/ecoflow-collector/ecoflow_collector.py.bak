@@ -184,42 +184,6 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     aggregating values from multiple MQTT messages into a single row.
     """
     # Define all possible fields
-    # Define all possible fields (comprehensive list)
-    all_fields = [
-        # Core metrics
-        'soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
-        # Output channels
-        'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts',
-        # Individual USB ports
-        'usb1_watts', 'usb2_watts', 'qcusb1_watts', 'qcusb2_watts',
-        'typec1_watts', 'typec2_watts', 'typec1_temp', 'typec2_temp',
-        # Input sources
-        'pv_in_watts', 'chg_sun_power', 'chg_power_ac', 'chg_power_dc', 'car_watts',
-        # BMS data
-        'bms_voltage_mv', 'bms_amp_ma', 'bms_temp_c', 'bms_cycles', 'bms_soh_percent',
-        'bms_min_cell_temp_c', 'bms_max_cell_temp_c', 'bms_min_mos_temp_c', 'bms_max_mos_temp_c',
-        'bms_real_soh', 'bms_remain_cap', 'bms_full_cap', 'bms_design_cap',
-        'bms_min_cell_vol_mv', 'bms_max_cell_vol_mv', 'bms_max_vol_diff_mv',
-        # EMS settings
-        'ems_min_dsg_soc', 'ems_max_charge_soc', 'ems_min_open_oil_eb_soc', 'ems_max_close_oil_eb_soc',
-        # Inverter data
-        'inv_ac_in_volts_mv', 'inv_ac_out_volts_mv', 'inv_ac_freq_hz', 'inv_temp_c',
-        'inv_cfg_ac_enabled', 'inv_cfg_standby_min',
-        # MPPT data
-        'mppt_in_volts_mv', 'mppt_in_amps_ma', 'mppt_out_volts_mv', 'mppt_out_amps_ma',
-        'mppt_temp_c', 'mppt_car_out_volts_mv', 'mppt_car_out_amps_ma',
-        'mppt_car_state', 'mppt_cfg_dc_chg_current',
-        # Car output
-        'car_out_volts_mv', 'car_out_amps_ma',
-        # PD settings
-        'pd_beep_state', 'pd_lcd_off_sec', 'pd_lcd_brightness', 'pd_standby_mode',
-        'pd_model', 'pd_sys_ver', 'pd_wifi_ver',
-        # Usage time counters
-        'pd_car_used_time', 'pd_inv_used_time', 'pd_mppt_used_time',
-        'pd_usb_used_time', 'pd_typec_used_time', 'pd_dc_in_used_time',
-        # Misc
-        'wifi_rssi'
-    ]
     
     # Only insert if we have at least one meaningful value
     has_data = any([data.get(k) is not None for k in all_fields])

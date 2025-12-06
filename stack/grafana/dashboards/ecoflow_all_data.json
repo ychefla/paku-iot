@@ -1,0 +1,540 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'pd.soc')::int AS \"Battery %\",\n  CASE \n    WHEN ts > NOW() - INTERVAL '5 minutes' THEN 'current'\n    ELSE 'stale'\n  END as data_freshness\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data->'params' ? 'pd.soc'\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Battery SOC",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (raw_data->'params'->>'pd.wattsInSum')::int AS \"Input Power\",\n  (raw_data->'params'->>'pd.wattsOutSum')::int AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts BETWEEN $__timeFrom() AND $__timeTo()\n  AND (raw_data->'params' ? 'pd.wattsInSum' OR raw_data->'params' ? 'pd.wattsOutSum')\nORDER BY ts",
+          "refId": "A"
+        }
+      ],
+      "title": "Power Flow",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Update Age"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 60
+                    },
+                    {
+                      "color": "red",
+                      "value": 300
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  'Battery' as \"Category\",\n  'State of Charge' as \"Parameter\",\n  (raw_data->'params'->>'pd.soc')::text || '%' as \"Value\",\n  EXTRACT(EPOCH FROM (NOW() - ts))::int as \"Update Age\",\n  ts as \"Last Update\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'pd.soc'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Battery',\n  'State of Health',\n  (raw_data->'params'->>'bmsMaster.soh')::text || '%',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'bmsMaster.soh'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Battery',\n  'Voltage',\n  ((raw_data->'params'->>'bmsMaster.vol')::float / 1000)::text || 'V',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'bmsMaster.vol'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Battery',\n  'Current',\n  ((raw_data->'params'->>'bmsMaster.amp')::float / 1000)::text || 'A',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'bmsMaster.amp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Battery',\n  'Temperature',\n  (raw_data->'params'->>'bmsMaster.temp')::text || '°C',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'bmsMaster.temp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Battery',\n  'Remain Time',\n  ((raw_data->'params'->>'pd.remainTime')::float / 60)::text || ' hours',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'pd.remainTime'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Power',\n  'Input Total',\n  (raw_data->'params'->>'pd.wattsInSum')::text || 'W',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'pd.wattsInSum'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Power',\n  'Output Total',\n  (raw_data->'params'->>'pd.wattsOutSum')::text || 'W',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'pd.wattsOutSum'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Solar',\n  'Input Power',\n  (raw_data->'params'->>'mppt.inWatts')::text || 'W',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.inWatts'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Solar',\n  'Input Voltage',\n  ((raw_data->'params'->>'mppt.inVol')::float / 1000)::text || 'V',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.inVol'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Solar',\n  'Input Current',\n  ((raw_data->'params'->>'mppt.inAmp')::float / 1000)::text || 'A',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.inAmp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Solar',\n  'MPPT Temperature',\n  (raw_data->'params'->>'mppt.mpptTemp')::text || '°C',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.mpptTemp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Inverter',\n  'Output Power',\n  (raw_data->'params'->>'inv.outputWatts')::text || 'W',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'inv.outputWatts'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Inverter',\n  'AC Input Voltage',\n  ((raw_data->'params'->>'inv.acInVol')::float / 1000)::text || 'V',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'inv.acInVol'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Inverter',\n  'AC Output Voltage',\n  ((raw_data->'params'->>'inv.invOutVol')::float / 1000)::text || 'V',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'inv.invOutVol'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Inverter',\n  'AC Frequency',\n  (raw_data->'params'->>'inv.acInFreq')::text || 'Hz',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'inv.acInFreq'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'Inverter',\n  'Temperature',\n  (raw_data->'params'->>'inv.outTemp')::text || '°C',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'inv.outTemp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'DC Output',\n  'Car Port Voltage',\n  ((raw_data->'params'->>'mppt.carOutVol')::float / 10)::text || 'V',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.carOutVol'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'DC Output',\n  'Car Port Current',\n  ((raw_data->'params'->>'mppt.carOutAmp')::float / 10)::text || 'A',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'mppt.carOutAmp'\nORDER BY ts DESC LIMIT 1\n\nUNION ALL\n\nSELECT\n  'DC Output',\n  'Car Port Power',\n  (raw_data->'params'->>'pd.carWatts')::text || 'W',\n  EXTRACT(EPOCH FROM (NOW() - ts))::int,\n  ts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn' AND raw_data->'params' ? 'pd.carWatts'\nORDER BY ts DESC LIMIT 1\n\nORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "title": "All Available Data (with freshness indicator)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (raw_data->'params'->>'bmsMaster.temp')::int AS \"Battery\",\n  (raw_data->'params'->>'inv.outTemp')::int AS \"Inverter\",\n  (raw_data->'params'->>'mppt.mpptTemp')::int AS \"MPPT\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts BETWEEN $__timeFrom() AND $__timeTo()\nORDER BY ts",
+          "refId": "A"
+        }
+      ],
+      "title": "Temperatures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  ((raw_data->'params'->>'bmsMaster.vol')::float / 1000) AS \"Battery\",\n  ((raw_data->'params'->>'inv.acInVol')::float / 1000) AS \"AC Input\",\n  ((raw_data->'params'->>'inv.invOutVol')::float / 1000) AS \"AC Output\",\n  ((raw_data->'params'->>'mppt.inVol')::float / 1000) AS \"Solar Input\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts BETWEEN $__timeFrom() AND $__timeTo()\nORDER BY ts",
+          "refId": "A"
+        }
+      ],
+      "title": "Voltages",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ecoflow", "all-data"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "SELECT DISTINCT device_sn FROM ecoflow_measurements ORDER BY device_sn",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "device_sn",
+        "options": [],
+        "query": "SELECT DISTINCT device_sn FROM ecoflow_measurements ORDER BY device_sn",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "EcoFlow - All Data",
+  "uid": "paku-ecoflow-all",
+  "version": 1,
+  "weekStart": ""
+}

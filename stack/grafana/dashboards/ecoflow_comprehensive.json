@@ -1,0 +1,389 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 20},
+              {"color": "green", "value": 50}
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'bmsMaster.soc')::numeric AS \"Battery %\",\n  EXTRACT(EPOCH FROM (NOW() - ts)) AS staleness_sec\nFROM ecoflow_measurements\nWHERE raw_data->'params'->>'bmsMaster.soc' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Battery Level",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"tooltip": false, "viz": false, "legend": false},
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "watt"
+        }
+      },
+      "gridPos": {"h": 8, "w": 18, "x": 6, "y": 0},
+      "id": 2,
+      "options": {
+        "legend": {"calcs": ["mean", "lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (raw_data->'params'->>'bmsMaster.inputWatts')::numeric AS \"Input (W)\",\n  (raw_data->'params'->>'bmsMaster.outputWatts')::numeric AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND (raw_data->'params'->>'bmsMaster.inputWatts' IS NOT NULL\n       OR raw_data->'params'->>'bmsMaster.outputWatts' IS NOT NULL)\nORDER BY ts",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Power Flow (Input/Output)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "watt"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'bmsMaster.inputWatts')::numeric AS \"Input Power\"\nFROM ecoflow_measurements\nWHERE raw_data->'params'->>'bmsMaster.inputWatts' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Current Input",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "watt"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'bmsMaster.outputWatts')::numeric AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE raw_data->'params'->>'bmsMaster.outputWatts' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Current Output",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 30}, {"color": "red", "value": 40}]},
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8},
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'bmsMaster.temp')::numeric AS \"Temperature\"\nFROM ecoflow_measurements\nWHERE raw_data->'params'->>'bmsMaster.temp' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Battery Temperature",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "mvolt"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8},
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "table",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  (raw_data->'params'->>'bmsMaster.vol')::numeric AS \"Voltage\"\nFROM ecoflow_measurements\nWHERE raw_data->'params'->>'bmsMaster.vol' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Battery Voltage",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"tooltip": false, "viz": false, "legend": false},
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "percent"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "id": 7,
+      "options": {
+        "legend": {"calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (raw_data->'params'->>'bmsMaster.soc')::numeric AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND raw_data->'params'->>'bmsMaster.soc' IS NOT NULL\nORDER BY ts",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Battery Level History",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "postgres"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"tooltip": false, "viz": false, "legend": false},
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "celsius"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "id": 8,
+      "options": {
+        "legend": {"calcs": ["mean", "lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "postgres", "uid": "postgres"},
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (raw_data->'params'->>'bmsMaster.temp')::numeric AS \"Battery Temp\",\n  (raw_data->'params'->>'bmsMaster.minCellTemp')::numeric AS \"Min Cell Temp\",\n  (raw_data->'params'->>'bmsMaster.maxCellTemp')::numeric AS \"Max Cell Temp\"\nFROM ecoflow_measurements\nWHERE ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND (raw_data->'params'->>'bmsMaster.temp' IS NOT NULL\n       OR raw_data->'params'->>'bmsMaster.minCellTemp' IS NOT NULL\n       OR raw_data->'params'->>'bmsMaster.maxCellTemp' IS NOT NULL)\nORDER BY ts",
+          "refId": "A",
+          "select": [[{"params": ["value"], "type": "column"}]],
+          "timeColumn": "time",
+          "where": [{"name": "$__timeFilter", "params": [], "type": "macro"}]
+        }
+      ],
+      "title": "Temperature History",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["ecoflow", "power", "realtime"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "EcoFlow - Real-Time Overview",
+  "uid": "paku-ecoflow-realtime",
+  "version": 1,
+  "weekStart": ""
+}
