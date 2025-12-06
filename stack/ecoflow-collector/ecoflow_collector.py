@@ -311,10 +311,7 @@ class EcoFlowCollectorApp:
             
             # Subscribe to device topic(s)
             # EcoFlow topic format varies by region and API version
-            # Based on the documentation:
-            # - /app/{userId}/{deviceSn}/thing/property/set (device command)
-            # - /app/{userId}/{deviceSn}/thing/property/get (get device properties)  
-            # - /app/device/property/{deviceSn} (simplified property updates)
+            # Based on the documentation, try multiple patterns to catch messages
             
             # Extract user ID from certificateAccount (format is often "userId/randomString")
             cert_account = self.mqtt_credentials.get("certificateAccount", "")
@@ -325,29 +322,24 @@ class EcoFlowCollectorApp:
                 user_id = cert_account
                 logger.info("Using full certificateAccount as user_id: %s", user_id)
             
+            # Subscribe to multiple topic patterns to ensure we catch messages
+            topics = []
+            
             if self.device_sn:
-                # Primary: Full wildcard for this specific device (most comprehensive)
-                topic1 = f"/app/{user_id}/{self.device_sn}/#"
-                logger.info("Subscribing to device wildcard: %s", topic1)
-                result1 = client.subscribe(topic1, qos=0)
-                logger.info("Subscribe result for %s: %s", topic1, result1)
-                
-                # Secondary: Simplified device property format
-                topic2 = f"/app/device/property/{self.device_sn}"
-                logger.info("Subscribing to simplified property: %s", topic2)
-                result2 = client.subscribe(topic2, qos=0)
-                logger.info("Subscribe result for %s: %s", topic2, result2)
-                
-                # Tertiary: OpenAPI quota format (for quotas and limits)
-                topic3 = f"/open/{user_id}/{self.device_sn}/quota"
-                logger.info("Subscribing to quota topic: %s", topic3)
-                result3 = client.subscribe(topic3, qos=0)
-                logger.info("Subscribe result for %s: %s", topic3, result3)
-            else:
-                # Subscribe to all devices with full wildcard
-                topic = f"/app/{user_id}/+/#"
-                logger.info("Subscribing to all devices wildcard: %s", topic)
-                client.subscribe(topic, qos=0)
+                # Standard OpenAPI topics for device properties and quotas
+                topics.extend([
+                    f"/app/{user_id}/{self.device_sn}/#",  # All device messages
+                    f"/app/device/property/{self.device_sn}",  # Simplified property format
+                    f"/open/{user_id}/{self.device_sn}/quota",  # Quota updates
+                ])
+            
+            # Also subscribe to global wildcard to debug what topics are actually used
+            topics.append("#")  # ALL topics - for debugging
+            
+            logger.info("Subscribing to %d topic patterns", len(topics))
+            for topic in topics:
+                result = client.subscribe(topic, qos=0)
+                logger.info("Subscribed to topic: %s (result: %s)", topic, result)
     
     def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
         logger.info("Subscription confirmed: mid=%s, codes=%s", mid, reason_code_list)
