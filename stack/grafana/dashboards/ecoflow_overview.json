@@ -4,7 +4,7 @@
   "tags": ["paku", "ecoflow", "power"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -20,15 +20,10 @@
           "type": "postgres",
           "uid": "paku-pg"
         },
-        "query": "SELECT DISTINCT device_sn FROM ecoflow_measurements ORDER BY device_sn",
+        "query": "SELECT DISTINCT device_sn FROM ecoflow_measurements WHERE device_sn != '' ORDER BY device_sn",
         "refresh": 1,
         "multi": false,
-        "includeAll": false,
-        "current": {
-          "selected": false,
-          "text": "",
-          "value": ""
-        }
+        "includeAll": false
       }
     ]
   },
@@ -43,292 +38,24 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 0
       },
       "targets": [
         {
           "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  soc_percent\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  soc_percent\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
-          "editorMode": "code"
+          }
         }
       ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "min": 0,
-          "max": 100,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "red"
-              },
-              {
-                "value": 20,
-                "color": "orange"
-              },
-              {
-                "value": 50,
-                "color": "yellow"
-              },
-              {
-                "value": 80,
-                "color": "green"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 2,
-      "type": "stat",
-      "title": "Power Output",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 0
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  watts_out_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "watt",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "green"
-              },
-              {
-                "value": 1000,
-                "color": "yellow"
-              },
-              {
-                "value": 2000,
-                "color": "orange"
-              },
-              {
-                "value": 3000,
-                "color": "red"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Power Input",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 0
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  watts_in_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "watt",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "red"
-              },
-              {
-                "value": 1,
-                "color": "green"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 4,
-      "type": "stat",
-      "title": "Remaining Time",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  remain_time_min\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "m",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "red"
-              },
-              {
-                "value": 30,
-                "color": "orange"
-              },
-              {
-                "value": 60,
-                "color": "yellow"
-              },
-              {
-                "value": 120,
-                "color": "green"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 5,
-      "type": "timeseries",
-      "title": "Battery State of Charge",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 6
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
           "color": {
             "mode": "thresholds"
           },
@@ -354,18 +81,308 @@
             ]
           }
         }
+      },
+      "options": {
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
       }
     },
     {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Power Flow (Input/Output)",
+      "id": 2,
+      "type": "stat",
+      "title": "Current Input Power",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
       },
       "gridPos": {
-        "h": 9,
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  watts_in_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_in_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "blue"
+              },
+              {
+                "value": 100,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Current Output Power",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  watts_out_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_out_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 500,
+                "color": "yellow"
+              },
+              {
+                "value": 1500,
+                "color": "orange"
+              },
+              {
+                "value": 2000,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Time Remaining",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  remain_time_min\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND remain_time_min IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "red"
+              },
+              {
+                "value": 60,
+                "color": "orange"
+              },
+              {
+                "value": 180,
+                "color": "yellow"
+              },
+              {
+                "value": 360,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Solar Input",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE(pv_in_watts, 0) as pv_in_watts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "gray"
+              },
+              {
+                "value": 1,
+                "color": "yellow"
+              },
+              {
+                "value": 100,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Battery Level Over Time",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Power In/Out",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 8,
         "w": 12,
         "x": 12,
         "y": 6
@@ -373,26 +390,14 @@
       "targets": [
         {
           "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, 0) AS \"Input (W)\",\n  COALESCE(watts_out_sum, 0) AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  watts_in_sum AS \"Input (W)\",\n  watts_out_sum AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
-          "editorMode": "code"
+          }
         }
       ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
@@ -432,12 +437,18 @@
             ]
           }
         ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "timeseries",
-      "title": "Solar (PV) Input",
+      "title": "Solar Input Over Time",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -446,46 +457,39 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 14
       },
       "targets": [
         {
           "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(pv_in_watts, 0) AS \"Solar Input (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(pv_in_watts, 0) AS \"Solar Input (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
-          "editorMode": "code"
+          }
         }
       ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
           "color": {
             "mode": "fixed",
             "fixedColor": "yellow"
-          },
-          "min": 0
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
         }
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "type": "timeseries",
-      "title": "Output Ports Breakdown",
+      "title": "Output Breakdown",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -494,265 +498,59 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 14
       },
       "targets": [
         {
           "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(ac_out_watts, 0) AS \"AC Output (W)\",\n  COALESCE(dc_out_watts, 0) AS \"DC Output (W)\",\n  COALESCE(typec_out_watts, 0) AS \"USB-C (W)\",\n  COALESCE(usb_out_watts, 0) AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(ac_out_watts, 0) AS \"AC Output (W)\",\n  COALESCE(dc_out_watts, 0) AS \"DC Output (W)\",\n  COALESCE(typec_out_watts, 0) AS \"USB-C (W)\",\n  COALESCE(usb_out_watts, 0) AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
-          "editorMode": "code"
+          }
         }
       ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
           "color": {
             "mode": "palette-classic"
-          },
-          "min": 0
-        }
-      }
-    },
-    {
-      "id": 9,
-      "type": "gauge",
-      "title": "Current Power Output",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 23
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  watts_out_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "orientation": "auto",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "watt",
-          "min": 0,
-          "max": 3600,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "green"
-              },
-              {
-                "value": 2000,
-                "color": "yellow"
-              },
-              {
-                "value": 3000,
-                "color": "red"
-              }
-            ]
           }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
         }
       }
     },
     {
       "id": 10,
-      "type": "stat",
-      "title": "Energy Statistics (Last Hour)",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 23
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  AVG(watts_out_sum) AS \"Avg Output\",\n  MAX(watts_out_sum) AS \"Peak Output\",\n  AVG(watts_in_sum) AS \"Avg Input\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts >= NOW() - INTERVAL '1 hour'",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": ["lastNotNull"],
-          "fields": ""
-        },
-        "orientation": "horizontal",
-        "textMode": "value_and_name",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "watt",
-          "decimals": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": 0,
-                "color": "green"
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 11,
-      "type": "table",
-      "title": "Recent Measurements",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 23
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  ts AS \"Time\",\n  soc_percent AS \"Battery %\",\n  watts_in_sum AS \"Input (W)\",\n  watts_out_sum AS \"Output (W)\",\n  remain_time_min AS \"Remain (min)\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 10",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "showHeader": true,
-        "sortBy": []
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Battery %"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "value": 0,
-                      "color": "red"
-                    },
-                    {
-                      "value": 20,
-                      "color": "orange"
-                    },
-                    {
-                      "value": 50,
-                      "color": "yellow"
-                    },
-                    {
-                      "value": 80,
-                      "color": "green"
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 12,
       "type": "timeseries",
-      "title": "Net Power Flow (Charging/Discharging)",
+      "title": "Net Power (Input - Output)",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 31
+        "y": 22
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  (COALESCE(watts_in_sum, 0) - COALESCE(watts_out_sum, 0)) AS \"Net Power (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
-          "editorMode": "code"
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
         }
       ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
@@ -763,11 +561,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "value": -3000,
+                "value": -2000,
                 "color": "red"
               },
               {
-                "value": -1000,
+                "value": -500,
                 "color": "orange"
               },
               {
@@ -775,16 +573,107 @@
                 "color": "yellow"
               },
               {
-                "value": 1,
+                "value": 100,
                 "color": "green"
               }
             ]
-          },
-          "custom": {
-            "fillOpacity": 20,
-            "gradientMode": "hue"
           }
         }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Power Statistics (Last Hour)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  ROUND(AVG(COALESCE(watts_out_sum, 0))) AS \"Avg Output\",\n  MAX(COALESCE(watts_out_sum, 0)) AS \"Peak Output\",\n  ROUND(AVG(COALESCE(watts_in_sum, 0))) AS \"Avg Input\",\n  MAX(COALESCE(watts_in_sum, 0)) AS \"Peak Input\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts >= NOW() - INTERVAL '1 hour'",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": 0,
+                "color": "green"
+              },
+              {
+                "value": 1000,
+                "color": "yellow"
+              },
+              {
+                "value": 2000,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Recent Measurements",
+      "datasource": {
+        "type": "postgres",
+        "uid": "paku-pg"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  ts AS \"Time\",\n  soc_percent AS \"Battery %\",\n  watts_in_sum AS \"Input (W)\",\n  watts_out_sum AS \"Output (W)\",\n  pv_in_watts AS \"Solar (W)\",\n  remain_time_min AS \"Remain (min)\",\n  ac_out_watts AS \"AC Out (W)\",\n  dc_out_watts AS \"DC Out (W)\",\n  typec_out_watts AS \"USB-C (W)\",\n  usb_out_watts AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 20",
+          "datasource": {
+            "type": "postgres",
+            "uid": "paku-pg"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
       }
     }
   ]

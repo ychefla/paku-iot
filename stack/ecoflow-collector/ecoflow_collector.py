@@ -179,6 +179,9 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     """
     Insert EcoFlow power station measurement into the database.
     
+    Uses INSERT ... ON CONFLICT to update existing recent measurement with new data,
+    aggregating values from multiple MQTT messages into a single row.
+    
     Expected fields from EcoFlow MQTT payload (Delta Pro):
     - soc (state of charge %)
     - remainTime (minutes)
@@ -186,40 +189,91 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     - wattsOutSum (total output watts)
     - Various port-specific power readings
     """
+    # Only insert if we have at least one meaningful value
+    has_data = any([
+        data.get(k) is not None 
+        for k in ['soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
+                  'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts']
+    ])
+    
+    if not has_data:
+        logger.debug("Skipping insert - no meaningful data in payload")
+        return
+    
     with conn.cursor() as cur:
+        # First, check if there's a recent measurement (within last 10 seconds) to update
         cur.execute(
             """
-            INSERT INTO ecoflow_measurements (
-                device_sn,
-                ts,
-                soc_percent,
-                remain_time_min,
-                watts_in_sum,
-                watts_out_sum,
-                ac_out_watts,
-                dc_out_watts,
-                typec_out_watts,
-                usb_out_watts,
-                pv_in_watts,
-                raw_data
-            )
-            VALUES (
-                %(device_sn)s,
-                NOW(),
-                %(soc_percent)s,
-                %(remain_time_min)s,
-                %(watts_in_sum)s,
-                %(watts_out_sum)s,
-                %(ac_out_watts)s,
-                %(dc_out_watts)s,
-                %(typec_out_watts)s,
-                %(usb_out_watts)s,
-                %(pv_in_watts)s,
-                %(raw_data)s
-            )
+            SELECT id FROM ecoflow_measurements
+            WHERE device_sn = %(device_sn)s
+              AND ts >= NOW() - INTERVAL '10 seconds'
+            ORDER BY ts DESC
+            LIMIT 1
             """,
-            data,
+            {"device_sn": data["device_sn"]}
         )
+        recent_row = cur.fetchone()
+        
+        if recent_row:
+            # Update existing row with new non-null values
+            update_fields = []
+            update_params = {"id": recent_row[0]}
+            
+            for field in ['soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
+                          'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts']:
+                if data.get(field) is not None:
+                    update_fields.append(f"{field} = COALESCE(%({field})s, {field})")
+                    update_params[field] = data[field]
+            
+            # Always append to raw_data
+            if data.get('raw_data'):
+                update_fields.append("raw_data = raw_data || %(raw_data)s::jsonb")
+                update_params['raw_data'] = data['raw_data']
+            
+            if update_fields:
+                query = f"""
+                UPDATE ecoflow_measurements
+                SET {', '.join(update_fields)}, ts = NOW()
+                WHERE id = %(id)s
+                """
+                cur.execute(query, update_params)
+                logger.debug("Updated recent measurement id=%s", recent_row[0])
+        else:
+            # Insert new row
+            cur.execute(
+                """
+                INSERT INTO ecoflow_measurements (
+                    device_sn,
+                    ts,
+                    soc_percent,
+                    remain_time_min,
+                    watts_in_sum,
+                    watts_out_sum,
+                    ac_out_watts,
+                    dc_out_watts,
+                    typec_out_watts,
+                    usb_out_watts,
+                    pv_in_watts,
+                    raw_data
+                )
+                VALUES (
+                    %(device_sn)s,
+                    NOW(),
+                    %(soc_percent)s,
+                    %(remain_time_min)s,
+                    %(watts_in_sum)s,
+                    %(watts_out_sum)s,
+                    %(ac_out_watts)s,
+                    %(dc_out_watts)s,
+                    %(typec_out_watts)s,
+                    %(usb_out_watts)s,
+                    %(pv_in_watts)s,
+                    %(raw_data)s
+                )
+                """,
+                data,
+            )
+            logger.debug("Inserted new measurement")
 
 
 def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> Dict[str, Any]:
@@ -231,6 +285,15 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     """
     # EcoFlow typically nests data in a "params" or "data" field
     params = raw_payload.get("params", {})
+    
+    # Helper to sum multiple USB/TypeC ports
+    def sum_ports(keys):
+        total = 0
+        for key in keys:
+            val = params.get(key)
+            if val is not None:
+                total += val
+        return total if total > 0 else None
     
     # Extract values from dotted field names (e.g., "bmsMaster.soc")
     # and also support legacy flat structures
@@ -259,22 +322,21 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
         ),
         "ac_out_watts": (
             params.get("inv.acOutWatts") or
+            params.get("inv.outWatts") or
             params.get("invOutWatts")
         ),
         "dc_out_watts": (
             params.get("pd.dcOutWatts") or
             params.get("dcOutWatts")
         ),
-        "typec_out_watts": (
-            params.get("pd.typec2Watts") or  # or typec1Watts
-            params.get("typecOutWatts")
-        ),
-        "usb_out_watts": (
-            params.get("pd.usb1Watts") or  # might also be usb2Watts
-            params.get("usbOutWatts")
-        ),
+        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]) or params.get("typecOutWatts"),
+        "usb_out_watts": sum_ports([
+            "pd.usb1Watts", "pd.usb2Watts", 
+            "pd.qcUsb1Watts", "pd.qcUsb2Watts"
+        ]) or params.get("usbOutWatts"),
         "pv_in_watts": (
             params.get("mppt.inWatts") or
+            params.get("mppt.pv1InputWatts") or
             params.get("pvInWatts") or 
             params.get("pv", {}).get("inputWatts")
         ),
@@ -282,6 +344,7 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     }
     
     return parsed
+
 
 
 # ---------------------------------------------------------------------
