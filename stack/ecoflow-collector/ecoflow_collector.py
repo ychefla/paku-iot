@@ -63,6 +63,7 @@ def load_config() -> Dict[str, Any]:
         "ecoflow_access_key": get_env("ECOFLOW_ACCESS_KEY"),
         "ecoflow_secret_key": get_env("ECOFLOW_SECRET_KEY"),
         "ecoflow_device_sn": os.getenv("ECOFLOW_DEVICE_SN", ""),
+        "ecoflow_api_url": os.getenv("ECOFLOW_API_URL", "https://api-e.ecoflow.com"),
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
         "pg_user": get_env("PGUSER"),
@@ -263,8 +264,8 @@ class EcoFlowCollectorApp:
         self.conn = connect_to_database(self.cfg)
         
         # Get MQTT credentials from EcoFlow API
-        # Support regional API endpoints via ECOFLOW_API_URL environment variable
-        api_url = os.getenv("ECOFLOW_API_URL")  # Optional: can specify api-e.ecoflow.com for EU
+        # Use configured API URL (defaults to EU endpoint)
+        api_url = self.cfg.get("ecoflow_api_url", "https://api-e.ecoflow.com")
         api = EcoFlowAPI(
             self.cfg["ecoflow_access_key"],
             self.cfg["ecoflow_secret_key"],
