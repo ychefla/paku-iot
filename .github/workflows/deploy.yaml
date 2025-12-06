@@ -149,7 +149,7 @@ jobs:
           # Start services - include EcoFlow profile if credentials are set
           if [ -n "${ECOFLOW_ACCESS_KEY}" ] && [ -n "${ECOFLOW_SECRET_KEY}" ]; then
             echo "EcoFlow credentials found - starting with ecoflow profile..."
-            docker compose --profile ecoflow -f compose/stack.prod.yaml up -d
+            docker compose -f compose/stack.prod.yaml --profile ecoflow up -d
           else
             echo "No EcoFlow credentials - starting without ecoflow profile..."
             docker compose -f compose/stack.prod.yaml up -d

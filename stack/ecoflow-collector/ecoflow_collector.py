@@ -63,7 +63,8 @@ def load_config() -> Dict[str, Any]:
         "ecoflow_access_key": get_env("ECOFLOW_ACCESS_KEY"),
         "ecoflow_secret_key": get_env("ECOFLOW_SECRET_KEY"),
         "ecoflow_device_sn": os.getenv("ECOFLOW_DEVICE_SN", ""),
-        "ecoflow_api_url": os.getenv("ECOFLOW_API_URL", "https://api-e.ecoflow.com"),
+        # Default to US API endpoint - use https://api-e.ecoflow.com for EU
+        "ecoflow_api_url": os.getenv("ECOFLOW_API_URL", "https://api.ecoflow.com"),
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
         "pg_user": get_env("PGUSER"),
@@ -308,33 +309,42 @@ class EcoFlowCollectorApp:
             logger.info("Connected to EcoFlow MQTT broker")
             
             # Subscribe to device topic(s)
-            # EcoFlow topic format: /app/{appKey}/{deviceSn}/thing/property/+
-            # The appKey is the user ID from MQTT credentials
-            app_key = self.mqtt_credentials.get("certificateAccount", "").split("/")[0] if "/" in self.mqtt_credentials.get("certificateAccount", "") else self.mqtt_credentials.get("certificateAccount", "")
+            # EcoFlow topic format varies by region and API version
+            # Common patterns:
+            # - /app/device/property/{device_sn}  (simple format, works for many devices)
+            # - /app/{user_id}/{device_sn}/+      (detailed format with user ID)
+            # - /open/{user_id}/{device_sn}/quota (OpenAPI format)
             
             if self.device_sn:
-                # Subscribe to specific device property updates
-                topic1 = f"/app/{app_key}/{self.device_sn}/thing/property/+"
-                logger.info("Subscribing to device property topic: %s", topic1)
-                result1 = client.subscribe(topic1, qos=1)
-                logger.info("Subscribe result: %s", result1)
+                # Primary topic: simple device property format (most reliable)
+                topic1 = f"/app/device/property/{self.device_sn}"
+                logger.info("Subscribing to device-specific topic: %s", topic1)
+                result1 = client.subscribe(topic1, qos=0)
+                logger.info("Subscribe result for %s: %s", topic1, result1)
                 
-                # Also try the simpler format
-                topic2 = f"/app/device/property/{self.device_sn}"
-                logger.info("Also subscribing to: %s", topic2)
-                result2 = client.subscribe(topic2, qos=1)
-                logger.info("Subscribe result: %s", result2)
+                # Secondary: OpenAPI quota format (for quotas and limits)
+                # Extract user ID from certificateAccount if available
+                cert_account = self.mqtt_credentials.get("certificateAccount", "")
+                if "/" in cert_account:
+                    user_id = cert_account.split("/")[0]
+                else:
+                    user_id = cert_account or "+"
                 
-                # Subscribe to wildcard to see all topics
-                topic3 = "#"
-                logger.info("Also subscribing to wildcard: %s", topic3)
-                result3 = client.subscribe(topic3, qos=1)
-                logger.info("Subscribe result: %s", result3)
+                topic2 = f"/open/{user_id}/{self.device_sn}/quota"
+                logger.info("Also subscribing to quota topic: %s", topic2)
+                result2 = client.subscribe(topic2, qos=0)
+                logger.info("Subscribe result for %s: %s", topic2, result2)
+                
+                # Tertiary: App API format with user wildcard (catch-all)
+                topic3 = f"/app/+/{self.device_sn}/+"
+                logger.info("Also subscribing to app wildcard: %s", topic3)
+                result3 = client.subscribe(topic3, qos=0)
+                logger.info("Subscribe result for %s: %s", topic3, result3)
             else:
                 # Subscribe to all devices for this user
-                topic = f"/app/{app_key}/+/thing/property/+"
+                topic = f"/app/device/property/+"
                 logger.info("Subscribing to all devices: %s", topic)
-                client.subscribe(topic, qos=1)
+                client.subscribe(topic, qos=0)
     
     def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
         logger.info("Subscription confirmed: mid=%s, codes=%s", mid, reason_code_list)
