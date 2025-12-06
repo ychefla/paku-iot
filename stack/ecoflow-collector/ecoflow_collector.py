@@ -307,43 +307,46 @@ class EcoFlowCollectorApp:
             logger.error("Failed to connect to EcoFlow MQTT broker: %s", reason_code)
         else:
             logger.info("Connected to EcoFlow MQTT broker")
+            logger.info("MQTT credentials info: certificateAccount=%s", self.mqtt_credentials.get("certificateAccount", "N/A"))
             
             # Subscribe to device topic(s)
             # EcoFlow topic format varies by region and API version
-            # Common patterns:
-            # - /app/device/property/{device_sn}  (simple format, works for many devices)
-            # - /app/{user_id}/{device_sn}/+      (detailed format with user ID)
-            # - /open/{user_id}/{device_sn}/quota (OpenAPI format)
+            # Based on the documentation:
+            # - /app/{userId}/{deviceSn}/thing/property/set (device command)
+            # - /app/{userId}/{deviceSn}/thing/property/get (get device properties)  
+            # - /app/device/property/{deviceSn} (simplified property updates)
+            
+            # Extract user ID from certificateAccount (format is often "userId/randomString")
+            cert_account = self.mqtt_credentials.get("certificateAccount", "")
+            if "/" in cert_account:
+                user_id = cert_account.split("/")[0]
+                logger.info("Extracted user_id from certificateAccount: %s", user_id)
+            else:
+                user_id = cert_account
+                logger.info("Using full certificateAccount as user_id: %s", user_id)
             
             if self.device_sn:
-                # Primary topic: simple device property format (most reliable)
-                topic1 = f"/app/device/property/{self.device_sn}"
-                logger.info("Subscribing to device-specific topic: %s", topic1)
+                # Primary: Full wildcard for this specific device (most comprehensive)
+                topic1 = f"/app/{user_id}/{self.device_sn}/#"
+                logger.info("Subscribing to device wildcard: %s", topic1)
                 result1 = client.subscribe(topic1, qos=0)
                 logger.info("Subscribe result for %s: %s", topic1, result1)
                 
-                # Secondary: OpenAPI quota format (for quotas and limits)
-                # Extract user ID from certificateAccount if available
-                cert_account = self.mqtt_credentials.get("certificateAccount", "")
-                if "/" in cert_account:
-                    user_id = cert_account.split("/")[0]
-                else:
-                    user_id = cert_account or "+"
-                
-                topic2 = f"/open/{user_id}/{self.device_sn}/quota"
-                logger.info("Also subscribing to quota topic: %s", topic2)
+                # Secondary: Simplified device property format
+                topic2 = f"/app/device/property/{self.device_sn}"
+                logger.info("Subscribing to simplified property: %s", topic2)
                 result2 = client.subscribe(topic2, qos=0)
                 logger.info("Subscribe result for %s: %s", topic2, result2)
                 
-                # Tertiary: App API format with user wildcard (catch-all)
-                topic3 = f"/app/+/{self.device_sn}/+"
-                logger.info("Also subscribing to app wildcard: %s", topic3)
+                # Tertiary: OpenAPI quota format (for quotas and limits)
+                topic3 = f"/open/{user_id}/{self.device_sn}/quota"
+                logger.info("Subscribing to quota topic: %s", topic3)
                 result3 = client.subscribe(topic3, qos=0)
                 logger.info("Subscribe result for %s: %s", topic3, result3)
             else:
-                # Subscribe to all devices for this user
-                topic = f"/app/device/property/+"
-                logger.info("Subscribing to all devices: %s", topic)
+                # Subscribe to all devices with full wildcard
+                topic = f"/app/{user_id}/+/#"
+                logger.info("Subscribing to all devices wildcard: %s", topic)
                 client.subscribe(topic, qos=0)
     
     def on_subscribe(self, client, userdata, mid, reason_code_list, properties):
