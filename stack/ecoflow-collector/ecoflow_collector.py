@@ -179,29 +179,29 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     """
     Insert EcoFlow power station measurement into the database.
     
+    Enhanced to handle all available fields from comprehensive parsing.
     Uses INSERT ... ON CONFLICT to update existing recent measurement with new data,
     aggregating values from multiple MQTT messages into a single row.
-    
-    Expected fields from EcoFlow MQTT payload (Delta Pro):
-    - soc (state of charge %)
-    - remainTime (minutes)
-    - wattsInSum (total input watts)
-    - wattsOutSum (total output watts)
-    - Various port-specific power readings
     """
+    # Define all possible fields
+    all_fields = [
+        'soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
+        'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts',
+        'bms_voltage_mv', 'bms_amp_ma', 'bms_temp_c', 'bms_cycles', 'bms_soh_percent',
+        'inv_ac_in_volts_mv', 'inv_ac_out_volts_mv', 'inv_ac_freq_hz', 'inv_temp_c',
+        'mppt_in_volts_mv', 'mppt_in_amps_ma', 'mppt_out_volts_mv', 'mppt_out_amps_ma',
+        'mppt_temp_c', 'car_out_volts_mv', 'car_out_amps_ma', 'wifi_rssi'
+    ]
+    
     # Only insert if we have at least one meaningful value
-    has_data = any([
-        data.get(k) is not None 
-        for k in ['soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
-                  'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts']
-    ])
+    has_data = any([data.get(k) is not None for k in all_fields])
     
     if not has_data:
         logger.debug("Skipping insert - no meaningful data in payload")
         return
     
     with conn.cursor() as cur:
-        # First, check if there's a recent measurement (within last 10 seconds) to update
+        # Check if there's a recent measurement (within last 10 seconds) to update
         cur.execute(
             """
             SELECT id FROM ecoflow_measurements
@@ -219,8 +219,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
             update_fields = []
             update_params = {"id": recent_row[0]}
             
-            for field in ['soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
-                          'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts']:
+            for field in all_fields:
                 if data.get(field) is not None:
                     update_fields.append(f"{field} = COALESCE(%({field})s, {field})")
                     update_params[field] = data[field]
@@ -237,43 +236,27 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
                 WHERE id = %(id)s
                 """
                 cur.execute(query, update_params)
-                logger.debug("Updated recent measurement id=%s", recent_row[0])
+                logger.debug("Updated recent measurement id=%s with %d fields", recent_row[0], len(update_fields))
         else:
-            # Insert new row
-            cur.execute(
-                """
+            # Prepare insert with only non-null fields
+            insert_fields = ['device_sn', 'ts'] + [f for f in all_fields if data.get(f) is not None]
+            if data.get('raw_data'):
+                insert_fields.append('raw_data')
+            
+            placeholders = ['%(device_sn)s', 'NOW()'] + [f'%({f})s' for f in all_fields if data.get(f) is not None]
+            if data.get('raw_data'):
+                placeholders.append('%(raw_data)s')
+            
+            query = f"""
                 INSERT INTO ecoflow_measurements (
-                    device_sn,
-                    ts,
-                    soc_percent,
-                    remain_time_min,
-                    watts_in_sum,
-                    watts_out_sum,
-                    ac_out_watts,
-                    dc_out_watts,
-                    typec_out_watts,
-                    usb_out_watts,
-                    pv_in_watts,
-                    raw_data
+                    {', '.join(insert_fields)}
                 )
                 VALUES (
-                    %(device_sn)s,
-                    NOW(),
-                    %(soc_percent)s,
-                    %(remain_time_min)s,
-                    %(watts_in_sum)s,
-                    %(watts_out_sum)s,
-                    %(ac_out_watts)s,
-                    %(dc_out_watts)s,
-                    %(typec_out_watts)s,
-                    %(usb_out_watts)s,
-                    %(pv_in_watts)s,
-                    %(raw_data)s
+                    {', '.join(placeholders)}
                 )
-                """,
-                data,
-            )
-            logger.debug("Inserted new measurement")
+            """
+            cur.execute(query, data)
+            logger.debug("Inserted new measurement with %d fields", len(insert_fields))
 
 
 def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> Dict[str, Any]:
@@ -282,74 +265,107 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     
     EcoFlow sends complex nested structures with dotted field names.
     Example: {"params": {"bmsMaster.soc": 89, "bmsMaster.inputWatts": 0, ...}}
+    
+    Enhanced to extract more comprehensive data from raw_data.
     """
     # EcoFlow typically nests data in a "params" or "data" field
     params = raw_payload.get("params", {})
+    
+    # Helper to safely get numeric values
+    def get_val(key, default=None):
+        val = params.get(key, default)
+        # Filter out obviously invalid values
+        if val is not None and isinstance(val, (int, float)):
+            # Some fields use 65535 or similar large numbers as "not available"
+            if val > 1000000:
+                return None
+        return val
     
     # Helper to sum multiple USB/TypeC ports
     def sum_ports(keys):
         total = 0
         for key in keys:
-            val = params.get(key)
+            val = get_val(key, 0)
             if val is not None:
                 total += val
         return total if total > 0 else None
     
     # Extract values from dotted field names (e.g., "bmsMaster.soc")
-    # and also support legacy flat structures
+    # Primary data sources - prefer pd (power distribution) and bmsMaster values
     parsed = {
         "device_sn": device_sn or raw_payload.get("sn", "unknown"),
         "soc_percent": (
-            params.get("bmsMaster.soc") or 
-            params.get("pd.soc") or
-            params.get("soc") or 
-            params.get("bmsMaster", {}).get("soc")
+            get_val("pd.soc") or 
+            get_val("bmsMaster.soc") or 
+            get_val("ems.lcdShowSoc") or
+            get_val("soc")
         ),
         "remain_time_min": (
-            params.get("pd.remainTime") or
-            params.get("bmsMaster.remainTime") or
-            params.get("ems.chgRemainTime") or
-            params.get("remainTime")
+            get_val("pd.remainTime") or
+            get_val("bmsMaster.remainTime") or
+            get_val("ems.chgRemainTime") or
+            get_val("ems.dsgRemainTime") or
+            get_val("remainTime")
         ),
+        # Input power - prefer pd.wattsInSum for total, but wattsInSum can be zero during discharge
         "watts_in_sum": (
-            params.get("pd.wattsInSum") or
-            params.get("pd.chgPowerAc") or
-            params.get("bmsMaster.inputWatts") or
-            params.get("inv.inputWatts") or
-            params.get("wattsInSum") or 
-            params.get("inv", {}).get("inputWatts")
+            get_val("pd.wattsInSum") or
+            get_val("inv.inputWatts") or
+            get_val("mppt.inWatts") or
+            get_val("bmsMaster.inputWatts") or
+            get_val("wattsInSum")
         ),
+        # Output power - prefer pd.wattsOutSum
         "watts_out_sum": (
-            params.get("pd.wattsOutSum") or
-            params.get("pd.dsgPowerAc") or
-            params.get("bmsMaster.outputWatts") or
-            params.get("inv.outputWatts") or
-            params.get("wattsOutSum") or 
-            params.get("inv", {}).get("outputWatts")
+            get_val("pd.wattsOutSum") or
+            get_val("inv.outputWatts") or
+            get_val("bmsMaster.outputWatts") or
+            get_val("wattsOutSum")
         ),
         "ac_out_watts": (
-            params.get("inv.outputWatts") or
-            params.get("inv.acOutWatts") or
-            params.get("inv.outWatts") or
-            params.get("invOutWatts")
+            get_val("inv.outputWatts") or
+            get_val("inv.invOutWatts") or
+            get_val("pd.dsgPowerAc")
         ),
         "dc_out_watts": (
-            params.get("mppt.carOutWatts") or
-            params.get("mppt.outWatts") or
-            params.get("pd.dcOutWatts") or
-            params.get("dcOutWatts")
+            get_val("mppt.carOutWatts") or
+            get_val("mppt.outWatts") or
+            get_val("pd.dsgPowerDc")
         ),
-        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]) or params.get("typecOutWatts"),
+        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]),
         "usb_out_watts": sum_ports([
             "pd.usb1Watts", "pd.usb2Watts", 
             "pd.qcUsb1Watts", "pd.qcUsb2Watts"
-        ]) or params.get("usbOutWatts"),
+        ]),
         "pv_in_watts": (
-            params.get("mppt.inWatts") or
-            params.get("mppt.pv1InputWatts") or
-            params.get("pvInWatts") or 
+            get_val("mppt.inWatts") or
+            get_val("mppt.pv1InputWatts") or
+            get_val("pd.chgSunPower") or
+            get_val("pvInWatts") or 
             params.get("pv", {}).get("inputWatts")
         ),
+        # BMS (Battery Management System) data
+        "bms_voltage_mv": get_val("bmsMaster.vol"),
+        "bms_amp_ma": get_val("bmsMaster.amp"),
+        "bms_temp_c": get_val("bmsMaster.temp"),
+        "bms_cycles": get_val("bmsMaster.cycles"),
+        "bms_soh_percent": get_val("bmsMaster.soh"),
+        # Inverter data
+        "inv_ac_in_volts_mv": get_val("inv.acInVol"),
+        "inv_ac_out_volts_mv": get_val("inv.invOutVol") or get_val("inv.acOutVol"),
+        "inv_ac_freq_hz": get_val("inv.acInFreq") or get_val("inv.invOutFreq"),
+        "inv_temp_c": get_val("inv.outTemp") or get_val("inv.dcInTemp"),
+        # MPPT (Solar controller) data
+        "mppt_in_volts_mv": get_val("mppt.inVol"),
+        "mppt_in_amps_ma": get_val("mppt.inAmp"),
+        "mppt_out_volts_mv": get_val("mppt.outVol"),
+        "mppt_out_amps_ma": get_val("mppt.outAmp"),
+        "mppt_temp_c": get_val("mppt.mpptTemp"),
+        # Car/DC output
+        "car_out_volts_mv": get_val("mppt.carOutVol"),
+        "car_out_amps_ma": get_val("mppt.carOutAmp"),
+        # WiFi signal strength
+        "wifi_rssi": get_val("pd.wifiRssi"),
         "raw_data": json.dumps(raw_payload),  # Store full payload for reference
     }
     
