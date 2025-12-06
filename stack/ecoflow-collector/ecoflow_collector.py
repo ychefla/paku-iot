@@ -308,21 +308,31 @@ class EcoFlowCollectorApp:
             logger.info("Connected to EcoFlow MQTT broker")
             
             # Subscribe to device topic(s)
-            # Try both specific topic and wildcard to catch messages
+            # EcoFlow topic format: /app/{appKey}/{deviceSn}/thing/property/+
+            # The appKey is the user ID from MQTT credentials
+            app_key = self.mqtt_credentials.get("certificateAccount", "").split("/")[0] if "/" in self.mqtt_credentials.get("certificateAccount", "") else self.mqtt_credentials.get("certificateAccount", "")
+            
             if self.device_sn:
-                topic1 = f"/app/device/property/{self.device_sn}"
-                logger.info("Subscribing to device-specific topic: %s", topic1)
+                # Subscribe to specific device property updates
+                topic1 = f"/app/{app_key}/{self.device_sn}/thing/property/+"
+                logger.info("Subscribing to device property topic: %s", topic1)
                 result1 = client.subscribe(topic1, qos=1)
-                logger.info("Subscribe result for %s: %s", topic1, result1)
+                logger.info("Subscribe result: %s", result1)
                 
-                # Also subscribe to wildcard to catch anything
-                topic2 = "#"  # Wildcard for ALL topics
-                logger.info("Also subscribing to wildcard: %s", topic2)
+                # Also try the simpler format
+                topic2 = f"/app/device/property/{self.device_sn}"
+                logger.info("Also subscribing to: %s", topic2)
                 result2 = client.subscribe(topic2, qos=1)
-                logger.info("Subscribe result for %s: %s", topic2, result2)
+                logger.info("Subscribe result: %s", result2)
+                
+                # Subscribe to wildcard to see all topics
+                topic3 = "#"
+                logger.info("Also subscribing to wildcard: %s", topic3)
+                result3 = client.subscribe(topic3, qos=1)
+                logger.info("Subscribe result: %s", result3)
             else:
-                # Subscribe to all devices with wildcard
-                topic = "/app/device/property/+"
+                # Subscribe to all devices for this user
+                topic = f"/app/{app_key}/+/thing/property/+"
                 logger.info("Subscribing to all devices: %s", topic)
                 client.subscribe(topic, qos=1)
     
