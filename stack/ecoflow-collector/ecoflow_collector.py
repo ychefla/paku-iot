@@ -368,6 +368,26 @@ class EcoFlowCollectorApp:
         self.client: Optional[mqtt.Client] = None
         self.device_sn = cfg.get("ecoflow_device_sn", "")
     
+    def _ensure_db_connection(self):
+        """Ensure database connection is alive, reconnect if needed."""
+        try:
+            if self.conn is None or self.conn.closed:
+                logger.warning("Database connection is closed, reconnecting...")
+                self.conn = connect_to_database(self.cfg)
+                return
+            
+            # Test the connection
+            with self.conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        except Exception as exc:
+            logger.warning("Database connection test failed: %s, reconnecting...", exc)
+            try:
+                if self.conn:
+                    self.conn.close()
+            except:
+                pass
+            self.conn = connect_to_database(self.cfg)
+    
     def start(self) -> None:
         # Connect to database
         self.conn = connect_to_database(self.cfg)
@@ -479,6 +499,13 @@ class EcoFlowCollectorApp:
             if len(parts) > 3:
                 device_sn = parts[3]
                 logger.info("Extracted device SN from topic: %s", device_sn)
+        
+        # Ensure database connection is alive
+        try:
+            self._ensure_db_connection()
+        except Exception as exc:
+            logger.error("Failed to ensure DB connection: %s; dropping message", exc)
+            return
         
         if self.conn is None:
             logger.error("No DB connection available; dropping message")
