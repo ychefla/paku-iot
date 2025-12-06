@@ -33,7 +33,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  MAX(CASE WHEN device_id = (SELECT MIN(device_id) FROM measurements WHERE system = 'sensors' AND metrics ? 'temperature_c') \n    THEN (metrics->>'temperature_c')::numeric END) AS \"Sensor 1\",\n  MAX(CASE WHEN device_id = (SELECT MAX(device_id) FROM measurements WHERE system = 'sensors' AND metrics ? 'temperature_c') \n    THEN (metrics->>'temperature_c')::numeric END) AS \"Sensor 2\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nGROUP BY ts\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY metric, ts ASC",
           "editorMode": "code"
         }
       ],
@@ -120,7 +120,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  MAX(CASE WHEN device_id = (SELECT MIN(device_id) FROM measurements WHERE system = 'sensors' AND metrics ? 'humidity_percent') \n    THEN (metrics->>'humidity_percent')::numeric END) AS \"Sensor 1\",\n  MAX(CASE WHEN device_id = (SELECT MAX(device_id) FROM measurements WHERE system = 'sensors' AND metrics ? 'humidity_percent') \n    THEN (metrics->>'humidity_percent')::numeric END) AS \"Sensor 2\"\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nGROUP BY ts\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY metric, ts ASC",
           "editorMode": "code"
         }
       ],
