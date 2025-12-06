@@ -69,7 +69,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (soc_percent)::numeric AS \"Battery %\",\n  EXTRACT(EPOCH FROM (NOW() - ts)) AS staleness_sec\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  soc_percent IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  (soc_percent)::numeric AS \"Battery %\",\n  EXTRACT(EPOCH FROM (NOW() - ts)) AS staleness_sec\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -180,7 +180,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (watts_in_sum)::numeric AS \"Input (W)\",\n  (watts_out_sum)::numeric AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND (watts_in_sum IS NOT NULL\n       OR watts_out_sum IS NOT NULL)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (watts_in_sum)::numeric AS \"Input (W)\",\n  (watts_out_sum)::numeric AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND (watts_in_sum IS NOT NULL\n       OR watts_out_sum IS NOT NULL)\nORDER BY ts",
           "refId": "A",
           "select": [
             [
@@ -260,7 +260,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (watts_in_sum)::numeric AS \"Input Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  watts_in_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  (watts_in_sum)::numeric AS \"Input Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_in_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -340,7 +340,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (watts_out_sum)::numeric AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  watts_out_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  (watts_out_sum)::numeric AS \"Output Power\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_out_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -428,7 +428,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Temperature\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  (raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Temperature\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND (raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -508,7 +508,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.vol'))::numeric AS \"Voltage\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  (raw_data->'params'->>'bmsMaster.vol') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.vol'))::numeric AS \"Voltage\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND (raw_data->'params'->>'bmsMaster.vol') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -618,7 +618,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (soc_percent)::numeric AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND soc_percent IS NOT NULL\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (soc_percent)::numeric AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND soc_percent IS NOT NULL\nORDER BY ts",
           "refId": "A",
           "select": [
             [
@@ -729,7 +729,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Battery Temp\",\n  ((raw_data->'params'->>'bmsMaster.minCellTemp'))::numeric AS \"Min Cell Temp\",\n  ((raw_data->'params'->>'bmsMaster.maxCellTemp'))::numeric AS \"Max Cell Temp\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND  ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND ((raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.minCellTemp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.maxCellTemp') IS NOT NULL)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Battery Temp\",\n  ((raw_data->'params'->>'bmsMaster.minCellTemp'))::numeric AS \"Min Cell Temp\",\n  ((raw_data->'params'->>'bmsMaster.maxCellTemp'))::numeric AS \"Max Cell Temp\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND ((raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.minCellTemp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.maxCellTemp') IS NOT NULL)\nORDER BY ts",
           "refId": "A",
           "select": [
             [
