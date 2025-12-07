@@ -118,25 +118,31 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     """
     Insert EcoFlow measurement into database.
     
-    EcoFlow API returns flat field names with dots, e.g.:
-    - inv.inputWatts (AC input watts)
-    - inv.outputWatts (AC output watts)
-    - mppt.inWatts (solar input watts)
-    - pd.carWatts (12V car output watts)
-    - bmsMaster.soc (battery SOC %)
-    - pd.remainTime (remaining time in minutes)
+    EcoFlow API returns flat field names with dots. Key fields:
+    - pd.wattsInSum: Total input power
+    - pd.wattsOutSum: Total output power
+    - inv.inputWatts: AC input
+    - inv.outputWatts: AC output
+    - mppt.inWatts: Solar input
+    - mppt.outWatts: MPPT output (to battery)
+    - pd.carWatts: 12V car output
+    - bmsMaster.soc: Battery SOC %
+    - pd.remainTime: Remaining time in minutes
     """
     
     # Battery info
     soc = data.get('bmsMaster.soc', 0)
     remain_time = data.get('pd.remainTime', 0)  # in minutes
     
-    # Input power
-    ac_in_watts = data.get('inv.inputWatts', 0)
-    pv_in_watts = data.get('mppt.inWatts', 0)
+    # Use EcoFlow's summary fields first, fall back to individual components
+    watts_in_sum = data.get('pd.wattsInSum', 0)
+    watts_out_sum = data.get('pd.wattsOutSum', 0)
     
-    # Output power
+    # Individual components
+    ac_in_watts = data.get('inv.inputWatts', 0)
     ac_out_watts = data.get('inv.outputWatts', 0)
+    pv_in_watts = data.get('mppt.inWatts', 0)
+    mppt_out_watts = data.get('mppt.outWatts', 0)
     car_watts = data.get('pd.carWatts', 0)
     
     # USB/TypeC outputs
@@ -147,12 +153,15 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     typec1 = data.get('pd.typec1Watts', 0)
     typec2 = data.get('pd.typec2Watts', 0)
     
-    # Calculate totals
-    watts_in_sum = ac_in_watts + pv_in_watts
-    watts_out_sum = ac_out_watts + car_watts + usb1 + usb2 + qcusb1 + qcusb2 + typec1 + typec2
+    # Calculate component sums
     dc_out_watts = car_watts + usb1 + usb2 + qcusb1 + qcusb2
     typec_out_watts = typec1 + typec2
     usb_out_watts = usb1 + usb2 + qcusb1 + qcusb2
+    
+    # Temperature
+    inv_temp = data.get('inv.outTemp', 0)
+    mppt_temp = data.get('mppt.mpptTemp', 0)
+    bms_temp = data.get('bmsMaster.temp', 0)
     
     sql = """
         INSERT INTO ecoflow_measurements (
@@ -245,16 +254,16 @@ class EcoFlowCollectorApp:
             
             insert_ecoflow_measurement(self.conn, self.device_sn, quota_data)
             
-            # Log key metrics
+            # Log key metrics using summary fields
             soc = quota_data.get('bmsMaster.soc', 0)
-            ac_in = quota_data.get('inv.inputWatts', 0)
-            ac_out = quota_data.get('inv.outputWatts', 0)
+            watts_in = quota_data.get('pd.wattsInSum', 0)
+            watts_out = quota_data.get('pd.wattsOutSum', 0)
             solar = quota_data.get('mppt.inWatts', 0)
-            dc_12v = quota_data.get('pd.carWatts', 0)
+            temp = quota_data.get('bmsMaster.temp', 0)
             
             logger.info(
-                "Stored: SOC=%d%%, AC_IN=%dW, AC_OUT=%dW, SOLAR=%dW, 12V=%dW",
-                soc, ac_in, ac_out, solar, dc_12v
+                "Stored: SOC=%d%%, IN=%dW, OUT=%dW, SOLAR=%dW, TEMP=%d°C",
+                soc, watts_in, watts_out, solar, temp
             )
             
         except Exception as e:
