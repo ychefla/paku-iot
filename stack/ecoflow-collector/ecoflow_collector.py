@@ -271,21 +271,23 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     # EcoFlow typically nests data in a "params" or "data" field
     params = raw_payload.get("params", {})
     
-    # Helper to safely get numeric values
-    def get_val(key, default=None):
+    # Helper to safely get numeric values with optional unit conversion
+    def get_val(key, default=None, divide_by=1):
         val = params.get(key, default)
         # Filter out obviously invalid values
         if val is not None and isinstance(val, (int, float)):
             # Some fields use 65535 or similar large numbers as "not available"
-            if val > 1000000:
+            if val > 100000000:  # 100M is clearly invalid
                 return None
+            if divide_by > 1:
+                val = val / divide_by
         return val
     
     # Helper to sum multiple USB/TypeC ports
-    def sum_ports(keys):
+    def sum_ports(keys, divide_by=1):
         total = 0
         for key in keys:
-            val = get_val(key, 0)
+            val = get_val(key, 0, divide_by=divide_by)
             if val is not None:
                 total += val
         return total if total > 0 else None
@@ -307,29 +309,30 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
             get_val("ems.dsgRemainTime") or
             get_val("remainTime")
         ),
-        # Input power - prefer pd.wattsInSum for total, but wattsInSum can be zero during discharge
+        # Input power - Many fields are in 0.1W or mW units, need conversion
+        # Try pd.wattsInSum first, then calculate from inv.inputWatts (often in 0.001W units)
         "watts_in_sum": (
             get_val("pd.wattsInSum") or
-            get_val("inv.inputWatts") or
-            get_val("mppt.inWatts") or
+            get_val("inv.inputWatts", divide_by=1000) or
+            get_val("mppt.inWatts", divide_by=1000) or
             get_val("bmsMaster.inputWatts") or
             get_val("wattsInSum")
         ),
-        # Output power - prefer pd.wattsOutSum
+        # Output power - prefer pd.wattsOutSum, convert inv.outputWatts from 0.001W units
         "watts_out_sum": (
             get_val("pd.wattsOutSum") or
-            get_val("inv.outputWatts") or
+            get_val("inv.outputWatts", divide_by=1000) or
             get_val("bmsMaster.outputWatts") or
             get_val("wattsOutSum")
         ),
         "ac_out_watts": (
-            get_val("inv.outputWatts") or
-            get_val("inv.invOutWatts") or
+            get_val("inv.outputWatts", divide_by=1000) or
+            get_val("inv.invOutWatts", divide_by=1000) or
             get_val("pd.dsgPowerAc")
         ),
         "dc_out_watts": (
-            get_val("mppt.carOutWatts") or
-            get_val("mppt.outWatts") or
+            get_val("mppt.carOutWatts", divide_by=1000) or
+            get_val("mppt.outWatts", divide_by=1000) or
             get_val("pd.dsgPowerDc")
         ),
         "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]),
@@ -338,11 +341,11 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
             "pd.qcUsb1Watts", "pd.qcUsb2Watts"
         ]),
         "pv_in_watts": (
-            get_val("mppt.inWatts") or
-            get_val("mppt.pv1InputWatts") or
+            get_val("mppt.inWatts", divide_by=1000) or
+            get_val("mppt.pv1InputWatts", divide_by=1000) or
             get_val("pd.chgSunPower") or
-            get_val("pvInWatts") or 
-            params.get("pv", {}).get("inputWatts")
+            get_val("pvInWatts", divide_by=1000) or 
+            (params.get("pv", {}).get("inputWatts", 0) / 1000 if params.get("pv", {}).get("inputWatts") else None)
         ),
         # BMS (Battery Management System) data
         "bms_voltage_mv": get_val("bmsMaster.vol"),
