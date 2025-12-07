@@ -40,7 +40,7 @@ def load_config() -> Dict[str, Any]:
         "ecoflow_access_key": get_env("ECOFLOW_ACCESS_KEY"),
         "ecoflow_secret_key": get_env("ECOFLOW_SECRET_KEY"),
         "ecoflow_device_sn": get_env("ECOFLOW_DEVICE_SN"),
-        "ecoflow_api_url": os.getenv("ECOFLOW_API_URL", "https://api-e.ecoflow.com"),
+        "ecoflow_api_url": os.getenv("ECOFLOW_API_URL") or "https://api-e.ecoflow.com",
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
         "pg_user": get_env("PGUSER"),
