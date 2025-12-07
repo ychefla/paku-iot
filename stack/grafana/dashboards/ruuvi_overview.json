@@ -61,7 +61,7 @@
             "lineWidth": 1,
             "fillOpacity": 10,
             "gradientMode": "none",
-            "spanNulls": false,
+            "spanNulls": 600000,
             "showPoints": "auto",
             "pointSize": 5,
             "stacking": {
@@ -148,7 +148,7 @@
             "lineWidth": 1,
             "fillOpacity": 10,
             "gradientMode": "none",
-            "spanNulls": false,
+            "spanNulls": 600000,
             "showPoints": "auto",
             "pointSize": 5,
             "stacking": {
@@ -235,7 +235,7 @@
             "lineWidth": 1,
             "fillOpacity": 10,
             "gradientMode": "none",
-            "spanNulls": false,
+            "spanNulls": 600000,
             "showPoints": "auto",
             "pointSize": 5,
             "stacking": {
@@ -322,7 +322,7 @@
             "lineWidth": 1,
             "fillOpacity": 10,
             "gradientMode": "none",
-            "spanNulls": false,
+            "spanNulls": 600000,
             "showPoints": "auto",
             "pointSize": 5,
             "stacking": {
