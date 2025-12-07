@@ -3,20 +3,6 @@ EcoFlow Collector Service
 
 Primarily uses EcoFlow REST API to fetch device data.
 MQTT support is minimal and can be enhanced in the future.
-
-Environment variables (set via docker compose):
-
-    ECOFLOW_ACCESS_KEY - EcoFlow Developer API access key
-    ECOFLOW_SECRET_KEY - EcoFlow Developer API secret key
-    ECOFLOW_DEVICE_SN - Device serial number
-
-    PGHOST
-    PGPORT
-    PGUSER
-    PGPASSWORD
-    PGDATABASE
-    
-    REST_API_INTERVAL - Polling interval in seconds (default: 30)
 """
 
 import hashlib
@@ -34,10 +20,6 @@ from typing import Any, Dict, Optional
 import psycopg
 import requests
 
-
-# ---------------------------------------------------------------------
-# Logging setup
-# ---------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
@@ -46,9 +28,6 @@ logging.basicConfig(
 logger = logging.getLogger("paku-ecoflow-collector")
 
 
-# ---------------------------------------------------------------------
-# Configuration helpers
-# ---------------------------------------------------------------------
 def get_env(name: str, default: Optional[str] = None) -> str:
     value = os.getenv(name, default)
     if value is None:
@@ -62,7 +41,6 @@ def load_config() -> Dict[str, Any]:
         "ecoflow_access_key": get_env("ECOFLOW_ACCESS_KEY"),
         "ecoflow_secret_key": get_env("ECOFLOW_SECRET_KEY"),
         "ecoflow_device_sn": get_env("ECOFLOW_DEVICE_SN"),
-        # Use EU API endpoint
         "ecoflow_api_url": os.getenv("ECOFLOW_API_URL", "https://api-e.ecoflow.com"),
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
@@ -73,19 +51,13 @@ def load_config() -> Dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------
-# EcoFlow API integration
-# ---------------------------------------------------------------------
 class EcoFlowAPI:
-    """Helper class to interact with EcoFlow Developer REST API."""
-    
     def __init__(self, access_key: str, secret_key: str, base_url: str):
         self.access_key = access_key
         self.secret_key = secret_key
         self.base_url = base_url.rstrip('/')
     
     def _generate_sign(self, params: Dict[str, str]) -> str:
-        """Generate HMAC-SHA256 signature for EcoFlow API request."""
         sorted_params = sorted(params.items())
         param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
         signature = hmac.new(
@@ -96,7 +68,6 @@ class EcoFlowAPI:
         return signature
     
     def _make_api_request(self, endpoint: str, method: str = "GET", body: Optional[Dict] = None) -> Dict[str, Any]:
-        """Make an authenticated request to EcoFlow REST API."""
         nonce = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
         timestamp = str(int(time.time() * 1000))
         
@@ -140,96 +111,112 @@ class EcoFlowAPI:
             return {}
     
     def get_device_quota_all(self, device_sn: str) -> Dict[str, Any]:
-        """Fetch all device quota data."""
         endpoint = f"/iot-open/sign/device/quota/all?sn={device_sn}"
         return self._make_api_request(endpoint, method="GET")
 
 
-# ---------------------------------------------------------------------
-# Database operations
-# ---------------------------------------------------------------------
-def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -> None:
-    """Insert EcoFlow measurement into the database."""
+def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: Dict[str, Any]) -> None:
+    """
+    Insert EcoFlow measurement into database.
     
-    # Extract key fields from the data
-    timestamp = data.get('timestamp') or datetime.now()
-    device_sn = data.get('device_sn', '')
+    Schema columns:
+    - ts (timestamp with time zone)
+    - device_sn (text)
+    - soc_percent (integer)
+    - remain_time_min (integer)
+    - watts_in_sum (integer) - sum of all inputs
+    - watts_out_sum (integer) - sum of all outputs
+    - ac_out_watts, pv_in_watts, car_watts, etc.
+    - raw_data (jsonb)
+    """
     
-    # Extract power values - these are the most critical
-    ac_input_watts = data.get('inv', {}).get('inputWatts', 0)
-    ac_output_watts = data.get('inv', {}).get('outputWatts', 0)
-    solar_input_watts = data.get('mppt', {}).get('inWatts', 0)
-    dc_12v_watts = data.get('pd', {}).get('carWatts', 0)
+    # Extract from pd (power distribution) subsystem
+    pd = data.get('pd', {})
+    remain_time = pd.get('remainTime', 0)  # in minutes
     
-    # Battery info
-    soc_percent = data.get('bmsMaster', {}).get('soc', 0)
-    battery_voltage = data.get('bmsMaster', {}).get('vol', 0) / 1000.0 if data.get('bmsMaster', {}).get('vol') else 0
-    battery_current = data.get('bmsMaster', {}).get('amp', 0) / 1000.0 if data.get('bmsMaster', {}).get('amp') else 0
-    battery_temp = data.get('bmsMaster', {}).get('temp', 0) / 10.0 if data.get('bmsMaster', {}).get('temp') else 0
+    # Extract from bmsMaster (battery management)
+    bms = data.get('bmsMaster', {})
+    soc = bms.get('soc', 0)
     
-    # AC info
-    ac_in_voltage = data.get('inv', {}).get('acInVol', 0) / 1000.0 if data.get('inv', {}).get('acInVol') else 0
-    ac_out_voltage = data.get('inv', {}).get('acOutVol', 0) / 1000.0 if data.get('inv', {}).get('acOutVol') else 0
-    inverter_temp = data.get('inv', {}).get('invOutTemp', 0) / 10.0 if data.get('inv', {}).get('invOutTemp') else 0
+    # Extract from inv (inverter)
+    inv = data.get('inv', {})
+    ac_in_watts = inv.get('inputWatts', 0)
+    ac_out_watts = inv.get('outputWatts', 0)
     
-    # Time remaining (in minutes)
-    remain_time_minutes = data.get('pd', {}).get('remainTime', 0)
+    # Extract from mppt (solar controller)
+    mppt = data.get('mppt', {})
+    pv_in_watts = mppt.get('inWatts', 0)
     
-    # Prepare data for JSON - exclude timestamp and device_sn as they're in separate columns
-    raw_data = {k: v for k, v in data.items() if k not in ('timestamp', 'device_sn')}
+    # Car (12V DC output)
+    car_watts = pd.get('carWatts', 0)
+    
+    # USB/TypeC outputs
+    usb1 = pd.get('usb1Watts', 0)
+    usb2 = pd.get('usb2Watts', 0)
+    qcusb1 = pd.get('qcUsb1Watts', 0)
+    qcusb2 = pd.get('qcUsb2Watts', 0)
+    typec1 = pd.get('typec1Watts', 0)
+    typec2 = pd.get('typec2Watts', 0)
+    
+    # Calculate totals
+    watts_in_sum = ac_in_watts + pv_in_watts
+    watts_out_sum = ac_out_watts + car_watts + usb1 + usb2 + qcusb1 + qcusb2 + typec1 + typec2
+    dc_out_watts = car_watts + usb1 + usb2 + qcusb1 + qcusb2
+    typec_out_watts = typec1 + typec2
+    usb_out_watts = usb1 + usb2 + qcusb1 + qcusb2
     
     sql = """
         INSERT INTO ecoflow_measurements (
-            timestamp, device_sn,
-            ac_input_watts, ac_output_watts, solar_input_watts, dc_12v_watts,
-            soc_percent, battery_voltage, battery_current, battery_temp,
-            ac_in_voltage, ac_out_voltage, inverter_temp,
-            remain_time_minutes,
+            device_sn, ts,
+            soc_percent, remain_time_min,
+            watts_in_sum, watts_out_sum,
+            ac_out_watts, dc_out_watts, typec_out_watts, usb_out_watts,
+            pv_in_watts, car_watts,
+            usb1_watts, usb2_watts, qcusb1_watts, qcusb2_watts,
+            typec1_watts, typec2_watts,
             raw_data
         ) VALUES (
             %s, %s,
+            %s, %s,
+            %s, %s,
             %s, %s, %s, %s,
+            %s, %s,
             %s, %s, %s, %s,
-            %s, %s, %s,
-            %s,
+            %s, %s,
             %s
         )
     """
     
     with conn.cursor() as cur:
         cur.execute(sql, (
-            timestamp, device_sn,
-            ac_input_watts, ac_output_watts, solar_input_watts, dc_12v_watts,
-            soc_percent, battery_voltage, battery_current, battery_temp,
-            ac_in_voltage, ac_out_voltage, inverter_temp,
-            remain_time_minutes,
-            json.dumps(raw_data)
+            device_sn, datetime.now(),
+            soc, remain_time,
+            watts_in_sum, watts_out_sum,
+            ac_out_watts, dc_out_watts, typec_out_watts, usb_out_watts,
+            pv_in_watts, car_watts,
+            usb1, usb2, qcusb1, qcusb2,
+            typec1, typec2,
+            json.dumps(data)
         ))
         conn.commit()
 
 
-# ---------------------------------------------------------------------
-# Main Application
-# ---------------------------------------------------------------------
 class EcoFlowCollectorApp:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.device_sn = config["ecoflow_device_sn"]
         self.rest_api_interval = config["rest_api_interval"]
         
-        # Initialize API client
         self.api = EcoFlowAPI(
             access_key=config["ecoflow_access_key"],
             secret_key=config["ecoflow_secret_key"],
             base_url=config["ecoflow_api_url"]
         )
         
-        # Database connection
         self.conn: Optional[psycopg.Connection] = None
         self._init_db_connection()
     
     def _init_db_connection(self):
-        """Initialize database connection."""
         try:
             self.conn = psycopg.connect(
                 host=self.config["pg_host"],
@@ -245,7 +232,6 @@ class EcoFlowCollectorApp:
             raise
     
     def _ensure_db_connection(self):
-        """Ensure database connection is alive, reconnect if needed."""
         try:
             if self.conn and not self.conn.closed:
                 with self.conn.cursor() as cur:
@@ -257,29 +243,18 @@ class EcoFlowCollectorApp:
         self._init_db_connection()
     
     def fetch_and_store_data(self):
-        """Fetch data from REST API and store to database."""
         try:
             logger.info("Fetching device data for SN: %s", self.device_sn)
             
-            # Fetch all quota data
             quota_data = self.api.get_device_quota_all(self.device_sn)
             
             if not quota_data:
                 logger.warning("No data received from API")
                 return
             
-            # Log received data structure
-            logger.debug("Received data keys: %s", list(quota_data.keys()))
-            
-            # Add metadata
-            quota_data['timestamp'] = datetime.now()
-            quota_data['device_sn'] = self.device_sn
-            
-            # Ensure database connection
             self._ensure_db_connection()
             
-            # Store to database
-            insert_ecoflow_measurement(self.conn, quota_data)
+            insert_ecoflow_measurement(self.conn, self.device_sn, quota_data)
             
             # Log key metrics
             soc = quota_data.get('bmsMaster', {}).get('soc', 0)
@@ -289,7 +264,7 @@ class EcoFlowCollectorApp:
             dc_12v = quota_data.get('pd', {}).get('carWatts', 0)
             
             logger.info(
-                "Stored measurement: SOC=%d%%, AC_IN=%dW, AC_OUT=%dW, SOLAR=%dW, 12V=%dW",
+                "Stored: SOC=%d%%, AC_IN=%dW, AC_OUT=%dW, SOLAR=%dW, 12V=%dW",
                 soc, ac_in, ac_out, solar, dc_12v
             )
             
@@ -297,7 +272,6 @@ class EcoFlowCollectorApp:
             logger.error("Failed to fetch/store data: %s", e, exc_info=True)
     
     def run(self):
-        """Main run loop."""
         logger.info("Starting EcoFlow collector (REST API mode)")
         logger.info("Polling interval: %d seconds", self.rest_api_interval)
         
@@ -310,9 +284,6 @@ class EcoFlowCollectorApp:
             time.sleep(self.rest_api_interval)
 
 
-# ---------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------
 def main() -> None:
     logger.info("Starting EcoFlow Collector Service")
     
