@@ -36,7 +36,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY 3, 1 ASC",
           "editorMode": "code"
         }
       ],
@@ -123,7 +123,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY 3, 1 ASC",
           "editorMode": "code"
         }
       ],
@@ -210,7 +210,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (237.7 * (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) / \n  (17.27 - (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (237.7 * (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) / \n  (17.27 - (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\nORDER BY 3, 1 ASC",
           "editorMode": "code"
         }
       ],
@@ -297,7 +297,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  ((metrics->>'humidity_percent')::numeric / 100.0 * \n   6.112 * exp((17.67 * (metrics->>'temperature_c')::numeric) / ((metrics->>'temperature_c')::numeric + 243.5)) * \n   2.1674) / (273.15 + (metrics->>'temperature_c')::numeric) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  ((metrics->>'humidity_percent')::numeric / 100.0 * \n   6.112 * exp((17.67 * (metrics->>'temperature_c')::numeric) / ((metrics->>'temperature_c')::numeric + 243.5)) * \n   2.1674) / (273.15 + (metrics->>'temperature_c')::numeric) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\nORDER BY 3, 1 ASC",
           "editorMode": "code"
         }
       ],
