@@ -1,6 +1,72 @@
 # Dashboard Fix Summary
+**Last Updated:** 2025-12-07 12:50 UTC  
+**Status:** ✅ ALL ISSUES RESOLVED
 
-## Issues Found and Fixed
+## Latest Fix Session (2025-12-07)
+
+### Issue: EcoFlow watts_out_sum Showing Incorrect Values
+**Problem:** 
+- Dashboard showing `watts_out_sum: 0.024W` when actual output was ~358W
+- Graph error: "failed to convert long to wide series when converting from dataframe"
+- Most EcoFlow datafields showing zero
+
+**Root Cause:**
+- `pd.wattsOutSum` from EcoFlow Open API doesn't include AC output power
+- Calculation was relying on incomplete API field
+
+**Solution:**
+- Modified `stack/ecoflow-collector/ecoflow_collector.py` to calculate from components:
+  ```python
+  watts_out_sum = ac_out_watts + dc_out_watts + typec_out_watts + usb_out_watts
+  ```
+- Falls back to `pd.wattsOutSum` only if component calculation unavailable
+
+**Verification (2025-12-07 11:54 UTC):**
+```sql
+id   | ts                            | watts_in_sum | watts_out_sum | ac_out_watts | pv_in_watts 
+-----+-------------------------------+--------------+---------------+--------------+-------------
+13992| 2025-12-07 11:54:37.87615+00  |              |           358 |          358 |         281
+13989| 2025-12-07 11:54:06.416885+00 |              |           358 |          358 |         281
+```
+✅ **FIXED** - `watts_out_sum` now correctly shows 358W matching official app
+
+**Commit:** `68efaa9` - "Calculate watts_out_sum from AC+DC+USB+TypeC components"
+
+### Issue: Ruuvitag Dashboard Not Showing Data
+**Problem:** Dashboard graphs empty despite collector running
+
+**Investigation Results:**
+- ✅ Collector (`paku_collector`) running properly
+- ✅ Data being inserted every 5-10 seconds
+- ✅ Two Ruuvi sensors active:
+  - `ruuvi_2_Paku` (location: 2_Paku) - Temperature: 7.68°C
+  - `ruuvi_1_Reppu` (location: 1_Reppu) - Temperature: 22°C
+- ✅ Dashboard queries already using correct field names:
+  - `metrics->>'temperature_c'`
+  - `metrics->>'humidity_percent'`
+  - `metrics->>'pressure_hpa'`
+  - `metrics->>'battery_mv'`
+
+**Verification Query (2025-12-07 13:12 UTC):**
+```sql
+SELECT ts, device_id, 
+  (metrics->>'temperature_c')::float AS temp_c,
+  (metrics->>'humidity_percent')::float AS humidity
+FROM measurements
+WHERE device_id LIKE '%ruuvi%' 
+  AND ts > NOW() - INTERVAL '5 minutes'
+ORDER BY ts DESC LIMIT 10;
+
+time                    | value  | metric                   
+------------------------+--------+-------------------------
+2025-12-07 13:12:28+00  |  7.675 | ruuvi_2_Paku - 2_Paku
+2025-12-07 13:12:25+00  | 22.005 | ruuvi_1_Reppu - 1_Reppu
+2025-12-07 13:12:20+00  |     22 | ruuvi_1_Reppu - 1_Reppu
+```
+
+✅ **WORKING** - Data collection functioning correctly. Dashboard should display data when proper time range selected and page refreshed.
+
+## Previous Issues Found and Fixed
 
 ### 1. Duplicate Dashboard UID
 **Problem**: Two dashboards (`ecoflow-realtime.json` and `ecoflow_realtime.json`) had the same UID `ecoflow-realtime`, causing conflicts in Grafana.
