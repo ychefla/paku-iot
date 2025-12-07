@@ -139,6 +139,8 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
+      ECOFLOW_API_URL: ${ECOFLOW_API_URL:-https://api-e.ecoflow.com}
+      REST_API_INTERVAL: ${REST_API_INTERVAL:-30}
 
 # ------------------------------------------------------------
 # VOLUMES
