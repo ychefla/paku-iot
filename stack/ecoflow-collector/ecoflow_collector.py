@@ -184,41 +184,13 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     aggregating values from multiple MQTT messages into a single row.
     """
     # Define all possible fields
-    # Define all possible fields (comprehensive list)
     all_fields = [
-        # Core metrics
         'soc_percent', 'remain_time_min', 'watts_in_sum', 'watts_out_sum',
-        # Output channels
-        'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts',
-        # Individual USB ports
-        'usb1_watts', 'usb2_watts', 'qcusb1_watts', 'qcusb2_watts',
-        'typec1_watts', 'typec2_watts', 'typec1_temp', 'typec2_temp',
-        # Input sources
-        'pv_in_watts', 'chg_sun_power', 'chg_power_ac', 'chg_power_dc', 'car_watts',
-        # BMS data
+        'ac_out_watts', 'dc_out_watts', 'typec_out_watts', 'usb_out_watts', 'pv_in_watts',
         'bms_voltage_mv', 'bms_amp_ma', 'bms_temp_c', 'bms_cycles', 'bms_soh_percent',
-        'bms_min_cell_temp_c', 'bms_max_cell_temp_c', 'bms_min_mos_temp_c', 'bms_max_mos_temp_c',
-        'bms_real_soh', 'bms_remain_cap', 'bms_full_cap', 'bms_design_cap',
-        'bms_min_cell_vol_mv', 'bms_max_cell_vol_mv', 'bms_max_vol_diff_mv',
-        # EMS settings
-        'ems_min_dsg_soc', 'ems_max_charge_soc', 'ems_min_open_oil_eb_soc', 'ems_max_close_oil_eb_soc',
-        # Inverter data
         'inv_ac_in_volts_mv', 'inv_ac_out_volts_mv', 'inv_ac_freq_hz', 'inv_temp_c',
-        'inv_cfg_ac_enabled', 'inv_cfg_standby_min',
-        # MPPT data
         'mppt_in_volts_mv', 'mppt_in_amps_ma', 'mppt_out_volts_mv', 'mppt_out_amps_ma',
-        'mppt_temp_c', 'mppt_car_out_volts_mv', 'mppt_car_out_amps_ma',
-        'mppt_car_state', 'mppt_cfg_dc_chg_current',
-        # Car output
-        'car_out_volts_mv', 'car_out_amps_ma',
-        # PD settings
-        'pd_beep_state', 'pd_lcd_off_sec', 'pd_lcd_brightness', 'pd_standby_mode',
-        'pd_model', 'pd_sys_ver', 'pd_wifi_ver',
-        # Usage time counters
-        'pd_car_used_time', 'pd_inv_used_time', 'pd_mppt_used_time',
-        'pd_usb_used_time', 'pd_typec_used_time', 'pd_dc_in_used_time',
-        # Misc
-        'wifi_rssi'
+        'mppt_temp_c', 'car_out_volts_mv', 'car_out_amps_ma', 'wifi_rssi'
     ]
     
     # Only insert if we have at least one meaningful value
@@ -260,7 +232,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
             if update_fields:
                 query = f"""
                 UPDATE ecoflow_measurements
-                SET {', '.join(update_fields)}, ts = NOW()
+                SET {', '.join(update_fields)}
                 WHERE id = %(id)s
                 """
                 cur.execute(query, update_params)
@@ -294,220 +266,107 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     EcoFlow sends complex nested structures with dotted field names.
     Example: {"params": {"bmsMaster.soc": 89, "bmsMaster.inputWatts": 0, ...}}
     
-    COMPREHENSIVE parser - extracts ALL available real-time data fields.
+    Enhanced to extract more comprehensive data from raw_data.
     """
     # EcoFlow typically nests data in a "params" or "data" field
     params = raw_payload.get("params", {})
     
-    # Helper to safely get numeric values - ACCEPTS ZERO VALUES
+    # Helper to safely get numeric values
     def get_val(key, default=None):
         val = params.get(key, default)
         # Filter out obviously invalid values
         if val is not None and isinstance(val, (int, float)):
-            # Some fields use 65535 or 4294967295 as "not available"
-            if val >= 4294967295 or val == 65535:
+            # Some fields use 65535 or similar large numbers as "not available"
+            if val > 1000000:
                 return None
         return val
     
-    # Helper to sum multiple ports - ACCEPTS ZEROS
+    # Helper to sum multiple USB/TypeC ports
     def sum_ports(keys):
         total = 0
-        found_any = False
         for key in keys:
-            val = get_val(key)
+            val = get_val(key, 0)
             if val is not None:
                 total += val
-                found_any = True
-        return total if found_any else None
+        return total if total > 0 else None
     
-    # Helper to get first non-None value from list
-    def first_of(*keys):
-        for key in keys:
-            val = get_val(key)
-            if val is not None:
-                return val
-        return None
-    
-    # Extract ALL values from dotted field names
-    # Primary power metrics
-    soc_val = first_of("pd.soc", "bmsMaster.soc", "ems.lcdShowSoc", "soc")
-    remain_time_val = first_of("pd.remainTime", "bmsMaster.remainTime", 
-                              "ems.chgRemainTime", "ems.dsgRemainTime", "remainTime")
-    watts_in = first_of("pd.wattsInSum", "inv.inputWatts", "mppt.inWatts", 
-                       "bmsMaster.inputWatts", "wattsInSum")
-    watts_out = first_of("pd.wattsOutSum", "inv.outputWatts", 
-                        "bmsMaster.outputWatts", "wattsOutSum")
-    
-    # Individual output channels
-    ac_out = first_of("inv.outputWatts", "inv.invOutWatts", "pd.dsgPowerAc")
-    dc_out = first_of("mppt.carOutWatts", "mppt.outWatts", "pd.dsgPowerDc")
-    typec_watts = sum_ports(["pd.typec1Watts", "pd.typec2Watts"])
-    usb_watts = sum_ports(["pd.usb1Watts", "pd.usb2Watts", "pd.qcUsb1Watts", "pd.qcUsb2Watts"])
-    
-    # Individual USB port details
-    usb1_watts = get_val("pd.usb1Watts")
-    usb2_watts = get_val("pd.usb2Watts")
-    qcusb1_watts = get_val("pd.qcUsb1Watts")
-    qcusb2_watts = get_val("pd.qcUsb2Watts")
-    typec1_watts = get_val("pd.typec1Watts")
-    typec2_watts = get_val("pd.typec2Watts")
-    typec1_temp = get_val("pd.typec1Temp")
-    typec2_temp = get_val("pd.typec2Temp")
-    
-    # Solar/PV input
-    pv_in = first_of("mppt.inWatts", "mppt.pv1InputWatts", "pd.chgSunPower", "pvInWatts")
-    chg_sun_power = get_val("pd.chgSunPower")
-    chg_power_ac = get_val("pd.chgPowerAc")
-    chg_power_dc = get_val("pd.chgPowerDc")
-    
-    # Car output watts
-    car_watts = get_val("pd.carWatts")
-    
-    # BMS (Battery Management System) - COMPREHENSIVE extraction
-    bms_vol = get_val("bmsMaster.vol")
-    bms_amp = get_val("bmsMaster.amp")
-    bms_temp = get_val("bmsMaster.temp")
-    bms_min_cell_temp = get_val("bmsMaster.minCellTemp")
-    bms_max_cell_temp = get_val("bmsMaster.maxCellTemp")
-    bms_min_mos_temp = get_val("bmsMaster.minMosTemp")
-    bms_max_mos_temp = get_val("bmsMaster.maxMosTemp")
-    bms_cycles = get_val("bmsMaster.cycles")
-    bms_soh = get_val("bmsMaster.soh")
-    bms_real_soh = get_val("bmsMaster.realSoh")
-    bms_remain_cap = get_val("bmsMaster.remainCap")
-    bms_full_cap = get_val("bmsMaster.fullCap")
-    bms_design_cap = get_val("bmsMaster.designCap")
-    bms_min_cell_vol = get_val("bmsMaster.minCellVol")
-    bms_max_cell_vol = get_val("bmsMaster.maxCellVol")
-    bms_max_vol_diff = get_val("bmsMaster.maxVolDiff")
-    
-    # EMS (Energy Management System) settings
-    ems_min_dsg_soc = get_val("ems.minDsgSoc")
-    ems_max_charge_soc = get_val("ems.maxChargeSoc")
-    ems_min_open_oil_eb_soc = get_val("ems.minOpenOilEbSoc")
-    ems_max_close_oil_eb_soc = get_val("ems.maxCloseOilEbSoc")
-    
-    # Inverter data - COMPREHENSIVE
-    inv_ac_in_vol = get_val("inv.acInVol")
-    inv_ac_out_vol = first_of("inv.invOutVol", "inv.acOutVol")
-    inv_ac_freq = first_of("inv.acInFreq", "inv.invOutFreq")
-    inv_temp = first_of("inv.outTemp", "inv.dcInTemp")
-    inv_cfg_ac_enabled = get_val("inv.cfgAcEnabled")
-    inv_cfg_standby_min = get_val("inv.cfgStandbyMin")
-    
-    # MPPT (Solar controller) - COMPREHENSIVE
-    mppt_in_vol = get_val("mppt.inVol")
-    mppt_in_amp = get_val("mppt.inAmp")
-    mppt_out_vol = get_val("mppt.outVol")
-    mppt_out_amp = get_val("mppt.outAmp")
-    mppt_temp = get_val("mppt.mpptTemp")
-    mppt_car_out_vol = get_val("mppt.carOutVol")
-    mppt_car_out_amp = get_val("mppt.carOutAmp")
-    mppt_car_state = get_val("mppt.carState")
-    mppt_cfg_dc_chg_current = get_val("mppt.cfgDcChgCurrent")
-    
-    # PD (Power Distribution) settings and status
-    pd_beep_state = get_val("pd.beepState")
-    pd_lcd_off_sec = get_val("pd.lcdOffSec")
-    pd_lcd_brightness = get_val("pd.lcdBrightness")
-    pd_standby_mode = get_val("pd.standByMode")
-    pd_wifi_rssi = get_val("pd.wifiRssi")
-    pd_model = get_val("pd.model")
-    pd_sys_ver = get_val("pd.sysVer")
-    pd_wifi_ver = get_val("pd.wifiVer")
-    
-    # Usage time counters (in seconds typically)
-    pd_car_used_time = get_val("pd.carUsedTime")
-    pd_inv_used_time = get_val("pd.invUsedTime")
-    pd_mppt_used_time = get_val("pd.mpptUsedTime")
-    pd_usb_used_time = get_val("pd.usbUsedTime")
-    pd_typec_used_time = get_val("pd.typccUsedTime")
-    pd_dc_in_used_time = get_val("pd.dcInUsedTime")
-    
+    # Extract values from dotted field names (e.g., "bmsMaster.soc")
+    # Primary data sources - prefer pd (power distribution) and bmsMaster values
     parsed = {
         "device_sn": device_sn or raw_payload.get("sn", "unknown"),
-        # Core metrics
-        "soc_percent": soc_val,
-        "remain_time_min": remain_time_val,
-        "watts_in_sum": watts_in,
-        "watts_out_sum": watts_out,
-        # Output channels
-        "ac_out_watts": ac_out,
-        "dc_out_watts": dc_out,
-        "typec_out_watts": typec_watts,
-        "usb_out_watts": usb_watts,
-        # Individual ports
-        "usb1_watts": usb1_watts,
-        "usb2_watts": usb2_watts,
-        "qcusb1_watts": qcusb1_watts,
-        "qcusb2_watts": qcusb2_watts,
-        "typec1_watts": typec1_watts,
-        "typec2_watts": typec2_watts,
-        "typec1_temp": typec1_temp,
-        "typec2_temp": typec2_temp,
-        # Input sources
-        "pv_in_watts": pv_in,
-        "chg_sun_power": chg_sun_power,
-        "chg_power_ac": chg_power_ac,
-        "chg_power_dc": chg_power_dc,
-        "car_watts": car_watts,
-        # BMS data
-        "bms_voltage_mv": bms_vol,
-        "bms_amp_ma": bms_amp,
-        "bms_temp_c": bms_temp,
-        "bms_min_cell_temp_c": bms_min_cell_temp,
-        "bms_max_cell_temp_c": bms_max_cell_temp,
-        "bms_min_mos_temp_c": bms_min_mos_temp,
-        "bms_max_mos_temp_c": bms_max_mos_temp,
-        "bms_cycles": bms_cycles,
-        "bms_soh_percent": bms_soh,
-        "bms_real_soh": bms_real_soh,
-        "bms_remain_cap": bms_remain_cap,
-        "bms_full_cap": bms_full_cap,
-        "bms_design_cap": bms_design_cap,
-        "bms_min_cell_vol_mv": bms_min_cell_vol,
-        "bms_max_cell_vol_mv": bms_max_cell_vol,
-        "bms_max_vol_diff_mv": bms_max_vol_diff,
-        # EMS settings
-        "ems_min_dsg_soc": ems_min_dsg_soc,
-        "ems_max_charge_soc": ems_max_charge_soc,
-        "ems_min_open_oil_eb_soc": ems_min_open_oil_eb_soc,
-        "ems_max_close_oil_eb_soc": ems_max_close_oil_eb_soc,
+        "soc_percent": (
+            get_val("pd.soc") or 
+            get_val("bmsMaster.soc") or 
+            get_val("ems.lcdShowSoc") or
+            get_val("soc")
+        ),
+        "remain_time_min": (
+            get_val("pd.remainTime") or
+            get_val("bmsMaster.remainTime") or
+            get_val("ems.chgRemainTime") or
+            get_val("ems.dsgRemainTime") or
+            get_val("remainTime")
+        ),
+        # Input power - prefer pd.wattsInSum for total, but wattsInSum can be zero during discharge
+        "watts_in_sum": (
+            get_val("pd.wattsInSum") or
+            get_val("inv.inputWatts") or
+            get_val("mppt.inWatts") or
+            get_val("bmsMaster.inputWatts") or
+            get_val("wattsInSum")
+        ),
+        # Output power - prefer pd.wattsOutSum
+        "watts_out_sum": (
+            get_val("pd.wattsOutSum") or
+            get_val("inv.outputWatts") or
+            get_val("bmsMaster.outputWatts") or
+            get_val("wattsOutSum")
+        ),
+        "ac_out_watts": (
+            get_val("inv.outputWatts") or
+            get_val("inv.invOutWatts") or
+            get_val("pd.dsgPowerAc")
+        ),
+        "dc_out_watts": (
+            get_val("mppt.carOutWatts") or
+            get_val("mppt.outWatts") or
+            get_val("pd.dsgPowerDc")
+        ),
+        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]),
+        "usb_out_watts": sum_ports([
+            "pd.usb1Watts", "pd.usb2Watts", 
+            "pd.qcUsb1Watts", "pd.qcUsb2Watts"
+        ]),
+        "pv_in_watts": (
+            get_val("mppt.inWatts") or
+            get_val("mppt.pv1InputWatts") or
+            get_val("pd.chgSunPower") or
+            get_val("pvInWatts") or 
+            params.get("pv", {}).get("inputWatts")
+        ),
+        # BMS (Battery Management System) data
+        "bms_voltage_mv": get_val("bmsMaster.vol"),
+        "bms_amp_ma": get_val("bmsMaster.amp"),
+        "bms_temp_c": get_val("bmsMaster.temp"),
+        "bms_cycles": get_val("bmsMaster.cycles"),
+        "bms_soh_percent": get_val("bmsMaster.soh"),
         # Inverter data
-        "inv_ac_in_volts_mv": inv_ac_in_vol,
-        "inv_ac_out_volts_mv": inv_ac_out_vol,
-        "inv_ac_freq_hz": inv_ac_freq,
-        "inv_temp_c": inv_temp,
-        "inv_cfg_ac_enabled": inv_cfg_ac_enabled,
-        "inv_cfg_standby_min": inv_cfg_standby_min,
-        # MPPT data
-        "mppt_in_volts_mv": mppt_in_vol,
-        "mppt_in_amps_ma": mppt_in_amp,
-        "mppt_out_volts_mv": mppt_out_vol,
-        "mppt_out_amps_ma": mppt_out_amp,
-        "mppt_temp_c": mppt_temp,
-        "mppt_car_out_volts_mv": mppt_car_out_vol,
-        "mppt_car_out_amps_ma": mppt_car_out_amp,
-        "mppt_car_state": mppt_car_state,
-        "mppt_cfg_dc_chg_current": mppt_cfg_dc_chg_current,
-        # PD settings and WiFi
-        "pd_beep_state": pd_beep_state,
-        "pd_lcd_off_sec": pd_lcd_off_sec,
-        "pd_lcd_brightness": pd_lcd_brightness,
-        "pd_standby_mode": pd_standby_mode,
-        "wifi_rssi": pd_wifi_rssi,
-        "pd_model": pd_model,
-        "pd_sys_ver": pd_sys_ver,
-        "pd_wifi_ver": pd_wifi_ver,
-        # Usage time counters
-        "pd_car_used_time": pd_car_used_time,
-        "pd_inv_used_time": pd_inv_used_time,
-        "pd_mppt_used_time": pd_mppt_used_time,
-        "pd_usb_used_time": pd_usb_used_time,
-        "pd_typec_used_time": pd_typec_used_time,
-        "pd_dc_in_used_time": pd_dc_in_used_time,
-        # Store full raw payload
-        "raw_data": json.dumps(raw_payload),
+        "inv_ac_in_volts_mv": get_val("inv.acInVol"),
+        "inv_ac_out_volts_mv": get_val("inv.invOutVol") or get_val("inv.acOutVol"),
+        "inv_ac_freq_hz": get_val("inv.acInFreq") or get_val("inv.invOutFreq"),
+        "inv_temp_c": get_val("inv.outTemp") or get_val("inv.dcInTemp"),
+        # MPPT (Solar controller) data
+        "mppt_in_volts_mv": get_val("mppt.inVol"),
+        "mppt_in_amps_ma": get_val("mppt.inAmp"),
+        "mppt_out_volts_mv": get_val("mppt.outVol"),
+        "mppt_out_amps_ma": get_val("mppt.outAmp"),
+        "mppt_temp_c": get_val("mppt.mpptTemp"),
+        # Car/DC output
+        "car_out_volts_mv": get_val("mppt.carOutVol"),
+        "car_out_amps_ma": get_val("mppt.carOutAmp"),
+        # WiFi signal strength
+        "wifi_rssi": get_val("pd.wifiRssi"),
+        "raw_data": json.dumps(raw_payload),  # Store full payload for reference
     }
     
     return parsed
@@ -594,6 +453,15 @@ class EcoFlowCollectorApp:
             logger.info("Connected to EcoFlow MQTT broker")
             logger.info("MQTT credentials info: certificateAccount=%s", self.mqtt_credentials.get("certificateAccount", "N/A"))
             
+            # Start periodic data request thread
+            import threading
+            request_thread = threading.Thread(target=self._periodic_data_request, daemon=True)
+            request_thread.start()
+            logger.info("Started periodic data request thread")
+            
+            # Make initial data request
+            self._request_device_data()
+            
             # Subscribe to device topic(s)
             # EcoFlow topic format varies by region and API version
             # Based on the documentation, try multiple patterns to catch messages
@@ -679,6 +547,38 @@ class EcoFlowCollectorApp:
             )
         except Exception as exc:
             logger.exception("Failed to insert EcoFlow measurement: %s", exc)
+
+    def _request_device_data(self):
+        """Publish command to request device data from EcoFlow device."""
+        if not self.client or not self.device_sn:
+            return
+        
+        # Request all device data - according to OpenAPI docs  
+        # Publish to /app/{user_id}/{device_sn}/thing/property/get
+        user_id = self.mqtt_credentials.get('certificateAccount')
+        topic = f'/app/{user_id}/{self.device_sn}/thing/property/get'
+        
+        # Empty payload requests all properties
+        payload = {}
+        
+        try:
+            result = self.client.publish(topic, json.dumps(payload), qos=1)
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.debug("Requested device data on topic: %s", topic)
+            else:
+                logger.warning("Failed to publish data request: %s", result.rc)
+        except Exception as e:
+            logger.warning("Error requesting device data: %s", e)
+    
+    def _periodic_data_request(self):
+        """Background thread to periodically request device data."""
+        import time
+        while True:
+            try:
+                self._request_device_data()
+            except Exception as e:
+                logger.error("Data request error: %s", e)
+            time.sleep(30)  # Request every 30 seconds
 
 
 # ---------------------------------------------------------------------

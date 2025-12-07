@@ -349,7 +349,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
@@ -391,7 +391,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, 0) AS \"Input (W)\",\n  COALESCE(watts_out_sum, 0) AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, 0) AS \"Input (W)\",\n  COALESCE(watts_out_sum, 0) AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
@@ -463,7 +463,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(pv_in_watts, 0) AS \"Solar Input (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(pv_in_watts, 0) AS \"Solar Input (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
@@ -504,7 +504,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(ac_out_watts, 0) AS \"AC Output (W)\",\n  COALESCE(dc_out_watts, 0) AS \"DC Output (W)\",\n  COALESCE(typec_out_watts, 0) AS \"USB-C (W)\",\n  COALESCE(usb_out_watts, 0) AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(ac_out_watts, 0) AS \"AC Output (W)\",\n  COALESCE(dc_out_watts, 0) AS \"DC Output (W)\",\n  COALESCE(typec_out_watts, 0) AS \"USB-C (W)\",\n  COALESCE(usb_out_watts, 0) AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
@@ -544,7 +544,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (COALESCE(watts_in_sum, 0) - COALESCE(watts_out_sum, 0)) AS \"Net Power (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (COALESCE(watts_in_sum, 0) - COALESCE(watts_out_sum, 0)) AS \"Net Power (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
             "uid": "paku-pg"
