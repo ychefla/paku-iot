@@ -1,8 +1,7 @@
 """
-EcoFlow Collector Service
+EcoFlow Collector Service - REST API Only
 
-Primarily uses EcoFlow REST API to fetch device data.
-MQTT support is minimal and can be enhanced in the future.
+Fetches data from EcoFlow REST API and stores to PostgreSQL.
 """
 
 import hashlib
@@ -119,44 +118,34 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     """
     Insert EcoFlow measurement into database.
     
-    Schema columns:
-    - ts (timestamp with time zone)
-    - device_sn (text)
-    - soc_percent (integer)
-    - remain_time_min (integer)
-    - watts_in_sum (integer) - sum of all inputs
-    - watts_out_sum (integer) - sum of all outputs
-    - ac_out_watts, pv_in_watts, car_watts, etc.
-    - raw_data (jsonb)
+    EcoFlow API returns flat field names with dots, e.g.:
+    - inv.inputWatts (AC input watts)
+    - inv.outputWatts (AC output watts)
+    - mppt.inWatts (solar input watts)
+    - pd.carWatts (12V car output watts)
+    - bmsMaster.soc (battery SOC %)
+    - pd.remainTime (remaining time in minutes)
     """
     
-    # Extract from pd (power distribution) subsystem
-    pd = data.get('pd', {})
-    remain_time = pd.get('remainTime', 0)  # in minutes
+    # Battery info
+    soc = data.get('bmsMaster.soc', 0)
+    remain_time = data.get('pd.remainTime', 0)  # in minutes
     
-    # Extract from bmsMaster (battery management)
-    bms = data.get('bmsMaster', {})
-    soc = bms.get('soc', 0)
+    # Input power
+    ac_in_watts = data.get('inv.inputWatts', 0)
+    pv_in_watts = data.get('mppt.inWatts', 0)
     
-    # Extract from inv (inverter)
-    inv = data.get('inv', {})
-    ac_in_watts = inv.get('inputWatts', 0)
-    ac_out_watts = inv.get('outputWatts', 0)
-    
-    # Extract from mppt (solar controller)
-    mppt = data.get('mppt', {})
-    pv_in_watts = mppt.get('inWatts', 0)
-    
-    # Car (12V DC output)
-    car_watts = pd.get('carWatts', 0)
+    # Output power
+    ac_out_watts = data.get('inv.outputWatts', 0)
+    car_watts = data.get('pd.carWatts', 0)
     
     # USB/TypeC outputs
-    usb1 = pd.get('usb1Watts', 0)
-    usb2 = pd.get('usb2Watts', 0)
-    qcusb1 = pd.get('qcUsb1Watts', 0)
-    qcusb2 = pd.get('qcUsb2Watts', 0)
-    typec1 = pd.get('typec1Watts', 0)
-    typec2 = pd.get('typec2Watts', 0)
+    usb1 = data.get('pd.usb1Watts', 0)
+    usb2 = data.get('pd.usb2Watts', 0)
+    qcusb1 = data.get('pd.qcUsb1Watts', 0)
+    qcusb2 = data.get('pd.qcUsb2Watts', 0)
+    typec1 = data.get('pd.typec1Watts', 0)
+    typec2 = data.get('pd.typec2Watts', 0)
     
     # Calculate totals
     watts_in_sum = ac_in_watts + pv_in_watts
@@ -257,11 +246,11 @@ class EcoFlowCollectorApp:
             insert_ecoflow_measurement(self.conn, self.device_sn, quota_data)
             
             # Log key metrics
-            soc = quota_data.get('bmsMaster', {}).get('soc', 0)
-            ac_in = quota_data.get('inv', {}).get('inputWatts', 0)
-            ac_out = quota_data.get('inv', {}).get('outputWatts', 0)
-            solar = quota_data.get('mppt', {}).get('inWatts', 0)
-            dc_12v = quota_data.get('pd', {}).get('carWatts', 0)
+            soc = quota_data.get('bmsMaster.soc', 0)
+            ac_in = quota_data.get('inv.inputWatts', 0)
+            ac_out = quota_data.get('inv.outputWatts', 0)
+            solar = quota_data.get('mppt.inWatts', 0)
+            dc_12v = quota_data.get('pd.carWatts', 0)
             
             logger.info(
                 "Stored: SOC=%d%%, AC_IN=%dW, AC_OUT=%dW, SOLAR=%dW, 12V=%dW",
