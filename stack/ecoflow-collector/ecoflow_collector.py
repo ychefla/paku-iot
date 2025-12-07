@@ -509,12 +509,12 @@ class EcoFlowCollectorApp:
         # Get MQTT credentials from EcoFlow API
         # Use configured API URL (defaults to EU endpoint)
         api_url = self.cfg.get("ecoflow_api_url", "https://api-e.ecoflow.com")
-        api = EcoFlowAPI(
+        self.api = EcoFlowAPI(
             self.cfg["ecoflow_access_key"],
             self.cfg["ecoflow_secret_key"],
             api_url
         )
-        self.mqtt_credentials = api.get_mqtt_credentials()
+        self.mqtt_credentials = self.api.get_mqtt_credentials()
         
         # Setup MQTT client
         client_id = self.mqtt_credentials.get("clientId", "paku-ecoflow-collector")
@@ -678,12 +678,13 @@ class EcoFlowCollectorApp:
                 # Request via MQTT
                 self._request_device_data()
                 
-                # Also fetch via REST API as fallback/supplement
-                threading.Thread(target=self._fetch_rest_data, daemon=True).start()
+                # Also fetch via REST API as fallback/supplement (if enabled)
+                if self.rest_api_enabled:
+                    threading.Thread(target=self._fetch_rest_data, daemon=True).start()
                 
             except Exception as e:
                 logger.error("Data request error: %s", e)
-            time.sleep(30)  # Request every 30 seconds
+            time.sleep(self.rest_api_interval)  # Use configured interval
     
     def _fetch_rest_data(self):
         """Fetch device data via REST API and store to database."""
