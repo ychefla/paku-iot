@@ -294,6 +294,44 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
     
     # Extract values from dotted field names (e.g., "bmsMaster.soc")
     # Primary data sources - prefer pd (power distribution) and bmsMaster values
+    
+    # Calculate power values first with unit conversions
+    watts_in_sum_val = (
+        get_val("pd.wattsInSum", divide_by=1000) or
+        get_val("inv.inputWatts", divide_by=1000) or
+        get_val("mppt.inWatts", divide_by=1000) or
+        get_val("bmsMaster.inputWatts", divide_by=1000) or
+        get_val("wattsInSum", divide_by=1000)
+    )
+    
+    # Individual output components
+    ac_out = (
+        get_val("inv.outputWatts", divide_by=1000) or
+        get_val("inv.invOutWatts", divide_by=1000) or
+        get_val("pd.dsgPowerAc", divide_by=1000)
+    )
+    dc_out = (
+        get_val("mppt.carOutWatts", divide_by=1000) or
+        get_val("mppt.outWatts", divide_by=1000) or
+        get_val("pd.dsgPowerDc", divide_by=1000)
+    )
+    typec_out = sum_ports(["pd.typec1Watts", "pd.typec2Watts"], divide_by=1000)
+    usb_out = sum_ports([
+        "pd.usb1Watts", "pd.usb2Watts", 
+        "pd.qcUsb1Watts", "pd.qcUsb2Watts"
+    ], divide_by=1000)
+    
+    # Calculate total output from components, or use provided total
+    # Note: pd.wattsOutSum often doesn't include AC output, so calculate from components
+    watts_out_from_components = sum(filter(None, [ac_out, dc_out, typec_out, usb_out])) or None
+    watts_out_sum_val = (
+        watts_out_from_components or
+        get_val("pd.wattsOutSum", divide_by=1000) or
+        get_val("inv.outputWatts", divide_by=1000) or
+        get_val("bmsMaster.outputWatts", divide_by=1000) or
+        get_val("wattsOutSum", divide_by=1000)
+    )
+    
     parsed = {
         "device_sn": device_sn or raw_payload.get("sn", "unknown"),
         "soc_percent": (
@@ -309,37 +347,12 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
             get_val("ems.dsgRemainTime") or
             get_val("remainTime")
         ),
-        # Input power - Many fields are in 0.1W or mW units, need conversion
-        # Try pd.wattsInSum first, then calculate from inv.inputWatts (often in 0.001W units)
-        "watts_in_sum": (
-            get_val("pd.wattsInSum", divide_by=1000) or
-            get_val("inv.inputWatts", divide_by=1000) or
-            get_val("mppt.inWatts", divide_by=1000) or
-            get_val("bmsMaster.inputWatts", divide_by=1000) or
-            get_val("wattsInSum", divide_by=1000)
-        ),
-        # Output power - prefer pd.wattsOutSum, convert inv.outputWatts from 0.001W units
-        "watts_out_sum": (
-            get_val("pd.wattsOutSum", divide_by=1000) or
-            get_val("inv.outputWatts", divide_by=1000) or
-            get_val("bmsMaster.outputWatts", divide_by=1000) or
-            get_val("wattsOutSum", divide_by=1000)
-        ),
-        "ac_out_watts": (
-            get_val("inv.outputWatts", divide_by=1000) or
-            get_val("inv.invOutWatts", divide_by=1000) or
-            get_val("pd.dsgPowerAc", divide_by=1000)
-        ),
-        "dc_out_watts": (
-            get_val("mppt.carOutWatts", divide_by=1000) or
-            get_val("mppt.outWatts", divide_by=1000) or
-            get_val("pd.dsgPowerDc", divide_by=1000)
-        ),
-        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"], divide_by=1000),
-        "usb_out_watts": sum_ports([
-            "pd.usb1Watts", "pd.usb2Watts", 
-            "pd.qcUsb1Watts", "pd.qcUsb2Watts"
-        ], divide_by=1000),
+        "watts_in_sum": watts_in_sum_val,
+        "watts_out_sum": watts_out_sum_val,
+        "ac_out_watts": ac_out,
+        "dc_out_watts": dc_out,
+        "typec_out_watts": typec_out,
+        "usb_out_watts": usb_out,
         "pv_in_watts": (
             get_val("mppt.inWatts", divide_by=1000) or
             get_val("mppt.pv1InputWatts", divide_by=1000) or
