@@ -175,6 +175,9 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
     # Time remaining (in minutes)
     remain_time_minutes = data.get('pd', {}).get('remainTime', 0)
     
+    # Prepare data for JSON - exclude timestamp and device_sn as they're in separate columns
+    raw_data = {k: v for k, v in data.items() if k not in ('timestamp', 'device_sn')}
+    
     sql = """
         INSERT INTO ecoflow_measurements (
             timestamp, device_sn,
@@ -200,7 +203,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, data: Dict[str, Any]) -
             soc_percent, battery_voltage, battery_current, battery_temp,
             ac_in_voltage, ac_out_voltage, inverter_temp,
             remain_time_minutes,
-            json.dumps(data)
+            json.dumps(raw_data)
         ))
         conn.commit()
 
