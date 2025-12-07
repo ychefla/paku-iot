@@ -312,38 +312,38 @@ def parse_ecoflow_payload(raw_payload: Dict[str, Any], device_sn: str = "") -> D
         # Input power - Many fields are in 0.1W or mW units, need conversion
         # Try pd.wattsInSum first, then calculate from inv.inputWatts (often in 0.001W units)
         "watts_in_sum": (
-            get_val("pd.wattsInSum") or
+            get_val("pd.wattsInSum", divide_by=1000) or
             get_val("inv.inputWatts", divide_by=1000) or
             get_val("mppt.inWatts", divide_by=1000) or
-            get_val("bmsMaster.inputWatts") or
-            get_val("wattsInSum")
+            get_val("bmsMaster.inputWatts", divide_by=1000) or
+            get_val("wattsInSum", divide_by=1000)
         ),
         # Output power - prefer pd.wattsOutSum, convert inv.outputWatts from 0.001W units
         "watts_out_sum": (
-            get_val("pd.wattsOutSum") or
+            get_val("pd.wattsOutSum", divide_by=1000) or
             get_val("inv.outputWatts", divide_by=1000) or
-            get_val("bmsMaster.outputWatts") or
-            get_val("wattsOutSum")
+            get_val("bmsMaster.outputWatts", divide_by=1000) or
+            get_val("wattsOutSum", divide_by=1000)
         ),
         "ac_out_watts": (
             get_val("inv.outputWatts", divide_by=1000) or
             get_val("inv.invOutWatts", divide_by=1000) or
-            get_val("pd.dsgPowerAc")
+            get_val("pd.dsgPowerAc", divide_by=1000)
         ),
         "dc_out_watts": (
             get_val("mppt.carOutWatts", divide_by=1000) or
             get_val("mppt.outWatts", divide_by=1000) or
-            get_val("pd.dsgPowerDc")
+            get_val("pd.dsgPowerDc", divide_by=1000)
         ),
-        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"]),
+        "typec_out_watts": sum_ports(["pd.typec1Watts", "pd.typec2Watts"], divide_by=1000),
         "usb_out_watts": sum_ports([
             "pd.usb1Watts", "pd.usb2Watts", 
             "pd.qcUsb1Watts", "pd.qcUsb2Watts"
-        ]),
+        ], divide_by=1000),
         "pv_in_watts": (
             get_val("mppt.inWatts", divide_by=1000) or
             get_val("mppt.pv1InputWatts", divide_by=1000) or
-            get_val("pd.chgSunPower") or
+            get_val("pd.chgSunPower", divide_by=1000) or
             get_val("pvInWatts", divide_by=1000) or 
             (params.get("pv", {}).get("inputWatts", 0) / 1000 if params.get("pv", {}).get("inputWatts") else None)
         ),
