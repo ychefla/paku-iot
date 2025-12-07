@@ -77,7 +77,7 @@ def load_config() -> Dict[str, Any]:
 # EcoFlow API integration
 # ---------------------------------------------------------------------
 class EcoFlowAPI:
-    """Helper class to interact with EcoFlow Developer API."""
+    """Helper class to interact with EcoFlow Developer API (both MQTT auth and REST API)."""
     
     def __init__(self, access_key: str, secret_key: str, base_url: Optional[str] = None):
         self.access_key = access_key
@@ -103,11 +103,17 @@ class EcoFlowAPI:
         ).hexdigest()
         return signature
     
-    def get_mqtt_credentials(self) -> Dict[str, Any]:
+    def _make_api_request(self, endpoint: str, method: str = "GET", body: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Request MQTT credentials from EcoFlow API.
+        Make an authenticated request to EcoFlow REST API.
         
-        Returns dict with: url, port, username, password, protocol, clientId
+        Args:
+            endpoint: API endpoint path (e.g., "/iot-open/sign/device/quota")
+            method: HTTP method (GET or POST)
+            body: Optional request body for POST requests
+            
+        Returns:
+            Response data dictionary
         """
         # Generate request parameters
         nonce = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
@@ -123,28 +129,52 @@ class EcoFlowAPI:
         # Generate signature
         sign = self._generate_sign(params)
         
-        # Make GET request with parameters as headers (required by EU API)
-        url = f"{self.base_url}/iot-open/sign/certification"
+        # Build headers
         headers = {
             "accessKey": self.access_key,
             "nonce": nonce,
             "timestamp": timestamp,
-            "sign": sign
+            "sign": sign,
+            "Content-Type": "application/json"
         }
         
-        logger.info("Requesting MQTT credentials from EcoFlow API...")
-        logger.debug("API endpoint: %s", url)
-        response = requests.get(url, headers=headers, timeout=30)
+        url = f"{self.base_url}{endpoint}"
+        logger.debug("REST API request: %s %s", method, url)
         
-        if response.status_code != 200:
-            logger.error("Failed to get MQTT credentials: HTTP %s - %s", 
-                        response.status_code, response.text)
-            raise RuntimeError(f"EcoFlow API error: {response.status_code}")
+        try:
+            if method == "GET":
+                response = requests.get(url, headers=headers, timeout=30)
+            elif method == "POST":
+                response = requests.post(url, headers=headers, json=body or {}, timeout=30)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            
+            if response.status_code != 200:
+                logger.error("API request failed: HTTP %s - %s", response.status_code, response.text)
+                return {"code": str(response.status_code), "message": response.text}
+            
+            data = response.json()
+            
+            if data.get("code") != "0":
+                logger.warning("API returned error code: %s, message: %s", 
+                             data.get("code"), data.get("message"))
+            
+            return data
+            
+        except requests.RequestException as e:
+            logger.error("API request exception: %s", e)
+            return {"code": "-1", "message": str(e)}
+    
+    def get_mqtt_credentials(self) -> Dict[str, Any]:
+        """
+        Request MQTT credentials from EcoFlow API.
         
-        data = response.json()
+        Returns dict with: url, port, username, password, protocol, clientId
+        """
+        data = self._make_api_request("/iot-open/sign/certification", "GET")
         
         if data.get("code") != "0":
-            logger.error("EcoFlow API returned error: %s", data)
+            logger.error("Failed to get MQTT credentials: %s", data)
             raise RuntimeError(f"EcoFlow API error: {data.get('message', 'Unknown error')}")
         
         mqtt_data = data.get("data", {})
@@ -152,6 +182,55 @@ class EcoFlowAPI:
         logger.debug("MQTT info: host=%s port=%s", mqtt_data.get("url"), mqtt_data.get("port"))
         
         return mqtt_data
+    
+    def get_device_quota(self, device_sn: str) -> Optional[Dict[str, Any]]:
+        """
+        Get device quota (current status) via REST API.
+        
+        According to OpenAPI docs, this returns real-time device data including:
+        - Battery SOC, voltage, current, temperature
+        - Input/output power
+        - Inverter status
+        - MPPT (solar) status
+        - And more...
+        
+        Args:
+            device_sn: Device serial number
+            
+        Returns:
+            Device quota data or None on error
+        """
+        endpoint = f"/iot-open/sign/device/quota?sn={device_sn}"
+        data = self._make_api_request(endpoint, "GET")
+        
+        if data.get("code") == "0":
+            logger.info("Successfully fetched device quota for %s", device_sn)
+            return data.get("data", {})
+        else:
+            logger.warning("Failed to get device quota: %s", data.get("message"))
+            return None
+    
+    def get_device_quota_all(self, device_sn: str) -> Optional[Dict[str, Any]]:
+        """
+        Get all device quota data via REST API.
+        
+        This endpoint retrieves comprehensive device status.
+        
+        Args:
+            device_sn: Device serial number
+            
+        Returns:
+            Complete device data or None on error
+        """
+        endpoint = f"/iot-open/sign/device/quota/all?sn={device_sn}"
+        data = self._make_api_request(endpoint, "GET")
+        
+        if data.get("code") == "0":
+            logger.info("Successfully fetched all device quota for %s", device_sn)
+            return data.get("data", {})
+        else:
+            logger.warning("Failed to get all device quota: %s", data.get("message"))
+            return None
 
 
 # ---------------------------------------------------------------------
@@ -399,6 +478,9 @@ class EcoFlowCollectorApp:
         self.mqtt_credentials: Optional[Dict[str, Any]] = None
         self.client: Optional[mqtt.Client] = None
         self.device_sn = cfg.get("ecoflow_device_sn", "")
+        self.api: Optional[EcoFlowAPI] = None
+        self.rest_api_enabled = os.getenv("ECOFLOW_REST_API_ENABLED", "true").lower() == "true"
+        self.rest_api_interval = int(os.getenv("ECOFLOW_REST_API_INTERVAL", "60"))  # seconds
     
     def _ensure_db_connection(self):
         """Ensure database connection is alive, reconnect if needed."""
@@ -587,14 +669,58 @@ class EcoFlowCollectorApp:
             logger.warning("Error requesting device data: %s", e)
     
     def _periodic_data_request(self):
-        """Background thread to periodically request device data."""
+        """Background thread to periodically request device data via MQTT and REST API."""
         import time
+        import threading
+        
         while True:
             try:
+                # Request via MQTT
                 self._request_device_data()
+                
+                # Also fetch via REST API as fallback/supplement
+                threading.Thread(target=self._fetch_rest_data, daemon=True).start()
+                
             except Exception as e:
                 logger.error("Data request error: %s", e)
             time.sleep(30)  # Request every 30 seconds
+    
+    def _fetch_rest_data(self):
+        """Fetch device data via REST API and store to database."""
+        if not self.device_sn:
+            logger.debug("No device SN configured, skipping REST API fetch")
+            return
+        
+        try:
+            # Fetch device quota (all data)
+            logger.info("Fetching device quota via REST API for device: %s", self.device_sn)
+            quota_data = self.api.get_device_quota_all(self.device_sn)
+            
+            if not quota_data:
+                logger.warning("No quota data received from REST API")
+                return
+            
+            logger.debug("REST API quota data: %s", json.dumps(quota_data, indent=2)[:500])
+            
+            # Ensure database connection
+            self._ensure_db_connection()
+            if self.conn is None:
+                logger.error("No DB connection available for REST data")
+                return
+            
+            # Parse and store the data
+            parsed_data = parse_ecoflow_payload(quota_data, self.device_sn)
+            parsed_data['source'] = 'rest_api'  # Mark source
+            
+            insert_ecoflow_measurement(self.conn, parsed_data)
+            logger.info(
+                "Inserted EcoFlow measurement from REST API: device=%s, soc=%s%%",
+                self.device_sn,
+                parsed_data.get("soc_percent")
+            )
+            
+        except Exception as e:
+            logger.error("Failed to fetch/store REST API data: %s", e, exc_info=True)
 
 
 # ---------------------------------------------------------------------
