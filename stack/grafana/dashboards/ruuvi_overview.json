@@ -1,10 +1,7 @@
 {
   "uid": "paku-ruuvi",
   "title": "Ruuvi Overview",
-  "tags": [
-    "paku",
-    "ruuvi"
-  ],
+  "tags": ["paku", "ruuvi"],
   "timezone": "",
   "schemaVersion": 39,
   "version": 1,
@@ -17,7 +14,7 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Temperature (\u00b0C)",
+      "title": "Temperature (°C)",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -36,7 +33,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY ts ASC",
           "editorMode": "code"
         }
       ],
@@ -123,7 +120,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY metric, ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY ts ASC",
           "editorMode": "code"
         }
       ],
@@ -219,9 +216,7 @@
         "cellHeight": "sm",
         "footer": {
           "show": false,
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "countRows": false,
           "fields": ""
         }
@@ -267,7 +262,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Temperature (\u00b0C)"
+                "value": "Temperature (°C)"
               },
               {
                 "id": "unit",
