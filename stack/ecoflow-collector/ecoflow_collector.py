@@ -232,6 +232,36 @@ class EcoFlowAPI:
             logger.warning("Failed to get all device quota: %s", data.get("message"))
             return None
 
+    def request_device_params(self, device_sn: str, params: list) -> bool:
+        """
+        Request specific parameters from the device.
+        
+        This triggers the device to report specific data points via MQTT.
+        According to EcoFlow API docs, we need to request parameters to get real-time data.
+        
+        Args:
+            device_sn: Device serial number
+            params: List of parameter names to request (e.g., ["inv.inputWatts", "inv.outputWatts"])
+            
+        Returns:
+            True if request was successful, False otherwise
+        """
+        endpoint = "/iot-open/sign/device/quota"
+        body = {
+            "sn": device_sn,
+            "params": {param: {} for param in params}
+        }
+        
+        logger.debug("Requesting device params: %s for device %s", params, device_sn)
+        data = self._make_api_request(endpoint, "POST", body)
+        
+        if data.get("code") == "0":
+            logger.debug("Successfully requested params for %s", device_sn)
+            return True
+        else:
+            logger.warning("Failed to request params: %s", data.get("message"))
+            return False
+
 
 # ---------------------------------------------------------------------
 # Database handling
@@ -677,6 +707,28 @@ class EcoFlowCollectorApp:
             try:
                 # Request via MQTT
                 self._request_device_data()
+                
+                # Request critical parameters via REST API to trigger device reporting
+                if self.rest_api_enabled and self.device_sn:
+                    critical_params = [
+                        "inv.inputWatts",      # AC input power
+                        "inv.outputWatts",     # AC output power  
+                        "inv.acInVol",         # AC input voltage
+                        "inv.acOutVol",        # AC output voltage
+                        "inv.invOutTemp",      # Inverter temperature
+                        "pd.carWatts",         # 12V DC output
+                        "pd.remainTime",       # Remaining time
+                        "mppt.inWatts",        # Solar input
+                        "bmsMaster.soc",       # Battery SOC
+                        "bmsMaster.vol",       # Battery voltage
+                        "bmsMaster.amp",       # Battery current
+                        "bmsMaster.temp"       # Battery temperature
+                    ]
+                    try:
+                        self.api.request_device_params(self.device_sn, critical_params)
+                        logger.debug("Requested %d critical parameters via REST API", len(critical_params))
+                    except Exception as e:
+                        logger.warning("Failed to request device params: %s", e)
                 
                 # Also fetch via REST API as fallback/supplement (if enabled)
                 if self.rest_api_enabled:
