@@ -36,7 +36,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY 3, 1 ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY metric, ts ASC",
           "editorMode": "code"
         }
       ],
@@ -123,7 +123,7 @@
             "uid": "paku-pg"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY 3, 1 ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY metric, ts ASC",
           "editorMode": "code"
         }
       ],
@@ -189,180 +189,6 @@
       }
     },
     {
-      "id": 4,
-      "type": "timeseries",
-      "title": "Dew Point (°C)",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (237.7 * (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) / \n  (17.27 - (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\nORDER BY 3, 1 ASC",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "barAlignment": 0,
-            "lineWidth": 1,
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "spanNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            },
-            "axisPlacement": "auto",
-            "axisLabel": "",
-            "axisColorMode": "text",
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "axisCenteredZero": false,
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": null,
-                "color": "green"
-              }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 5,
-      "type": "timeseries",
-      "title": "Absolute Humidity (g/m³)",
-      "datasource": {
-        "type": "postgres",
-        "uid": "paku-pg"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "paku-pg"
-          },
-          "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  ((metrics->>'humidity_percent')::numeric / 100.0 * \n   6.112 * exp((17.67 * (metrics->>'temperature_c')::numeric) / ((metrics->>'temperature_c')::numeric + 243.5)) * \n   2.1674) / (273.15 + (metrics->>'temperature_c')::numeric) AS value,\n  COALESCE(location, device_id) AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\nORDER BY 3, 1 ASC",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "g/m³",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "linear",
-            "barAlignment": 0,
-            "lineWidth": 1,
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "spanNulls": false,
-            "showPoints": "auto",
-            "pointSize": 5,
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            },
-            "axisPlacement": "auto",
-            "axisLabel": "",
-            "axisColorMode": "text",
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "axisCenteredZero": false,
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": null,
-                "color": "green"
-              }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
       "id": 3,
       "type": "table",
       "title": "Recent Measurements",
@@ -374,7 +200,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 8
       },
       "targets": [
         {
