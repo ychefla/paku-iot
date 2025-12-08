@@ -142,6 +142,34 @@ services:
       ECOFLOW_API_URL: ${ECOFLOW_API_URL:-https://api-e.ecoflow.com}
       REST_API_INTERVAL: ${REST_API_INTERVAL:-30}
 
+  # ------------------------------------------------------------
+  # OTA SERVICE
+  # REST API for Over-The-Air firmware updates.
+  # Provides endpoints for ESP devices to check/download updates
+  # and admin APIs for firmware management and rollout control.
+  # ------------------------------------------------------------
+  ota-service:
+    build:
+      context: ../stack/ota-service
+    container_name: paku_ota_service
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      FIRMWARE_STORAGE_PATH: /firmware
+      API_KEY: ${OTA_API_KEY:-}
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - paku_firmware:/firmware
+
 # ------------------------------------------------------------
 # VOLUMES
 # Centralized definitions for all persistent data directories.
@@ -149,3 +177,4 @@ services:
 volumes:
   paku_pgdata:
   paku_grafana:
+  paku_firmware:

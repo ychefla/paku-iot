@@ -10,6 +10,7 @@ The **paku-iot** repository hosts the backend infrastructure for collecting, sto
 
 - **MQTT Telemetry Ingestion**: Receives environmental sensor data via MQTT
 - **EcoFlow Integration**: Automatic data collection from EcoFlow power stations (Delta Pro, etc.)
+- **OTA Updates**: Over-the-air firmware update orchestration for ESP devices
 - **Persistent Storage**: Stores measurements in PostgreSQL
 - **Data Visualization**: Real-time dashboards in Grafana
 - **Docker-based Stack**: Complete environment runs via Docker Compose
@@ -53,6 +54,7 @@ The **paku-iot** repository hosts the backend infrastructure for collecting, sto
    - **Grafana**: http://localhost:3000 (default credentials: admin / [value from compose/.env])
    - **PostgreSQL**: localhost:5432
    - **MQTT Broker**: localhost:1883
+   - **OTA Service**: http://localhost:8080 (API documentation: http://localhost:8080/docs)
 
 5. **Stop the Stack:**
    ```bash
@@ -87,6 +89,49 @@ To enable automatic data collection from EcoFlow power stations (Delta Pro, Delt
 
 For complete setup instructions, troubleshooting, and Grafana examples, see [EcoFlow Integration Guide](docs/ecoflow_integration.md).
 
+## OTA Updates for ESP Devices
+
+The platform includes a complete OTA (Over-The-Air) update system for ESP32/ESP8266 devices:
+
+### Features
+
+- **Firmware Hosting**: Secure storage and serving of signed firmware binaries
+- **Version Management**: Track releases, compatibility requirements, and changelogs
+- **Rollout Orchestration**: Control which devices receive updates (all, canary, specific devices)
+- **Status Monitoring**: Real-time tracking of update progress and success rates
+- **Rollback Support**: Ability to halt or reverse problematic rollouts
+
+### Quick Start
+
+1. **Upload firmware** (requires API key):
+   ```bash
+   curl -X POST "http://localhost:8080/api/admin/firmware/upload?version=1.0.0&device_model=esp32&is_signed=true" \
+     -H "X-API-Key: your-api-key" \
+     -F "file=@firmware.bin"
+   ```
+
+2. **Create a rollout**:
+   ```bash
+   curl -X POST "http://localhost:8080/api/admin/rollout/create" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: your-api-key" \
+     -d '{
+       "name": "v1.0.0-production",
+       "firmware_version": "1.0.0",
+       "device_model": "esp32",
+       "target_type": "all",
+       "rollout_percentage": 100,
+       "is_active": true
+     }'
+   ```
+
+3. **Monitor updates**:
+   - API: `http://localhost:8080/metrics`
+   - Grafana: OTA Monitoring dashboard
+   - Logs: `docker logs paku_ota_service`
+
+For complete documentation, device integration examples, and best practices, see [OTA Updates Guide](docs/ota_updates.md).
+
 ## Testing
 
 ### End-to-End Test
@@ -107,19 +152,22 @@ For detailed testing documentation, see [docs/e2e_test.md](docs/e2e_test.md).
 
 ## Architecture
 
-The stack consists of five core Docker containers, plus optional collectors:
+The stack consists of core Docker containers for data collection and management:
 
 1. **Ruuvi Emulator**: Publishes simulated sensor data to MQTT
 2. **Mosquitto**: MQTT broker for message routing
 3. **Collector**: Consumes MQTT messages and writes to database
-4. **PostgreSQL**: Time-series data storage
+4. **PostgreSQL**: Time-series data storage with OTA tables
 5. **Grafana**: Data visualization and dashboards
 6. **EcoFlow Collector** (optional): Collects data from EcoFlow power stations
+7. **OTA Service**: REST API for firmware update orchestration
 
 ```
 Ruuvi Emulator → Mosquitto (MQTT) → Collector → PostgreSQL → Grafana
                                                       ↑
 EcoFlow Device → EcoFlow Cloud API → EcoFlow Collector
+                                                      ↑
+ESP Devices → OTA Service (REST API) → PostgreSQL → OTA Monitoring Dashboard
 ```
 
 ## Data Model
@@ -169,6 +217,7 @@ docker compose -f compose/stack.prod.yaml up -d
 - [MQTT Schema](docs/mqtt_schema.md) - Message format and topic structure
 - [Database Schema](docs/database_schema.md) - Database structure and design
 - [EcoFlow Integration](docs/ecoflow_integration.md) - Complete guide for EcoFlow power station integration
+- [OTA Updates](docs/ota_updates.md) - Over-the-air firmware update system for ESP devices
 
 ## Development
 
@@ -218,15 +267,18 @@ docker logs paku_collector
 docker logs paku_postgres
 docker logs paku_mosquitto
 docker logs paku_grafana
+docker logs paku_ecoflow_collector
+docker logs paku_ota_service
 ```
 
 ## Future Enhancements
 
 Planned for future sprints:
-- Multi-device support with device registry
+- Multi-device support with enhanced device registry
 - Downlink commands and configuration
-- OTA firmware distribution
-- HTTP APIs and admin UI
+- CDN integration for firmware distribution
+- Admin UI for OTA management
+- Advanced rollout strategies (A/B testing, gradual percentage increase)
 
 See [docs/requirements.md](docs/requirements.md) for detailed roadmap.
 
