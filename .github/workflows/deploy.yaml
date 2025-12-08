@@ -32,6 +32,7 @@ jobs:
           SSH_HOST: ${{ secrets.HETZNER_HOST }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           GF_SECURITY_ADMIN_PASSWORD: ${{ secrets.GF_SECURITY_ADMIN_PASSWORD }}
+          OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
           ECOFLOW_ACCESS_KEY: ${{ secrets.ECOFLOW_ACCESS_KEY }}
           ECOFLOW_SECRET_KEY: ${{ secrets.ECOFLOW_SECRET_KEY }}
           ECOFLOW_DEVICE_SN: ${{ secrets.ECOFLOW_DEVICE_SN }}
@@ -77,11 +78,15 @@ jobs:
           ECOFLOW_SECRET_KEY=__ECOFLOW_SECRET_KEY__
           ECOFLOW_DEVICE_SN=__ECOFLOW_DEVICE_SN__
           ECOFLOW_API_URL=__ECOFLOW_API_URL__
+          
+          # OTA Service Configuration
+          OTA_API_KEY=__OTA_API_KEY__
           ENVFILE
           
           # Replace placeholders with actual values
           sed -i "s|__POSTGRES_PASSWORD__|${POSTGRES_PASSWORD}|g" compose/.env
           sed -i "s|__GF_SECURITY_ADMIN_PASSWORD__|${GF_SECURITY_ADMIN_PASSWORD}|g" compose/.env
+          sed -i "s|__OTA_API_KEY__|${OTA_API_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_ACCESS_KEY__|${ECOFLOW_ACCESS_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_SECRET_KEY__|${ECOFLOW_SECRET_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_DEVICE_SN__|${ECOFLOW_DEVICE_SN}|g" compose/.env
@@ -176,6 +181,7 @@ jobs:
             export DEPLOY_PATH='${DEPLOY_PATH}'
             export POSTGRES_PASSWORD='${POSTGRES_PASSWORD}'
             export GF_SECURITY_ADMIN_PASSWORD='${GF_SECURITY_ADMIN_PASSWORD}'
+            export OTA_API_KEY='${OTA_API_KEY}'
             export ECOFLOW_ACCESS_KEY='${ECOFLOW_ACCESS_KEY}'
             export ECOFLOW_SECRET_KEY='${ECOFLOW_SECRET_KEY}'
             export ECOFLOW_DEVICE_SN='${ECOFLOW_DEVICE_SN}'

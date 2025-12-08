@@ -130,7 +130,25 @@ The platform includes a complete OTA (Over-The-Air) update system for ESP32/ESP8
    - Grafana: OTA Monitoring dashboard
    - Logs: `docker logs paku_ota_service`
 
-For complete documentation, device integration examples, and best practices, see [OTA Updates Guide](docs/ota_updates.md).
+### Automated OTA Updates via GitHub Actions
+
+The repository includes a GitHub Actions workflow for automated ESP firmware updates:
+
+**Manual Workflow Trigger**: Navigate to Actions → "OTA Update ESP Devices" → Run workflow
+
+**Features**:
+- Builds firmware from `paku-core` main branch automatically
+- Supports multiple rollout strategies (test, canary, full)
+- Generates deployment summaries with firmware checksums
+- No manual steps required - just execute the workflow
+
+**Setup Requirements**:
+- Configure `OTA_SERVICE_URL` and `OTA_API_KEY` secrets in GitHub
+- Optionally set `PAKU_CORE_REPO` for private repositories
+
+For complete workflow documentation and usage guide, see [OTA Workflow Guide](docs/ota_workflow_guide.md).
+
+For API documentation, device integration examples, and best practices, see [OTA Updates Guide](docs/ota_updates.md).
 
 ## Testing
 
@@ -218,6 +236,7 @@ docker compose -f compose/stack.prod.yaml up -d
 - [Database Schema](docs/database_schema.md) - Database structure and design
 - [EcoFlow Integration](docs/ecoflow_integration.md) - Complete guide for EcoFlow power station integration
 - [OTA Updates](docs/ota_updates.md) - Over-the-air firmware update system for ESP devices
+- [OTA Workflow Guide](docs/ota_workflow_guide.md) - GitHub Actions workflow for automated ESP firmware updates
 
 ## Development
 

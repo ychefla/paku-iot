@@ -212,6 +212,49 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ------------------------------------------------------------
+  # OTA SERVICE
+  # REST API for Over-The-Air firmware updates for ESP devices.
+  # Provides endpoints for firmware hosting, version management,
+  # rollout orchestration, and update status tracking.
+  # ------------------------------------------------------------
+  ota-service:
+    build:
+      context: ../stack/ota-service
+    container_name: paku_ota_service
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-paku}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-paku}
+      FIRMWARE_STORAGE_PATH: /firmware
+      API_KEY: ${OTA_API_KEY:-}
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - paku_firmware:/firmware
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
 # ------------------------------------------------------------
 # VOLUMES
 # Centralized definitions for all persistent data directories.
@@ -219,3 +262,4 @@ services:
 volumes:
   paku_pgdata:
   paku_grafana:
+  paku_firmware:

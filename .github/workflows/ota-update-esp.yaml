@@ -1,0 +1,259 @@
+name: OTA Update ESP Devices
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollout_strategy:
+        description: 'Rollout strategy'
+        required: true
+        type: choice
+        options:
+          - test
+          - canary-10
+          - canary-25
+          - canary-50
+          - full
+        default: 'test'
+      device_model:
+        description: 'Device model (e.g., esp32, esp8266)'
+        required: true
+        type: string
+        default: 'esp32'
+      test_devices:
+        description: 'Test device IDs (comma-separated, only for test strategy)'
+        required: false
+        type: string
+        default: ''
+      release_notes:
+        description: 'Release notes'
+        required: false
+        type: string
+        default: 'Automated OTA update from paku-core main branch'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy-ota:
+    name: Build and Deploy OTA Update
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout paku-core repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.PAKU_CORE_REPO || 'ychefla/paku-core' }}
+          ref: main
+          token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          pip install --upgrade platformio
+          pio --version
+
+      - name: Build firmware
+        run: |
+          echo "Building firmware for ${{ github.event.inputs.device_model }}..."
+          pio run --environment ${{ github.event.inputs.device_model }}
+          
+          # Find the built firmware
+          FIRMWARE_PATH=$(find .pio/build/${{ github.event.inputs.device_model }} -name "firmware.bin" -o -name "*.bin" | head -1)
+          
+          if [ -z "$FIRMWARE_PATH" ]; then
+            echo "Error: Firmware binary not found!"
+            exit 1
+          fi
+          
+          echo "Firmware built successfully: $FIRMWARE_PATH"
+          echo "FIRMWARE_PATH=$FIRMWARE_PATH" >> $GITHUB_ENV
+          
+          # Calculate checksum
+          FIRMWARE_SHA256=$(sha256sum "$FIRMWARE_PATH" | cut -d' ' -f1)
+          echo "FIRMWARE_SHA256=$FIRMWARE_SHA256" >> $GITHUB_ENV
+          echo "Firmware SHA256: $FIRMWARE_SHA256"
+
+      - name: Generate version from commit
+        run: |
+          # Use short commit hash and timestamp for version
+          VERSION="${GITHUB_SHA:0:7}-$(date +%Y%m%d-%H%M%S)"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Generated version: $VERSION"
+
+      - name: Upload firmware to OTA service
+        run: |
+          echo "Uploading firmware to OTA service..."
+          
+          UPLOAD_RESPONSE=$(curl -v -X POST \
+            "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/firmware/upload?version=${VERSION}&device_model=${{ github.event.inputs.device_model }}&is_signed=false&release_notes=$(echo '${{ github.event.inputs.release_notes }}' | jq -sRr @uri)" \
+            -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
+            -F "file=@${FIRMWARE_PATH}" \
+            -w "\nHTTP_CODE:%{http_code}" \
+            2>&1)
+          
+          HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error: Failed to upload firmware (HTTP $HTTP_CODE)"
+            echo "$UPLOAD_RESPONSE"
+            exit 1
+          fi
+          
+          echo "Firmware uploaded successfully!"
+
+      - name: Create rollout configuration
+        run: |
+          echo "Creating rollout configuration for strategy: ${{ github.event.inputs.rollout_strategy }}..."
+          
+          STRATEGY="${{ github.event.inputs.rollout_strategy }}"
+          ROLLOUT_NAME="${{ github.event.inputs.device_model }}-${VERSION}-${STRATEGY}"
+          
+          # Prepare rollout payload based on strategy
+          case "$STRATEGY" in
+            test)
+              if [ -z "${{ github.event.inputs.test_devices }}" ]; then
+                echo "Error: test_devices must be provided for test strategy"
+                exit 1
+              fi
+              # Convert comma-separated list to JSON array
+              DEVICE_ARRAY=$(echo '${{ github.event.inputs.test_devices }}' | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+              PAYLOAD=$(jq -n \
+                --arg name "$ROLLOUT_NAME" \
+                --arg version "$VERSION" \
+                --arg model "${{ github.event.inputs.device_model }}" \
+                --argjson devices "$DEVICE_ARRAY" \
+                '{
+                  name: $name,
+                  firmware_version: $version,
+                  device_model: $model,
+                  target_type: "specific",
+                  target_device_ids: $devices,
+                  is_active: true
+                }')
+              ;;
+            canary-10|canary-25|canary-50)
+              PERCENTAGE=$(echo "$STRATEGY" | cut -d- -f2)
+              PAYLOAD=$(jq -n \
+                --arg name "$ROLLOUT_NAME" \
+                --arg version "$VERSION" \
+                --arg model "${{ github.event.inputs.device_model }}" \
+                --argjson pct "$PERCENTAGE" \
+                '{
+                  name: $name,
+                  firmware_version: $version,
+                  device_model: $model,
+                  target_type: "canary",
+                  rollout_percentage: $pct,
+                  is_active: true
+                }')
+              ;;
+            full)
+              PAYLOAD=$(jq -n \
+                --arg name "$ROLLOUT_NAME" \
+                --arg version "$VERSION" \
+                --arg model "${{ github.event.inputs.device_model }}" \
+                '{
+                  name: $name,
+                  firmware_version: $version,
+                  device_model: $model,
+                  target_type: "all",
+                  is_active: true
+                }')
+              ;;
+            *)
+              echo "Error: Unknown rollout strategy: $STRATEGY"
+              exit 1
+              ;;
+          esac
+          
+          echo "Rollout payload:"
+          echo "$PAYLOAD" | jq '.'
+          
+          # Create rollout
+          ROLLOUT_RESPONSE=$(curl -v -X POST \
+            "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/rollout/create" \
+            -H "Content-Type: application/json" \
+            -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
+            -d "$PAYLOAD" \
+            -w "\nHTTP_CODE:%{http_code}" \
+            2>&1)
+          
+          HTTP_CODE=$(echo "$ROLLOUT_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Error: Failed to create rollout (HTTP $HTTP_CODE)"
+            echo "$ROLLOUT_RESPONSE"
+            exit 1
+          fi
+          
+          echo "Rollout created successfully!"
+          echo "$ROLLOUT_RESPONSE" | grep -v "HTTP_CODE:" | jq '.'
+
+      - name: Generate deployment summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # ESP OTA Deployment Summary
+          
+          ## Firmware Details
+          - **Version**: \`${VERSION}\`
+          - **Device Model**: \`${{ github.event.inputs.device_model }}\`
+          - **Commit**: \`${GITHUB_SHA:0:7}\`
+          - **SHA256**: \`${FIRMWARE_SHA256}\`
+          
+          ## Rollout Configuration
+          - **Strategy**: \`${{ github.event.inputs.rollout_strategy }}\`
+          - **Rollout Name**: \`${{ github.event.inputs.device_model }}-${VERSION}-${{ github.event.inputs.rollout_strategy }}\`
+          EOF
+          
+          if [ "${{ github.event.inputs.rollout_strategy }}" = "test" ]; then
+            echo "- **Test Devices**: \`${{ github.event.inputs.test_devices }}\`" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ github.event.inputs.rollout_strategy }}" == canary-* ]]; then
+            PERCENTAGE=$(echo "${{ github.event.inputs.rollout_strategy }}" | cut -d- -f2)
+            echo "- **Rollout Percentage**: ${PERCENTAGE}%" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          
+          ## Release Notes
+          ${{ github.event.inputs.release_notes }}
+          
+          ## Monitoring
+          - Check OTA service metrics: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/metrics
+          - View Grafana dashboard for real-time update status
+          
+          ## Next Steps
+          1. Monitor device update progress in Grafana
+          2. Check for any failed updates
+          3. If using canary rollout, gradually increase percentage after validation
+          4. For issues, deactivate rollout via admin API
+          EOF
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::OTA deployment failed! Check logs for details."
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # ❌ ESP OTA Deployment Failed
+          
+          The OTA deployment encountered an error. Please check the workflow logs for details.
+          
+          ## Troubleshooting
+          - Verify OTA service is accessible at: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          - Check OTA_API_KEY is configured correctly in secrets
+          - Ensure paku-core repository builds successfully
+          - Review firmware build logs above
+          EOF
