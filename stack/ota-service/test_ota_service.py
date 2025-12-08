@@ -5,27 +5,16 @@ Tests API endpoints and core functionality.
 """
 
 import json
+import os
+import sys
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from io import BytesIO
 
-
-# Mock settings to avoid requiring environment variables
-@pytest.fixture(autouse=True)
-def mock_settings():
-    with patch('ota_service.Settings') as mock:
-        settings = Mock()
-        settings.pghost = 'localhost'
-        settings.pgport = 5432
-        settings.pguser = 'test'
-        settings.pgpassword = 'test'
-        settings.pgdatabase = 'test'
-        settings.firmware_storage_path = '/tmp/firmware'
-        settings.api_key = 'test-key'
-        settings.port = 8080
-        settings.host = '0.0.0.0'
-        mock.return_value = settings
-        yield settings
+# Set required environment variables before importing ota_service
+os.environ['PGUSER'] = 'test'
+os.environ['PGPASSWORD'] = 'test'
+os.environ['PGDATABASE'] = 'test'
 
 
 def test_percentage_match():
@@ -122,14 +111,15 @@ async def test_metrics_endpoint():
         mock_cursor.__enter__ = Mock(return_value=mock_cursor)
         mock_cursor.__exit__ = Mock(return_value=False)
         
-        # Mock query results
+        # Mock query results - fetchone is called twice (total devices and active rollouts)
         mock_cursor.fetchone.side_effect = [
             (100,),  # total devices
+            (2,),    # active rollouts
         ]
+        # Mock fetchall results
         mock_cursor.fetchall.side_effect = [
             [("esp32", 80), ("esp8266", 20)],  # devices by model
             [("success", 45), ("failed", 2)],  # recent updates
-            (2,),  # active rollouts
         ]
         
         mock_conn.cursor.return_value = mock_cursor
