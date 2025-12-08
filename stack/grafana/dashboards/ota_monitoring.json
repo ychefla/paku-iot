@@ -1,0 +1,252 @@
+{
+  "dashboard": {
+    "title": "OTA Update Monitoring",
+    "uid": "ota-monitoring",
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "type": "stat",
+        "title": "Total Devices",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT COUNT(*) as total FROM devices",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "type": "stat",
+        "title": "Active Rollouts",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT COUNT(*) as active FROM rollout_configurations WHERE is_active = true",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 3, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "type": "stat",
+        "title": "Success Rate (24h)",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' AND status IN ('success', 'failed')",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 80, "color": "yellow"},
+                {"value": 95, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "type": "stat",
+        "title": "Updates (24h)",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT COUNT(*) as updates FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' AND status IN ('success', 'failed')",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "graphMode": "none",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "type": "piechart",
+        "title": "Firmware Version Distribution",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT current_firmware_version as version, COUNT(*) as count FROM devices WHERE current_firmware_version IS NOT NULL GROUP BY current_firmware_version ORDER BY count DESC",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "type": "piechart",
+        "title": "Update Status (24h)",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT status, COUNT(*) as count FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' GROUP BY status ORDER BY count DESC",
+            "format": "table"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          }
+        }
+      },
+      {
+        "id": 7,
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+        "type": "timeseries",
+        "title": "Update Activity Over Time",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT DATE_TRUNC('hour', reported_at) as time, status, COUNT(*) as count FROM device_update_status WHERE reported_at > NOW() - INTERVAL '7 days' GROUP BY time, status ORDER BY time",
+            "format": "time_series"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "stacking": {
+                "mode": "normal"
+              }
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+        "type": "table",
+        "title": "Recent Firmware Releases",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT version, device_model, ROUND(file_size / 1024.0 / 1024.0, 2) as size_mb, is_signed, created_at FROM firmware_releases ORDER BY created_at DESC LIMIT 10",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+        "type": "table",
+        "title": "Active Rollouts",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT name, firmware_version, device_model, target_type, rollout_percentage, created_at FROM rollout_configurations WHERE is_active = true ORDER BY created_at DESC",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+        "type": "table",
+        "title": "Recent Update Failures",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT device_id, firmware_version, error_message, reported_at FROM device_update_status WHERE status = 'failed' AND reported_at > NOW() - INTERVAL '7 days' ORDER BY reported_at DESC LIMIT 20",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+        "type": "table",
+        "title": "Devices by Model",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT device_model, COUNT(*) as device_count, COUNT(DISTINCT current_firmware_version) as version_count FROM devices GROUP BY device_model ORDER BY device_count DESC",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+        "type": "table",
+        "title": "Devices Needing Updates",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT d.device_id, d.device_model, d.current_firmware_version as current, (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as latest, d.last_seen FROM devices d WHERE d.current_firmware_version != (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) ORDER BY d.last_seen DESC LIMIT 20",
+            "format": "table"
+          }
+        ]
+      }
+    ]
+  }
+}

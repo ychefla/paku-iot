@@ -6,8 +6,10 @@ FROM postgres:16-alpine
 #   - POSTGRES_PASSWORD
 #   - POSTGRES_DB
 
-# Copy the initialization script
+# Copy the initialization scripts
 # Postgres will automatically execute .sql files in /docker-entrypoint-initdb.d/
-COPY init.sql /docker-entrypoint-initdb.d/
+# in alphabetical order
+COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY ota_schema.sql /docker-entrypoint-initdb.d/02-ota_schema.sql
 
 CMD ["postgres"]
