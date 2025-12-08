@@ -59,13 +59,16 @@ CREATE TABLE IF NOT EXISTS device_update_status (
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
     reported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    metadata JSONB,
-    CONSTRAINT fk_device FOREIGN KEY (device_id) REFERENCES devices(device_id) ON DELETE CASCADE
+    metadata JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_device_update_status_device ON device_update_status(device_id, reported_at DESC);
 CREATE INDEX IF NOT EXISTS idx_device_update_status_status ON device_update_status(status);
 CREATE INDEX IF NOT EXISTS idx_device_update_status_version ON device_update_status(firmware_version);
+
+-- Note: Foreign key constraints removed to allow flexibility
+-- device_id references devices.device_id (but not enforced)
+-- firmware_version can reference firmware_releases.version (but not enforced)
 
 COMMENT ON TABLE device_update_status IS 'Device firmware update status and progress tracking';
 COMMENT ON COLUMN device_update_status.status IS 'Current update status';
@@ -85,12 +88,12 @@ CREATE TABLE IF NOT EXISTS rollout_configurations (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by TEXT,
-    metadata JSONB,
-    CONSTRAINT fk_firmware FOREIGN KEY (firmware_version) REFERENCES firmware_releases(version) ON DELETE CASCADE
+    metadata JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_rollout_configurations_active ON rollout_configurations(is_active);
 CREATE INDEX IF NOT EXISTS idx_rollout_configurations_model ON rollout_configurations(device_model);
+CREATE INDEX IF NOT EXISTS idx_rollout_configurations_version ON rollout_configurations(firmware_version);
 
 COMMENT ON TABLE rollout_configurations IS 'Firmware rollout orchestration and targeting rules';
 COMMENT ON COLUMN rollout_configurations.target_type IS 'Rollout targeting strategy';

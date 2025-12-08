@@ -853,6 +853,10 @@ def _percentage_match(device_id: str, percentage: int) -> bool:
     """
     Determine if device matches percentage criteria using consistent hashing.
     
+    Uses SHA-256 for consistent hashing to ensure secure, deterministic device selection
+    for percentage-based rollouts. The same device will always get the same result for
+    the same percentage, enabling gradual rollout increases.
+    
     Args:
         device_id: Device identifier
         percentage: Target percentage (0-100)
@@ -865,8 +869,8 @@ def _percentage_match(device_id: str, percentage: int) -> bool:
     if percentage <= 0:
         return False
     
-    # Use consistent hashing to determine device inclusion
-    hash_value = int(hashlib.md5(device_id.encode()).hexdigest(), 16)
+    # Use SHA-256 for secure consistent hashing
+    hash_value = int(hashlib.sha256(device_id.encode()).hexdigest(), 16)
     return (hash_value % 100) < percentage
 
 
