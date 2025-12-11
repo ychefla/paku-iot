@@ -287,7 +287,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'bmsMaster.temp')::numeric / 10.0, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -592,7 +592,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'inv.outTemp')::numeric / 10.0, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE((raw_data->>'inv.outTemp')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -653,7 +653,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'mppt.mpptTemp')::numeric / 10.0, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE((raw_data->>'mppt.mpptTemp')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -1127,7 +1127,7 @@
           "format": "time_series",
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.temp')::numeric / 10.0, 0) AS value,\n  'Battery (BMS)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outTemp')::numeric / 10.0, 0) AS value,\n  'Inverter' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'mppt.mpptTemp')::numeric / 10.0, 0) AS value,\n  'MPPT/Solar Controller' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY time ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0) AS value,\n  'Battery (BMS)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outTemp')::numeric, 0) AS value,\n  'Inverter' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'mppt.mpptTemp')::numeric, 0) AS value,\n  'MPPT/Solar Controller' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY time ASC",
           "refId": "A",
           "timeColumn": "time"
         }
