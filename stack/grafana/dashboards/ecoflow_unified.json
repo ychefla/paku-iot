@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -80,7 +80,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -94,7 +94,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -145,7 +145,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -159,7 +159,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -214,7 +214,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -228,7 +228,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -283,7 +283,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -297,7 +297,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -344,7 +344,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -358,7 +358,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -405,7 +405,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -419,7 +419,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -466,7 +466,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -480,7 +480,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -527,7 +527,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -541,7 +541,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -588,7 +588,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -602,7 +602,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -649,7 +649,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawQuery": true,
@@ -663,7 +663,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -742,7 +742,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "metricColumn": "metric",
@@ -758,7 +758,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -837,7 +837,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "metricColumn": "metric",
@@ -853,7 +853,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -932,7 +932,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "metricColumn": "metric",
@@ -948,7 +948,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -1027,7 +1027,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "metricColumn": "metric",
@@ -1043,7 +1043,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "${DS_POSTGRESQL}"
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -1122,7 +1122,7 @@
         {
           "datasource": {
             "type": "postgres",
-            "uid": "${DS_POSTGRESQL}"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "metricColumn": "metric",
@@ -1150,7 +1150,7 @@
         "current": {},
         "datasource": {
           "type": "postgres",
-          "uid": "${DS_POSTGRESQL}"
+          "uid": "DS_POSTGRESQL"
         },
         "definition": "SELECT DISTINCT device_sn FROM ecoflow_measurements WHERE device_sn != '' ORDER BY device_sn",
         "hide": 0,
