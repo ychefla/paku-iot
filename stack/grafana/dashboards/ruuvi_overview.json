@@ -1,7 +1,10 @@
 {
   "uid": "paku-ruuvi",
-  "title": "Ruuvi Overview",
-  "tags": ["paku", "ruuvi"],
+  "title": "Temperature and Humidity Overview",
+  "tags": [
+    "paku",
+    "ruuvi"
+  ],
   "timezone": "",
   "schemaVersion": 39,
   "version": 1,
@@ -14,7 +17,7 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Temperature (°C)",
+      "title": "Temperature (\u00b0C)",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -35,6 +38,126 @@
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY ts ASC",
           "editorMode": "code"
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'inv'->>'outTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->'inv'->>'outTemp') IS NOT NULL\nORDER BY ts ASC",
+          "refId": "EcoFlow_Inverter",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'temp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'temp')::numeric / 10.0, 0) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'temp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'temp') IS NOT NULL)\nORDER BY ts ASC",
+          "refId": "EcoFlow_BMS",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'maxCellTemp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'maxCellTemp') IS NOT NULL)\nORDER BY ts ASC",
+          "refId": "EcoFlow_MaxCell",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "time_series",
+          "group": [],
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'minCellTemp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'minCellTemp') IS NOT NULL)\nORDER BY ts ASC",
+          "refId": "EcoFlow_MinCell",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "column"
+              }
+            ]
+          ],
+          "timeColumn": "time",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
         }
       ],
       "options": {
@@ -188,7 +311,7 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "Dew Point (°C)",
+      "title": "Dew Point (\u00b0C)",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -275,7 +398,7 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Absolute Humidity (g/m³)",
+      "title": "Absolute Humidity (g/m\u00b3)",
       "datasource": {
         "type": "postgres",
         "uid": "paku-pg"
@@ -311,7 +434,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "g/m³",
+          "unit": "g/m\u00b3",
           "color": {
             "mode": "palette-classic"
           },
@@ -390,7 +513,9 @@
         "cellHeight": "sm",
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "countRows": false,
           "fields": ""
         }
@@ -436,7 +561,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Temperature (°C)"
+                "value": "Temperature (\u00b0C)"
               },
               {
                 "id": "unit",
