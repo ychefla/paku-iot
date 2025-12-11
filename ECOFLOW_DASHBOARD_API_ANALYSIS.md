@@ -241,26 +241,28 @@ Based on usefulness and data availability, recommended panels are:
 
 ```json
 {
-  "bmsMaster.soc": 89,
-  "bmsMaster.temp": 235,
-  "pd.wattsInSum": 0,
-  "pd.wattsOutSum": 24,
-  "pd.remainTime": 7350,
-  "pd.carWatts": 0,
-  "pd.usb1Watts": 0,
-  "pd.usb2Watts": 0,
-  "pd.qcUsb1Watts": 0,
-  "pd.qcUsb2Watts": 0,
-  "pd.typec1Watts": 1,
-  "pd.typec2Watts": 0,
-  "inv.inputWatts": 0,
-  "inv.outputWatts": 24,
-  "inv.outTemp": 243,
-  "mppt.inWatts": 0,
-  "mppt.outWatts": 0,
-  "mppt.mpptTemp": 228
+  "bmsMaster.soc": 89,              // Battery State of Charge (%)
+  "bmsMaster.temp": 235,             // Battery temp in tenths of °C (235 = 23.5°C)
+  "pd.wattsInSum": 0,                // Total input power (W)
+  "pd.wattsOutSum": 24,              // Total output power (W)
+  "pd.remainTime": 7350,             // Remaining time (minutes)
+  "pd.carWatts": 0,                  // 12V car port output (W)
+  "pd.usb1Watts": 0,                 // USB port 1 output (W)
+  "pd.usb2Watts": 0,                 // USB port 2 output (W)
+  "pd.qcUsb1Watts": 0,               // QC USB port 1 output (W)
+  "pd.qcUsb2Watts": 0,               // QC USB port 2 output (W)
+  "pd.typec1Watts": 1,               // USB-C port 1 output (W)
+  "pd.typec2Watts": 0,               // USB-C port 2 output (W)
+  "inv.inputWatts": 0,               // AC input power (W)
+  "inv.outputWatts": 24,             // AC output power (W)
+  "inv.outTemp": 243,                // Inverter temp in tenths of °C (243 = 24.3°C)
+  "mppt.inWatts": 0,                 // Solar input power (W)
+  "mppt.outWatts": 0,                // MPPT output to battery (W)
+  "mppt.mpptTemp": 228               // MPPT temp in tenths of °C (228 = 22.8°C)
 }
 ```
+
+**Note:** Temperature values are stored in tenths of degrees Celsius and must be divided by 10 to get actual temperature. For example, `bmsMaster.temp: 235` means 23.5°C.
 
 ### Database Storage
 
