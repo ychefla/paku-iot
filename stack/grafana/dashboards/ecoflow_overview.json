@@ -18,7 +18,7 @@
         "label": "Device",
         "datasource": {
           "type": "postgres",
-          "uid": "paku-pg"
+          "uid": "DS_POSTGRESQL"
         },
         "query": "SELECT DISTINCT device_sn FROM ecoflow_measurements WHERE device_sn != '' ORDER BY device_sn",
         "refresh": 1,
@@ -34,7 +34,7 @@
       "title": "Battery Level",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 6,
@@ -49,7 +49,7 @@
           "rawSql": "SELECT\n  soc_percent\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -97,7 +97,7 @@
       "title": "Current Input Power",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 6,
@@ -112,7 +112,7 @@
           "rawSql": "SELECT\n  watts_in_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_in_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -152,7 +152,7 @@
       "title": "Current Output Power",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 6,
@@ -167,7 +167,7 @@
           "rawSql": "SELECT\n  watts_out_sum\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND watts_out_sum IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -215,7 +215,7 @@
       "title": "Time Remaining",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 6,
@@ -230,7 +230,7 @@
           "rawSql": "SELECT\n  remain_time_min\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND remain_time_min IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -278,7 +278,7 @@
       "title": "Solar Input",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 6,
@@ -293,7 +293,7 @@
           "rawSql": "SELECT\n  COALESCE(pv_in_watts, 0) as pv_in_watts\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -337,7 +337,7 @@
       "title": "Battery Level Over Time",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -352,7 +352,7 @@
           "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS \"Battery %\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND soc_percent IS NOT NULL\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -379,7 +379,7 @@
       "title": "Power In/Out",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -394,7 +394,7 @@
           "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(watts_in_sum, 0) AS \"Input (W)\",\n  COALESCE(watts_out_sum, 0) AS \"Output (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -451,7 +451,7 @@
       "title": "Solar Input Over Time",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -466,7 +466,7 @@
           "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(pv_in_watts, 0) AS \"Solar Input (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -492,7 +492,7 @@
       "title": "Output Breakdown",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -507,7 +507,7 @@
           "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE(ac_out_watts, 0) AS \"AC Output (W)\",\n  COALESCE(dc_out_watts, 0) AS \"DC Output (W)\",\n  COALESCE(typec_out_watts, 0) AS \"USB-C (W)\",\n  COALESCE(usb_out_watts, 0) AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -532,7 +532,7 @@
       "title": "Net Power (Input - Output)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -547,7 +547,7 @@
           "rawSql": "SELECT\n  ts AS \"time\",\n  (COALESCE(watts_in_sum, 0) - COALESCE(watts_out_sum, 0)) AS \"Net Power (W)\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -593,7 +593,7 @@
       "title": "Power Statistics (Last Hour)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -608,7 +608,7 @@
           "rawSql": "SELECT\n  ROUND(AVG(COALESCE(watts_out_sum, 0))) AS \"Avg Output\",\n  MAX(COALESCE(watts_out_sum, 0)) AS \"Peak Output\",\n  ROUND(AVG(COALESCE(watts_in_sum, 0))) AS \"Avg Input\",\n  MAX(COALESCE(watts_in_sum, 0)) AS \"Peak Input\"\nFROM ecoflow_measurements\nWHERE\n  device_sn = '$device_sn'\n  AND ts >= NOW() - INTERVAL '1 hour'",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],
@@ -652,7 +652,7 @@
       "title": "Recent Measurements",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -667,7 +667,7 @@
           "rawSql": "SELECT\n  ts AS \"Time\",\n  soc_percent AS \"Battery %\",\n  watts_in_sum AS \"Input (W)\",\n  watts_out_sum AS \"Output (W)\",\n  pv_in_watts AS \"Solar (W)\",\n  remain_time_min AS \"Remain (min)\",\n  ac_out_watts AS \"AC Out (W)\",\n  dc_out_watts AS \"DC Out (W)\",\n  typec_out_watts AS \"USB-C (W)\",\n  usb_out_watts AS \"USB-A (W)\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 20",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           }
         }
       ],

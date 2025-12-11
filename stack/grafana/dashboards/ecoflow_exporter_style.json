@@ -21,7 +21,7 @@
         "label": "Device",
         "datasource": {
           "type": "postgres",
-          "uid": "paku-pg"
+          "uid": "DS_POSTGRESQL"
         },
         "query": "SELECT DISTINCT device_sn FROM ecoflow_measurements WHERE device_sn != '' ORDER BY device_sn",
         "refresh": 1,
@@ -37,7 +37,7 @@
       "title": "Online Status",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 2, "w": 4, "x": 0, "y": 0},
       "targets": [{
@@ -75,7 +75,7 @@
       "title": "Inverter IN Watts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 4, "y": 0},
       "targets": [{
@@ -111,7 +111,7 @@
       "title": "Inverter IN Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 6, "y": 0},
       "targets": [{
@@ -147,7 +147,7 @@
       "title": "Inverter IN Current",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 8, "y": 0},
       "targets": [{
@@ -180,7 +180,7 @@
       "title": "Charging Remaining Time",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 4, "x": 10, "y": 0},
       "targets": [{
@@ -217,7 +217,7 @@
       "title": "Full Capacity",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 14, "y": 0},
       "targets": [{
@@ -251,7 +251,7 @@
       "title": "BMS Current",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 16, "y": 0},
       "targets": [{
@@ -285,7 +285,7 @@
       "title": "Battery Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 18, "y": 0},
       "targets": [{
@@ -319,7 +319,7 @@
       "title": "MIN Cell Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 20, "y": 0},
       "targets": [{
@@ -353,7 +353,7 @@
       "title": "MAX Cell Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 22, "y": 0},
       "targets": [{
@@ -387,7 +387,7 @@
       "title": "Battery Level (SOC)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 4, "x": 0, "y": 2},
       "targets": [{
@@ -422,7 +422,7 @@
       "title": "Inverter OUT Watts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 4, "y": 4},
       "targets": [{
@@ -458,7 +458,7 @@
       "title": "Inverter OUT Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 6, "y": 4},
       "targets": [{
@@ -494,7 +494,7 @@
       "title": "Inverter OUT Current",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 8, "y": 4},
       "targets": [{
@@ -527,7 +527,7 @@
       "title": "Discharging Remaining Time",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 4, "x": 10, "y": 4},
       "targets": [{
@@ -565,7 +565,7 @@
       "title": "Remain Capacity",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 14, "y": 4},
       "targets": [{
@@ -599,7 +599,7 @@
       "title": "Battery Cycles",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 16, "y": 4},
       "targets": [{
@@ -633,7 +633,7 @@
       "title": "Inverter Temp",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 18, "y": 4},
       "targets": [{
@@ -669,7 +669,7 @@
       "title": "MIN Cell Temp",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 20, "y": 4},
       "targets": [{
@@ -705,7 +705,7 @@
       "title": "MAX Cell Temp",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 4, "w": 2, "x": 22, "y": 4},
       "targets": [{
@@ -741,7 +741,7 @@
       "title": "Charge/Discharge Status",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 2, "w": 4, "x": 0, "y": 6},
       "targets": [{
@@ -780,7 +780,7 @@
       "title": "Battery Level",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "targets": [{
@@ -821,7 +821,7 @@
       "title": "I/O Watts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
       "targets": [
@@ -880,7 +880,7 @@
       "title": "Remaining Time",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
       "targets": [
@@ -926,7 +926,7 @@
       "title": "I/O Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
       "targets": [
@@ -970,7 +970,7 @@
       "title": "Temperature",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
       "targets": [
@@ -1024,7 +1024,7 @@
       "title": "Current",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
       "targets": [
@@ -1073,7 +1073,7 @@
       "title": "USB Output",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
       "targets": [
@@ -1117,7 +1117,7 @@
       "title": "Battery Volts",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
       "targets": [
@@ -1166,7 +1166,7 @@
       "title": "Solar Power",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40},
       "targets": [{

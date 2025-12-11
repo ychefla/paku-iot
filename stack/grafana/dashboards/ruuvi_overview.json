@@ -20,7 +20,7 @@
       "title": "Temperature (\u00b0C)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -33,7 +33,7 @@
           "refId": "A",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'temperature_c')::numeric AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nORDER BY ts ASC",
@@ -227,7 +227,7 @@
       "title": "Humidity (%)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -240,7 +240,7 @@
           "refId": "A",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  (metrics->>'humidity_percent')::numeric AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nORDER BY ts ASC",
@@ -314,7 +314,7 @@
       "title": "Dew Point (\u00b0C)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -327,7 +327,7 @@
           "refId": "A",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  (237.7 * (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) / \n  (17.27 - (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\nORDER BY ts ASC",
@@ -401,7 +401,7 @@
       "title": "Absolute Humidity (g/m\u00b3)",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -414,7 +414,7 @@
           "refId": "A",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  ts AS \"time\",\n  ((metrics->>'humidity_percent')::numeric / 100.0 * \n   6.112 * exp((17.67 * (metrics->>'temperature_c')::numeric) / ((metrics->>'temperature_c')::numeric + 243.5)) * \n   2.1674) / (273.15 + (metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\nORDER BY ts ASC",
@@ -488,7 +488,7 @@
       "title": "Recent Measurements",
       "datasource": {
         "type": "postgres",
-        "uid": "paku-pg"
+        "uid": "DS_POSTGRESQL"
       },
       "gridPos": {
         "h": 8,
@@ -501,7 +501,7 @@
           "refId": "A",
           "datasource": {
             "type": "postgres",
-            "uid": "paku-pg"
+            "uid": "DS_POSTGRESQL"
           },
           "format": "table",
           "rawSql": "SELECT\n  ts,\n  site_id,\n  system,\n  device_id,\n  location,\n  (metrics->>'temperature_c')::numeric AS temperature_c,\n  (metrics->>'humidity_percent')::numeric AS humidity_percent,\n  (metrics->>'pressure_hpa')::numeric AS pressure_hpa,\n  (metrics->>'battery_mv')::numeric AS battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\nORDER BY ts DESC\nLIMIT 50",
