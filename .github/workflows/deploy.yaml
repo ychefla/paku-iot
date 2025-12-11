@@ -149,7 +149,7 @@ jobs:
           # Build and deploy
           echo "Building and starting services..."
           docker compose -f compose/stack.prod.yaml pull 2>/dev/null || true
-          docker compose -f compose/stack.prod.yaml build
+          docker compose -f compose/stack.prod.yaml build --no-cache
           
           # Start services - include EcoFlow profile if credentials are set
           if [ -n "${ECOFLOW_ACCESS_KEY}" ] && [ -n "${ECOFLOW_SECRET_KEY}" ]; then
