@@ -27,33 +27,31 @@ The EcoFlow system provides multiple temperature measurements that MUST all be i
 
 ##### a. Inverter Temperature
 - **Table:** `ecoflow_measurements`
-- **Query Path:** `(raw_data->'inv'->>'outTemp')::numeric / 10.0`
+- **Query Path:** `(raw_data->>'inv.outTemp')::numeric / 10.0`
 - **Description:** Inverter output temperature
 - **Unit:** Celsius (°C)
+- **Note:** REST API stores flat keys with dots, e.g., `"inv.outTemp"` is a single key, not nested
 
 ##### b. Battery Management System (BMS) Temperature
 - **Table:** `ecoflow_measurements`
-- **Query Paths:** 
-  - Primary: `(raw_data->'bms'->>'temp')::numeric / 10.0`
-  - Fallback: `(raw_data->'bms_bmsStatus'->>'temp')::numeric / 10.0`
+- **Query Path:** `(raw_data->>'bmsMaster.temp')::numeric / 10.0`
 - **Description:** Battery management system temperature
 - **Unit:** Celsius (°C)
+- **Note:** REST API stores flat keys with dots, e.g., `"bmsMaster.temp"` is a single key, not nested
 
 ##### c. Maximum Cell Temperature
 - **Table:** `ecoflow_measurements`
-- **Query Paths:**
-  - Primary: `(raw_data->'bms'->>'maxCellTemp')::numeric / 10.0`
-  - Fallback: `(raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric / 10.0`
+- **Query Path:** `(raw_data->>'bmsMaster.maxCellTemp')::numeric / 10.0`
 - **Description:** Hottest battery cell temperature
 - **Unit:** Celsius (°C)
+- **Note:** REST API stores flat keys with dots, e.g., `"bmsMaster.maxCellTemp"` is a single key, not nested
 
 ##### d. Minimum Cell Temperature
 - **Table:** `ecoflow_measurements`
-- **Query Paths:**
-  - Primary: `(raw_data->'bms'->>'minCellTemp')::numeric / 10.0`
-  - Fallback: `(raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric / 10.0`
+- **Query Path:** `(raw_data->>'bmsMaster.minCellTemp')::numeric / 10.0`
 - **Description:** Coldest battery cell temperature
 - **Unit:** Celsius (°C)
+- **Note:** REST API stores flat keys with dots, e.g., `"bmsMaster.minCellTemp"` is a single key, not nested
 
 ### Adding New Temperature Sources
 

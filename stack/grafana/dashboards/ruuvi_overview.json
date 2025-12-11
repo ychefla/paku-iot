@@ -48,7 +48,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'inv'->>'outTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->'inv'->>'outTemp') IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'inv.outTemp') IS NOT NULL\nORDER BY ts ASC",
           "refId": "EcoFlow_Inverter",
           "select": [
             [
@@ -78,7 +78,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'temp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'temp')::numeric / 10.0, 0) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'temp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'temp') IS NOT NULL)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.temp')::numeric / 10.0, 0) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.temp') IS NOT NULL\nORDER BY ts ASC",
           "refId": "EcoFlow_BMS",
           "select": [
             [
@@ -108,7 +108,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'maxCellTemp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'maxCellTemp') IS NOT NULL)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.maxCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.maxCellTemp') IS NOT NULL\nORDER BY ts ASC",
           "refId": "EcoFlow_MaxCell",
           "select": [
             [
@@ -138,7 +138,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric / 10.0, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND ((raw_data->'bms'->>'minCellTemp') IS NOT NULL OR (raw_data->'bms_bmsStatus'->>'minCellTemp') IS NOT NULL)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.minCellTemp')::numeric / 10.0, 0) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.minCellTemp') IS NOT NULL\nORDER BY ts ASC",
           "refId": "EcoFlow_MinCell",
           "select": [
             [
