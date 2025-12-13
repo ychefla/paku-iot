@@ -12,11 +12,12 @@ If you encounter "HTTP 405 Method Not Allowed" errors, ensure you're using the l
 
 The EcoFlow collector:
 1. Authenticates with the EcoFlow Developer API using HMAC-SHA256 signed requests
-2. Obtains temporary MQTT credentials from the API
-3. Connects to EcoFlow's MQTT broker (`mqtt.ecoflow.com`)
-4. Subscribes to your device's data stream
-5. Parses incoming power station telemetry
-6. Stores measurements in the `ecoflow_measurements` table
+2. Polls the EcoFlow REST API at regular intervals (default: 30 seconds)
+3. Fetches device quota (status) information via GET requests
+4. Parses power station telemetry data
+5. Stores measurements in the `ecoflow_measurements` table
+
+**Data Collection Method**: REST API polling (configurable interval via `REST_API_INTERVAL` environment variable)
 
 ## Prerequisites
 

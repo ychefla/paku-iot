@@ -80,18 +80,22 @@ The collector now:
 - Validates new payload structure
 - Stores metrics in JSONB column
 
-### 3. Update paku-core ⚠️ IN PROGRESS
+### 3. Update paku-core ⏸️ PENDING
 
 See `paku-core/MQTT_UPDATE.md` for detailed code changes required.
 
-Key changes:
+**Note**: This step requires updates to the separate paku-core firmware repository. The backend (paku-iot) supports both old and new formats during the transition period.
+
+Key changes needed in paku-core:
 - Consolidate metrics per device into single message
 - Use new topic pattern: `paku/{system}/{device_id}/data`
 - Include all metrics in `metrics` object
 
-### 4. Update Grafana Dashboards 🔜 TODO
+### 4. Update Grafana Dashboards ✅ COMPLETED
 
-Queries need updating to:
+Dashboards have been updated to use the new schema.
+
+Example query updates:
 ```sql
 -- Old query
 SELECT ts, temperature_c 

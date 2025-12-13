@@ -1,5 +1,12 @@
 # OTA Workflow Implementation Summary
 
+> **📚 REFERENCE DOCUMENT**
+>
+> This document provides a high-level overview of the OTA GitHub Actions workflow.
+> For current usage instructions, see [docs/ota_workflow_guide.md](docs/ota_workflow_guide.md).
+
+---
+
 **Implementation Date**: December 8, 2025
 
 ## Overview

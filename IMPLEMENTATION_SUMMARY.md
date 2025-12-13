@@ -1,5 +1,12 @@
 # EcoFlow Delta Pro Integration - Implementation Summary
 
+> **📚 REFERENCE DOCUMENT**
+>
+> This document provides a high-level overview of the EcoFlow integration implementation.
+> For current usage instructions, see [docs/ecoflow_integration.md](docs/ecoflow_integration.md).
+
+---
+
 ## What Was Requested
 
 You asked for functionality to automatically collect data from your EcoFlow Delta Pro over the internet and push it to the paku-iot database.

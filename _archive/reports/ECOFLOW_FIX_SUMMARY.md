@@ -1,3 +1,10 @@
+> **📜 HISTORICAL DOCUMENT**
+>
+> This document represents a snapshot from a specific point in time and may not reflect the current state of the system.
+> For current documentation, see [README.md](../README.md) and [docs/](../docs/).
+
+---
+
 # EcoFlow Collector Fix Summary
 
 **Date**: December 2024  
