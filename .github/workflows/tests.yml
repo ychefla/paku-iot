@@ -1,0 +1,140 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-ota-service:
+    name: Test OTA Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stack/ota-service
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests with coverage
+        run: |
+          pytest -v --cov=. --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./stack/ota-service/coverage.xml
+          flags: ota-service
+          name: ota-service-coverage
+
+  test-collector:
+    name: Test Collector Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stack/collector
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run validation tests
+        run: |
+          python test_validation.py
+      
+      - name: Run unit tests with coverage
+        run: |
+          pytest -v --cov=. --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./stack/collector/coverage.xml
+          flags: collector
+          name: collector-coverage
+
+  test-ecoflow-collector:
+    name: Test EcoFlow Collector Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: stack/ecoflow-collector
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run unit tests with coverage
+        run: |
+          pytest -v --cov=. --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./stack/ecoflow-collector/coverage.xml
+          flags: ecoflow-collector
+          name: ecoflow-collector-coverage
+
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort
+      
+      - name: Run flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 stack --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 stack --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+        continue-on-error: true
+      
+      - name: Check code formatting with black
+        run: |
+          black --check stack
+        continue-on-error: true
+      
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only stack
+        continue-on-error: true
