@@ -1,5 +1,12 @@
 # OTA Update System Implementation Summary
 
+> **📚 REFERENCE DOCUMENT**
+>
+> This document provides a high-level overview of the OTA system implementation.
+> For current usage instructions, see [docs/ota_updates.md](docs/ota_updates.md) and [docs/ota_workflow_guide.md](docs/ota_workflow_guide.md).
+
+---
+
 This document summarizes the implementation of the Over-The-Air (OTA) firmware update system for ESP devices in the Paku IoT platform.
 
 ## Implementation Date

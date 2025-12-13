@@ -15,14 +15,14 @@ The EcoFlow integration enables automatic collection of real-time data from EcoF
 ## Architecture
 
 ```
-EcoFlow Device → EcoFlow Cloud → MQTT Broker → EcoFlow Collector → PostgreSQL → Grafana
-     (WiFi)         (Internet)   (mqtt.ecoflow.com)   (Container)     (paku DB)
+EcoFlow Device → EcoFlow Cloud → REST API → EcoFlow Collector → PostgreSQL → Grafana
+     (WiFi)         (Internet)   (HTTPS)      (Container)        (paku DB)
 ```
 
 The EcoFlow collector service runs as a separate Docker container that:
-- Obtains temporary MQTT credentials from the EcoFlow API
-- Connects to EcoFlow's MQTT broker over TLS
-- Subscribes to your device's data stream
+- Authenticates with the EcoFlow Developer API using HMAC-SHA256 signatures
+- Polls the REST API at configurable intervals (default: 30 seconds)
+- Fetches device quota/status data via HTTPS GET requests
 - Parses and stores measurements in the database
 
 ## Prerequisites

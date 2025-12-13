@@ -1,79 +1,88 @@
 # paku-iot — Backend Requirements (Current Plan)
 
 ## Purpose & Scope
-The **paku-iot** repo hosts the backend stack for the Paku project. In the **current phase**, the scope is intentionally small and focused:
+The **paku-iot** repo hosts the backend stack for the Paku project. The implementation includes:
 
-- Ingest environmental telemetry (temperature, humidity, etc.) from a single van environment.
-- Persist measurements in a simple Postgres schema.
-- Visualize data in Grafana dashboards.
-- Run everything locally using a single Docker Compose stack.
-
-Future phases (not part of the current sprint) may add:
-- Multiple devices and a proper device registry.
-- Commands / configuration downlink to devices.
-- OTA firmware distribution.
-- Remote deployment on a small VM.
+- Ingest environmental telemetry (temperature, humidity, etc.) from IoT devices
+- Persist measurements in PostgreSQL with flexible JSONB schema
+- Visualize data in Grafana dashboards
+- EcoFlow power station integration via REST API
+- Over-the-air (OTA) firmware updates for ESP devices
+- Docker Compose orchestration for all services
+- Automated deployment via GitHub Actions
 
 > Naming: we use **edge** for the device/firmware side (repo: `paku-core`). This backend is **paku-iot**.
 
 ---
 
-## MVP Functional Requirements (current phase)
+## Implemented Functional Requirements
 
 1. **Ingest telemetry via MQTT**
-   - MQTT broker: Mosquitto (running in the unified stack).
-   - Primary topic (current focus):
-     - `paku/ruuvi/van_inside`
-   - Payload: RuuviTag-style JSON as documented in `docs/mqtt_schema.md`.
+   - MQTT broker: Mosquitto (running in the unified stack)
+   - Hierarchical topic structure: `{site_id}/{system}/{device_id}/data`
+   - Legacy support: `paku/ruuvi/van_inside`
+   - Payload: JSON with flexible JSONB metrics field as documented in `docs/mqtt_schema.md`
 
-2. **Store measurements in Postgres**
-   - Simple `measurements` table, including at least:
-     - `id` (primary key)
-     - `sensor_id`
-     - timestamp
-     - temperature, humidity, pressure, battery
-   - Schema created automatically when Postgres container starts (init script or similar).
+2. **Store measurements in PostgreSQL**
+   - `measurements` table with JSONB metrics column
+   - `ecoflow_measurements` table for EcoFlow power stations
+   - OTA-related tables: firmware_releases, devices, device_update_status, rollout_configurations, ota_events
+   - Schema created automatically when Postgres container starts
 
 3. **Collector service (MQTT → Postgres)**
-   - Subscribes to the Ruuvi topic.
-   - Validates incoming JSON against the documented schema.
-   - Inserts valid measurements into Postgres.
-   - Logs and skips malformed messages without crashing.
+   - Subscribes to hierarchical topic patterns
+   - Validates incoming JSON against the documented schema
+   - Inserts valid measurements into Postgres
+   - Logs and skips malformed messages without crashing
 
-4. **Basic dashboards in Grafana**
-   - Visualize at least:
-     - Temperature over time.
-     - Humidity over time.
-     - Table view of the last N measurements.
-   - Dashboards should persist across container restarts via named volumes.
+4. **EcoFlow Integration**
+   - REST API polling of EcoFlow Cloud API
+   - Automatic data collection from Delta Pro and other supported models
+   - Real-time power station metrics (battery, solar input, power output, etc.)
+   - Separate collector service with configurable polling interval
 
-5. **Minimal observability for this stack**
-   - Container logs for all services (broker, collector, Postgres, Grafana).
-   - Simple end-to-end test: one MQTT message results in one DB row.
+5. **OTA Firmware Updates**
+   - REST API for ESP device firmware management
+   - Firmware upload and versioning
+   - Multiple rollout strategies (all, canary, specific devices, groups)
+   - Update progress tracking and status monitoring
+   - GitHub Actions workflow for automated firmware deployment
+   - Consistent hashing for canary rollouts
+
+6. **Grafana Dashboards**
+   - Auto-provisioned dashboards for Ruuvi sensors
+   - Comprehensive EcoFlow monitoring dashboards
+   - Real-time visualization of all metrics
+   - Dashboards persist across container restarts via named volumes
+
+7. **Production Deployment**
+   - Docker Compose orchestration for all services
+   - Automated deployment via GitHub Actions
+   - Environment-based configuration management
+   - Support for Hetzner Cloud and other hosting providers
 
 ---
 
-## Future Functional Requirements (not in current sprint)
+## Future Functional Requirements
 
-These are explicitly **future** items. They influence some design choices but are not to be implemented now:
+These are items for potential future enhancement:
 
-1. **Generalized device topics and registry**
-   - Topics like `paku/<deviceId>/telemetry`, `paku/<deviceId>/state`, `paku/<deviceId>/event/<name>`.
-   - Device registry (id, model, secrets, metadata).
+1. **Enhanced device registry**
+   - Advanced device grouping and metadata
+   - Fine-grained access control per device
 
 2. **Downlink / control**
-   - `paku/<deviceId>/cmd` (JSON commands).
-   - Device ACK via `/state` or `/event/ack`.
+   - `paku/<deviceId>/cmd` (JSON commands)
+   - Device ACK via `/state` or `/event/ack`
 
-3. **OTA firmware distribution**
-   - Host firmware files + manifest (e.g. `GET /ota/manifest.json`).
-   - Firmware download over HTTP(S) or similar.
+3. **HTTP APIs for telemetry**
+   - REST API for querying measurements
+   - Lightweight admin UI for system management
 
-4. **HTTP APIs and admin tools**
-   - Basic APIs for devices and measurements.
-   - Lightweight admin UI.
-
-These should remain parked until the single-van telemetry pipeline is stable and useful.
+4. **Advanced OTA features**
+   - CDN integration for firmware distribution
+   - A/B testing capabilities
+   - Automatic rollback on failure detection
 
 ---
 
