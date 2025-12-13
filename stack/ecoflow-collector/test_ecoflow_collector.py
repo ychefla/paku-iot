@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import json
 import pytest
+import requests
 from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch, call
 from ecoflow_collector import (
@@ -175,7 +176,6 @@ def test_make_api_request_api_error(mock_get):
 @patch('ecoflow_collector.requests.get')
 def test_make_api_request_http_error(mock_get):
     """Test API request with HTTP error."""
-    import requests
     mock_get.side_effect = requests.exceptions.HTTPError("500 Server Error")
     
     api = EcoFlowAPI("test_key", "test_secret", "https://api.test.com")
@@ -187,7 +187,6 @@ def test_make_api_request_http_error(mock_get):
 @patch('ecoflow_collector.requests.get')
 def test_make_api_request_timeout(mock_get):
     """Test API request timeout."""
-    import requests
     mock_get.side_effect = requests.exceptions.Timeout("Connection timeout")
     
     api = EcoFlowAPI("test_key", "test_secret", "https://api.test.com")
