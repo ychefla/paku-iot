@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+
 jobs:
   test-ota-service:
     name: Test OTA Service
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: stack/ota-service
@@ -41,6 +46,8 @@ jobs:
   test-collector:
     name: Test Collector Service
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: stack/collector
@@ -76,6 +83,8 @@ jobs:
   test-ecoflow-collector:
     name: Test EcoFlow Collector Service
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: stack/ecoflow-collector
@@ -107,6 +116,8 @@ jobs:
   lint:
     name: Lint Python Code
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - uses: actions/checkout@v3
