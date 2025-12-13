@@ -57,7 +57,11 @@ def load_config() -> Dict[str, Any]:
     return {
         "mqtt_host": get_env("MQTT_HOST", "mosquitto"),
         "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
-        "mqtt_topic_pattern": get_env("MQTT_TOPIC_PATTERN", "+/+/+/data"),
+        "mqtt_topic_patterns": [
+            "+/+/+/data",    # Sensor data measurements
+            "+/edge/+/status",  # Edge device status
+            "+/edge/+/config",  # Edge device configuration
+        ],
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
         "pg_user": get_env("PGUSER"),
@@ -144,6 +148,95 @@ def insert_measurement(
         )
 
 
+def insert_edge_status(
+    conn: psycopg.Connection,
+    site_id: str,
+    device_id: str,
+    payload: Dict[str, Any]
+) -> None:
+    """
+    Insert edge device status into the database.
+    
+    Expected payload structure:
+    {
+        "timestamp": "2025-12-13T10:00:00Z",
+        "state": "COLLECT",
+        "uptime_s": 12345,
+        "wifi": {...},
+        "mqtt": {...},
+        ...
+    }
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO edge_device_status (
+                site_id,
+                device_id,
+                status,
+                ts
+            )
+            VALUES (
+                %(site_id)s,
+                %(device_id)s,
+                %(status)s::jsonb,
+                COALESCE(%(timestamp)s::timestamptz, NOW())
+            )
+            """,
+            {
+                "site_id": site_id,
+                "device_id": device_id,
+                "status": json.dumps(payload),
+                "timestamp": payload.get("timestamp"),
+            },
+        )
+
+
+def upsert_edge_config(
+    conn: psycopg.Connection,
+    site_id: str,
+    device_id: str,
+    payload: Dict[str, Any]
+) -> None:
+    """
+    Upsert edge device configuration into the database.
+    
+    Expected payload structure:
+    {
+        "timing": {...},
+        "sensors": {...},
+        "power": {...},
+        ...
+    }
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO edge_device_configs (
+                site_id,
+                device_id,
+                config,
+                updated_at
+            )
+            VALUES (
+                %(site_id)s,
+                %(device_id)s,
+                %(config)s::jsonb,
+                NOW()
+            )
+            ON CONFLICT (site_id, device_id)
+            DO UPDATE SET
+                config = %(config)s::jsonb,
+                updated_at = NOW()
+            """,
+            {
+                "site_id": site_id,
+                "device_id": device_id,
+                "config": json.dumps(payload),
+            },
+        )
+
+
 # ---------------------------------------------------------------------
 # Payload validation
 # ---------------------------------------------------------------------
@@ -177,6 +270,11 @@ def parse_topic(topic: str) -> Optional[tuple[str, str, str, str]]:
     Parse topic structure: {site_id}/{system}/{device_id}/{topic_type}
     
     Returns: (site_id, system, device_id, topic_type) or None if invalid
+    
+    Supported topic_types:
+    - data: sensor measurements
+    - status: edge device status updates  
+    - config: edge device configuration
     """
     parts = topic.split("/")
     if len(parts) != 4:
@@ -185,8 +283,9 @@ def parse_topic(topic: str) -> Optional[tuple[str, str, str, str]]:
     
     site_id, system, device_id, topic_type = parts
     
-    if topic_type != "data":
-        # Only process /data topics
+    # Support data, status, and config topics
+    if topic_type not in ["data", "status", "config"]:
+        logger.debug("Ignoring unsupported topic type '%s': %s", topic_type, topic)
         return None
     
     return (site_id, system, device_id, topic_type)
@@ -210,10 +309,10 @@ class CollectorApp:
         self.conn = connect_to_database(self.cfg)
 
         logger.info(
-            "Connecting to MQTT at %s:%s, subscribing to %s",
+            "Connecting to MQTT at %s:%s, subscribing to: %s",
             self.cfg["mqtt_host"],
             self.cfg["mqtt_port"],
-            self.cfg["mqtt_topic_pattern"],
+            ", ".join(self.cfg["mqtt_topic_patterns"]),
         )
         self.client.connect(self.cfg["mqtt_host"], self.cfg["mqtt_port"], keepalive=60)
         self.client.loop_forever()
@@ -223,8 +322,10 @@ class CollectorApp:
         if reason_code.is_failure:
             logger.error("Failed to connect to MQTT broker: %s", reason_code)
         else:
-            logger.info("Connected to MQTT broker, subscribing to %s", self.cfg["mqtt_topic_pattern"])
-            client.subscribe(self.cfg["mqtt_topic_pattern"])
+            logger.info("Connected to MQTT broker")
+            for pattern in self.cfg["mqtt_topic_patterns"]:
+                client.subscribe(pattern)
+                logger.info("Subscribed to: %s", pattern)
 
     def on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
         logger.warning("Disconnected from MQTT broker, reason_code=%s", reason_code)
@@ -234,13 +335,13 @@ class CollectorApp:
         payload_raw = msg.payload.decode("utf-8", errors="replace")
         logger.debug("Received MQTT message on %s: %s", topic, payload_raw)
 
-        # Parse topic to extract site_id, system, device_id
+        # Parse topic to extract site_id, system, device_id, topic_type
         parsed = parse_topic(topic)
         if not parsed:
-            logger.debug("Ignoring non-data topic: %s", topic)
+            logger.debug("Ignoring unsupported topic: %s", topic)
             return
         
-        site_id, system, device_id, _ = parsed
+        site_id, system, device_id, topic_type = parsed
 
         try:
             data = json.loads(payload_raw)
@@ -252,25 +353,48 @@ class CollectorApp:
             logger.warning("Expected JSON object on %s, got: %r", topic, data)
             return
 
-        if not validate_payload(data):
-            # Already logged inside validate_payload
-            return
-
         if self.conn is None:
             logger.error("No DB connection available; dropping message from %s", topic)
             return
 
         try:
-            insert_measurement(self.conn, site_id, system, device_id, data)
-            logger.info(
-                "Inserted measurement: %s/%s/%s location=%s",
-                site_id,
-                system,
-                device_id,
-                data.get("location", "N/A")
-            )
+            if topic_type == "data":
+                # Handle sensor data measurements
+                if not validate_payload(data):
+                    return
+                
+                insert_measurement(self.conn, site_id, system, device_id, data)
+                logger.info(
+                    "Inserted measurement: %s/%s/%s location=%s",
+                    site_id,
+                    system,
+                    device_id,
+                    data.get("location", "N/A")
+                )
+                
+            elif topic_type == "status" and system == "edge":
+                # Handle edge device status updates
+                insert_edge_status(self.conn, site_id, device_id, data)
+                logger.info(
+                    "Inserted edge status: %s/edge/%s state=%s",
+                    site_id,
+                    device_id,
+                    data.get("state", "N/A")
+                )
+                
+            elif topic_type == "config" and system == "edge":
+                # Handle edge device configuration updates
+                upsert_edge_config(self.conn, site_id, device_id, data)
+                logger.info(
+                    "Updated edge config: %s/edge/%s",
+                    site_id,
+                    device_id
+                )
+            else:
+                logger.debug("Unhandled topic type: %s (system=%s)", topic_type, system)
+                
         except Exception as exc:
-            logger.exception("Failed to insert measurement from %s: %s", topic, exc)
+            logger.exception("Failed to process message from %s: %s", topic, exc)
 
 
 # ---------------------------------------------------------------------
