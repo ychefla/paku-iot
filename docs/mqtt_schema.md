@@ -121,6 +121,68 @@ paku/heater/webasto/config
 }
 ```
 
+### EDGE Device Configuration Topics
+
+**EDGE devices** (ESP32 firmware) use split configuration topics to prevent publish/subscribe loops:
+
+#### `/config/set` - Configuration Commands (Subscribe)
+
+Commands sent from the server to configure the device. Published by the server/operator.
+
+**QoS:** 1 (at least once)  
+**Retained:** Yes (last configuration)
+
+**Example Topic:**
+```
+paku/edge/ESP32-20E955A0/config/set
+```
+
+**Usage:**
+```bash
+# Set configuration on the broker
+docker exec paku_mosquitto mosquitto_pub -h localhost \
+  -t 'paku/edge/ESP32-20E955A0/config/set' -r \
+  -m '{"sensors":{"flow":{"enabled":false}}}'
+```
+
+**Payload Format:**
+```json
+{
+  "timing": {
+    "collection_interval_s": 300,
+    "transmission_interval_s": 600,
+    "timezone": "EET-2EEST,M3.5.0/3,M10.5.0/4"
+  },
+  "sensors": {
+    "flow": {
+      "enabled": false
+    }
+  },
+  "power": {
+    "disconnect_after_transmit": true
+  }
+}
+```
+
+#### `/config/report` - Configuration Status (Publish)
+
+Current configuration reported by the device. Published by the device.
+
+**QoS:** 1 (at least once)  
+**Retained:** No (use `/status` for retained state)
+
+**Example Topic:**
+```
+paku/edge/ESP32-20E955A0/config/report
+```
+
+**Payload Format:** Same as `/config/set`
+
+**Separation Rationale:**
+- Device subscribes only to `/config/set` for incoming commands
+- Device publishes only to `/config/report` for status reporting
+- No circular loop: device never receives its own config publications
+
 ---
 
 ## System Categories

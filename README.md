@@ -233,6 +233,7 @@ docker compose -f compose/stack.prod.yaml up -d
 - [Deployment Guide](docs/deployment.md) - Hetzner deployment instructions
 - [E2E Test Guide](docs/e2e_test.md) - Complete testing documentation
 - [MQTT Schema](docs/mqtt_schema.md) - Message format and topic structure
+- [EDGE Device Setup](docs/edge_device_setup.md) - ESP32 device configuration and management
 - [Database Schema](docs/database_schema.md) - Database structure and design
 - [EcoFlow Integration](docs/ecoflow_integration.md) - Complete guide for EcoFlow power station integration
 - [OTA Updates](docs/ota_updates.md) - Over-the-air firmware update system for ESP devices
