@@ -73,14 +73,17 @@ jobs:
           if [ -n "${{ secrets.WIFI_SSIDS }}" ]; then
             echo "Using WiFi credentials from GitHub Secrets"
             
-            # Parse JSON arrays from secrets
-            SSIDS='${{ secrets.WIFI_SSIDS }}'
-            PASSWORDS='${{ secrets.WIFI_PASSWORDS }}'
+            # Write secrets to temp files to avoid bash special character issues
+            echo '${{ secrets.WIFI_SSIDS }}' > /tmp/ssids.json
+            echo '${{ secrets.WIFI_PASSWORDS }}' > /tmp/passwords.json
             
             # Convert JSON arrays to C arrays
-            SSID_ARRAY=$(echo "$SSIDS" | jq -r '.[] | "\"" + . + "\""' | paste -sd ',' -)
-            PASSWORD_ARRAY=$(echo "$PASSWORDS" | jq -r '.[] | "\"" + . + "\""' | paste -sd ',' -)
-            WIFI_COUNT=$(echo "$SSIDS" | jq '. | length')
+            SSID_ARRAY=$(jq -r '.[] | @json' /tmp/ssids.json | paste -sd ',' -)
+            PASSWORD_ARRAY=$(jq -r '.[] | @json' /tmp/passwords.json | paste -sd ',' -)
+            WIFI_COUNT=$(jq '. | length' /tmp/ssids.json)
+            
+            # Clean up temp files
+            rm -f /tmp/ssids.json /tmp/passwords.json
             
             cat > include/secrets.h << EOF
           #pragma once
