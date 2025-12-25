@@ -198,59 +198,59 @@ jobs:
           pip3 install --quiet requests 2>/dev/null || true
           
           # Use Python requests instead of curl for more reliable multipart upload
-          python3 << 'PYEOF'
-import os
-import sys
-
-try:
-    import requests
-except ImportError:
-    print("Error: requests library not available")
-    sys.exit(1)
-
-firmware_path = os.environ['FIRMWARE_PATH']
-version = os.environ['VERSION']
-device_model = "${{ github.event.inputs.device_model }}"
-ota_url = "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}"
-api_key = "${{ secrets.OTA_API_KEY }}"
-release_notes = "${{ github.event.inputs.release_notes }}"
-
-# Build URL with query parameters
-url = f"{ota_url}/api/admin/firmware/upload"
-params = {
-    "version": version,
-    "device_model": device_model,
-    "is_signed": "false"
-}
-
-if release_notes:
-    params["release_notes"] = release_notes
-
-print(f"Uploading to: {url}")
-print(f"Parameters: {params}")
-
-try:
-    # Upload file
-    headers = {"X-API-Key": api_key}
-    with open(firmware_path, 'rb') as f:
-        files = {'file': (os.path.basename(firmware_path), f, 'application/octet-stream')}
-        response = requests.post(url, params=params, headers=headers, files=files, timeout=60)
-    
-    print(f"Response status: {response.status_code}")
-    print(f"Response body: {response.text}")
-    
-    if response.status_code != 200:
-        print(f"Error: Failed to upload firmware (HTTP {response.status_code})")
-        sys.exit(1)
-    
-    print("Firmware uploaded successfully!")
-    
-except Exception as e:
-    print(f"Error uploading firmware: {e}")
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-PYEOF
+          python3 <<'PYEOF'
+          import os
+          import sys
+          
+          try:
+              import requests
+          except ImportError:
+              print("Error: requests library not available")
+              sys.exit(1)
+          
+          firmware_path = os.environ['FIRMWARE_PATH']
+          version = os.environ['VERSION']
+          device_model = "${{ github.event.inputs.device_model }}"
+          ota_url = "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}"
+          api_key = "${{ secrets.OTA_API_KEY }}"
+          release_notes = "${{ github.event.inputs.release_notes }}"
+          
+          # Build URL with query parameters
+          url = f"{ota_url}/api/admin/firmware/upload"
+          params = {
+              "version": version,
+              "device_model": device_model,
+              "is_signed": "false"
+          }
+          
+          if release_notes:
+              params["release_notes"] = release_notes
+          
+          print(f"Uploading to: {url}")
+          print(f"Parameters: {params}")
+          
+          try:
+              # Upload file
+              headers = {"X-API-Key": api_key}
+              with open(firmware_path, 'rb') as f:
+                  files = {'file': (os.path.basename(firmware_path), f, 'application/octet-stream')}
+                  response = requests.post(url, params=params, headers=headers, files=files, timeout=60)
+              
+              print(f"Response status: {response.status_code}")
+              print(f"Response body: {response.text}")
+              
+              if response.status_code != 200:
+                  print(f"Error: Failed to upload firmware (HTTP {response.status_code})")
+                  sys.exit(1)
+              
+              print("Firmware uploaded successfully!")
+              
+          except Exception as e:
+              print(f"Error uploading firmware: {e}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          PYEOF
 
       - name: Create rollout configuration
         run: |
