@@ -912,5 +912,6 @@ if __name__ == "__main__":
         "ota_service:app",
         host=settings.host,
         port=settings.port,
-        log_level="info",
+        log_level="debug",
+        access_log=True,
     )
