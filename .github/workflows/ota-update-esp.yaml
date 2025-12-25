@@ -243,7 +243,7 @@ try:
         print(f"Error: Failed to upload firmware (HTTP {response.status_code})")
         sys.exit(1)
     
-    print("✅ Firmware uploaded successfully!")
+    print("Firmware uploaded successfully!")
     
 except Exception as e:
     print(f"Error uploading firmware: {e}")
