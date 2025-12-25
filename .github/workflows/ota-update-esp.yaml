@@ -56,7 +56,7 @@ jobs:
         with:
           path: |
             ~/.platformio
-            .pio
+            paku_core/.pio
           key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
           restore-keys: |
             ${{ runner.os }}-pio-
@@ -66,8 +66,14 @@ jobs:
           pip install --upgrade platformio
           pio --version
 
+      - name: Copy secrets template
+        run: |
+          cd paku_core
+          cp include/secrets.h.template include/secrets.h
+
       - name: Build firmware
         run: |
+          cd paku_core
           echo "Building firmware for ${{ github.event.inputs.device_model }}..."
           pio run --environment ${{ github.event.inputs.device_model }}
           
@@ -80,7 +86,8 @@ jobs:
           fi
           
           echo "Firmware built successfully: $FIRMWARE_PATH"
-          echo "FIRMWARE_PATH=$FIRMWARE_PATH" >> $GITHUB_ENV
+          # Store path relative to repo root
+          echo "FIRMWARE_PATH=paku_core/$FIRMWARE_PATH" >> $GITHUB_ENV
           
           # Calculate checksum
           FIRMWARE_SHA256=$(sha256sum "$FIRMWARE_PATH" | cut -d' ' -f1)
