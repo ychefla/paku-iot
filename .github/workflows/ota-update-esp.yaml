@@ -213,12 +213,12 @@ jobs:
               print("Error: requests library not available")
               sys.exit(1)
           
-          firmware_path = os.environ['FIRMWARE_PATH']
-          version = os.environ['VERSION']
-          device_model = os.environ['DEVICE_MODEL']
-          ota_url = os.environ['OTA_URL']
-          api_key = os.environ['OTA_API_KEY']
-          release_notes = os.environ.get('RELEASE_NOTES', '')
+          firmware_path = os.environ['FIRMWARE_PATH'].strip()
+          version = os.environ['VERSION'].strip()
+          device_model = os.environ['DEVICE_MODEL'].strip()
+          ota_url = os.environ['OTA_URL'].strip()
+          api_key = os.environ['OTA_API_KEY'].strip()
+          release_notes = os.environ.get('RELEASE_NOTES', '').strip()
           
           # Build URL with query parameters
           url = f"{ota_url}/api/admin/firmware/upload"
