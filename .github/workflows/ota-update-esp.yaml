@@ -81,26 +81,33 @@ jobs:
           pio --version
 
       - name: Copy secrets template
+        shell: bash
+        env:
+          WIFI_SSIDS_SECRET: ${{ secrets.WIFI_SSIDS }}
+          WIFI_PASSWORDS_SECRET: ${{ secrets.WIFI_PASSWORDS }}
+          MQTT_SERVER_SECRET: ${{ secrets.MQTT_SERVER }}
+          ADDITIONAL_SSID: ${{ github.event.inputs.additional_ssid }}
+          ADDITIONAL_PASSWORD: ${{ github.event.inputs.additional_password }}
         run: |
           cd paku_core
           # Use template or inject secrets from GitHub Secrets (if provided)
-          if [ -n "${{ secrets.WIFI_SSIDS }}" ]; then
+          if [ -n "$WIFI_SSIDS_SECRET" ]; then
             echo "Using WiFi credentials from GitHub Secrets"
             
-            # Write secrets to temp files using printf to avoid bash parsing issues
-            printf '%s\n' '${{ secrets.WIFI_SSIDS }}' > /tmp/ssids.json
-            printf '%s\n' '${{ secrets.WIFI_PASSWORDS }}' > /tmp/passwords.json
+            # Write secrets to temp files using environment variables (avoids bash parsing)
+            printf '%s' "$WIFI_SSIDS_SECRET" > /tmp/ssids.json
+            printf '%s' "$WIFI_PASSWORDS_SECRET" > /tmp/passwords.json
             
             # Add additional SSID if provided
-            if [ -n "${{ github.event.inputs.additional_ssid }}" ]; then
-              echo "Adding additional WiFi network: ${{ github.event.inputs.additional_ssid }}"
+            if [ -n "$ADDITIONAL_SSID" ]; then
+              echo "Adding additional WiFi network: $ADDITIONAL_SSID"
               
               # Append additional network to arrays
-              TEMP_SSIDS=$(jq --arg ssid "${{ github.event.inputs.additional_ssid }}" '. + [$ssid]' /tmp/ssids.json)
-              TEMP_PASSWORDS=$(jq --arg pwd "${{ github.event.inputs.additional_password }}" '. + [$pwd]' /tmp/passwords.json)
+              TEMP_SSIDS=$(jq --arg ssid "$ADDITIONAL_SSID" '. + [$ssid]' /tmp/ssids.json)
+              TEMP_PASSWORDS=$(jq --arg pwd "$ADDITIONAL_PASSWORD" '. + [$pwd]' /tmp/passwords.json)
               
-              printf '%s\n' "$TEMP_SSIDS" > /tmp/ssids.json
-              printf '%s\n' "$TEMP_PASSWORDS" > /tmp/passwords.json
+              printf '%s' "$TEMP_SSIDS" > /tmp/ssids.json
+              printf '%s' "$TEMP_PASSWORDS" > /tmp/passwords.json
             fi
             
             # Convert JSON arrays to C arrays
@@ -122,7 +129,7 @@ jobs:
           static const char* WIFI_PASSWORDS[] = { $PASSWORD_ARRAY };
           static const size_t WIFI_COUNT = $WIFI_COUNT;
           
-          #define MQTT_SERVER "${{ secrets.MQTT_SERVER }}"
+          #define MQTT_SERVER "$MQTT_SERVER_SECRET"
           #define MQTT_PORT 1883
           
           #define PAKU_IOT_ENABLED 0
