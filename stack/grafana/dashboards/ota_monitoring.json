@@ -183,7 +183,42 @@
       },
       {
         "id": 8,
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
+        "type": "table",
+        "title": "All Devices - Software Status",
+        "targets": [
+          {
+            "refId": "A",
+            "rawSql": "SELECT d.device_id as \"Device ID\", d.device_model as \"Model\", d.current_firmware_version as \"Current FW\", (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as \"Latest FW\", CASE WHEN d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) THEN '✅ Up-to-date' ELSE '⚠️ Update Available' END as \"Status\", (SELECT status FROM device_update_status WHERE device_id = d.device_id ORDER BY reported_at DESC LIMIT 1) as \"Last Update\", d.last_seen as \"Last Seen\" FROM devices d ORDER BY d.last_seen DESC NULLS LAST",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Status"},
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 150
+                }
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "Last Seen"},
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "dateTimeAsIso"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 13,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
         "type": "table",
         "title": "Recent Firmware Releases",
         "targets": [
@@ -196,7 +231,7 @@
       },
       {
         "id": 9,
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
         "type": "table",
         "title": "Active Rollouts",
         "targets": [
@@ -209,7 +244,7 @@
       },
       {
         "id": 10,
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 38},
         "type": "table",
         "title": "Recent Update Failures",
         "targets": [
@@ -222,7 +257,7 @@
       },
       {
         "id": 11,
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46},
         "type": "table",
         "title": "Devices by Model",
         "targets": [
@@ -235,7 +270,7 @@
       },
       {
         "id": 12,
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 46},
         "type": "table",
         "title": "Devices Needing Updates",
         "targets": [
