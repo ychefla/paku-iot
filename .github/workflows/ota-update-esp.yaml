@@ -161,15 +161,18 @@ jobs:
           echo "Building firmware for ${{ github.event.inputs.device_model }}..."
           pio run --environment ${{ github.event.inputs.device_model }}
           
-          # Find the built firmware
-          FIRMWARE_PATH=$(find .pio/build/${{ github.event.inputs.device_model }} -name "firmware.bin" -o -name "*.bin" | head -1)
+          # Find the built firmware (specifically firmware.bin, not partitions.bin)
+          FIRMWARE_PATH=".pio/build/${{ github.event.inputs.device_model }}/firmware.bin"
           
-          if [ -z "$FIRMWARE_PATH" ]; then
-            echo "Error: Firmware binary not found!"
+          if [ ! -f "$FIRMWARE_PATH" ]; then
+            echo "Error: Firmware binary not found at $FIRMWARE_PATH"
+            ls -la ".pio/build/${{ github.event.inputs.device_model }}/" || true
             exit 1
           fi
           
           echo "Firmware built successfully: $FIRMWARE_PATH"
+          echo "Firmware size: $(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || stat -f%z "$FIRMWARE_PATH") bytes"
+          
           # Store path relative to repo root
           echo "FIRMWARE_PATH=paku_core/$FIRMWARE_PATH" >> $GITHUB_ENV
           
