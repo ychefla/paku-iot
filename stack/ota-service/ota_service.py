@@ -28,8 +28,9 @@ from typing import Any, Dict, List, Optional
 import aiofiles
 import psycopg
 import uvicorn
-from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Query, Depends
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Query, Depends, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
@@ -80,6 +81,34 @@ app = FastAPI(
     description="Firmware update orchestration for ESP devices",
     version="1.0.0",
 )
+
+# ---------------------------------------------------------------------
+# Exception Handlers
+# ---------------------------------------------------------------------
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with detailed logging."""
+    logger.error(f"Validation error for {request.method} {request.url}")
+    logger.error(f"Headers: {dict(request.headers)}")
+    logger.error(f"Query params: {dict(request.query_params)}")
+    logger.error(f"Validation errors: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": exc.errors(),
+            "body": str(exc.body) if hasattr(exc, 'body') else None
+        }
+    )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests."""
+    logger.info(f"Request: {request.method} {request.url}")
+    logger.debug(f"Headers: {dict(request.headers)}")
+    logger.debug(f"Query params: {dict(request.query_params)}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
 
 # ---------------------------------------------------------------------
 # Database Connection
