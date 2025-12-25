@@ -1,15 +1,14 @@
 {
-  "dashboard": {
-    "title": "OTA Update Monitoring",
-    "uid": "ota-monitoring",
-    "timezone": "browser",
-    "schemaVersion": 16,
-    "refresh": "30s",
-    "time": {
-      "from": "now-24h",
-      "to": "now"
-    },
-    "panels": [
+  "title": "OTA Update Monitoring",
+  "uid": "ota-monitoring",
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
       {
         "id": 1,
         "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
