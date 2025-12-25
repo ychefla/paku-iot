@@ -194,35 +194,48 @@ jobs:
           echo "Firmware path: ${FIRMWARE_PATH}"
           echo "Firmware size: $(stat -c%s "${FIRMWARE_PATH}" 2>/dev/null || stat -f%z "${FIRMWARE_PATH}")"
           
-          # Build upload URL with all parameters
-          UPLOAD_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/firmware/upload"
-          UPLOAD_URL="${UPLOAD_URL}?version=${VERSION}"
-          UPLOAD_URL="${UPLOAD_URL}&device_model=${{ github.event.inputs.device_model }}"
-          UPLOAD_URL="${UPLOAD_URL}&is_signed=false"
-          
-          # Add release notes if provided
-          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
-            ENCODED_NOTES=$(printf '%s' '${{ github.event.inputs.release_notes }}' | jq -sRr @uri)
-            UPLOAD_URL="${UPLOAD_URL}&release_notes=${ENCODED_NOTES}"
-          fi
-          
-          echo "Upload URL: ${UPLOAD_URL}"
-          
-          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/upload_response.txt \
-            -X POST \
-            -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
-            -H "Expect:" \
-            -F "file=@${FIRMWARE_PATH}" \
-            "${UPLOAD_URL}")
-          
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Error: Failed to upload firmware (HTTP $HTTP_CODE)"
-            cat /tmp/upload_response.txt
-            exit 1
-          fi
-          
-          echo "Firmware uploaded successfully!"
-          cat /tmp/upload_response.txt
+          # Use Python requests instead of curl for more reliable multipart upload
+          python3 << 'PYEOF'
+import os
+import sys
+import requests
+from urllib.parse import quote
+
+firmware_path = os.environ['FIRMWARE_PATH']
+version = os.environ['VERSION']
+device_model = "${{ github.event.inputs.device_model }}"
+ota_url = "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}"
+api_key = "${{ secrets.OTA_API_KEY }}"
+release_notes = "${{ github.event.inputs.release_notes }}"
+
+# Build URL with query parameters
+url = f"{ota_url}/api/admin/firmware/upload"
+params = {
+    "version": version,
+    "device_model": device_model,
+    "is_signed": "false"
+}
+
+if release_notes:
+    params["release_notes"] = release_notes
+
+print(f"Upload URL: {url}")
+print(f"Parameters: {params}")
+
+# Upload file
+headers = {"X-API-Key": api_key}
+with open(firmware_path, 'rb') as f:
+    files = {'file': (os.path.basename(firmware_path), f, 'application/octet-stream')}
+    response = requests.post(url, params=params, headers=headers, files=files, timeout=60)
+
+print(f"Response status: {response.status_code}")
+print(f"Response body: {response.text}")
+
+if response.status_code != 200:
+    sys.exit(1)
+
+print("Firmware uploaded successfully!")
+PYEOF
 
       - name: Create rollout configuration
         run: |
