@@ -200,6 +200,7 @@ jobs:
           UPLOAD_RESPONSE=$(curl -v \
             "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/firmware/upload?version=${VERSION}&device_model=${{ github.event.inputs.device_model }}&is_signed=false&release_notes=${ENCODED_NOTES}" \
             -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
+            -H "Expect:" \
             -F "file=@${FIRMWARE_PATH}" \
             -w "\nHTTP_CODE:%{http_code}" \
             2>&1)
