@@ -189,6 +189,11 @@ jobs:
           echo "Generated version: $VERSION"
 
       - name: Upload firmware to OTA service
+        env:
+          OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
+          DEVICE_MODEL: ${{ github.event.inputs.device_model }}
+          RELEASE_NOTES: ${{ github.event.inputs.release_notes }}
         run: |
           echo "Uploading firmware to OTA service..."
           echo "Firmware path: ${FIRMWARE_PATH}"
@@ -210,10 +215,10 @@ jobs:
           
           firmware_path = os.environ['FIRMWARE_PATH']
           version = os.environ['VERSION']
-          device_model = "${{ github.event.inputs.device_model }}"
-          ota_url = "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}"
-          api_key = "${{ secrets.OTA_API_KEY }}"
-          release_notes = "${{ github.event.inputs.release_notes }}"
+          device_model = os.environ['DEVICE_MODEL']
+          ota_url = os.environ['OTA_URL']
+          api_key = os.environ['OTA_API_KEY']
+          release_notes = os.environ.get('RELEASE_NOTES', '')
           
           # Build URL with query parameters
           url = f"{ota_url}/api/admin/firmware/upload"
