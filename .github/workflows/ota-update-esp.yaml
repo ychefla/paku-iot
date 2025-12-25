@@ -70,6 +70,17 @@ jobs:
         run: |
           cd paku_core
           cp include/secrets.h.template include/secrets.h
+          # Create device_config.h with the appropriate device based on build environment
+          if [[ "${{ github.event.inputs.device_model }}" == *"lilygo"* ]] || [[ "${{ github.event.inputs.device_model }}" == "esp32-s3" ]]; then
+            sed 's|// #define DEVICE_LILYGO_T_DISPLAY_S3|#define DEVICE_LILYGO_T_DISPLAY_S3|' src/device_config.h.template > src/device_config.h
+            sed -i 's|^#define DEVICE_ESP8266_WIRED_SENSORS|// #define DEVICE_ESP8266_WIRED_SENSORS|' src/device_config.h
+          elif [[ "${{ github.event.inputs.device_model }}" == "esp8266"* ]]; then
+            cp src/device_config.h.template src/device_config.h
+          else
+            # Generic ESP32
+            sed 's|// #define DEVICE_ESP32_CH340C_30PIN|#define DEVICE_ESP32_CH340C_30PIN|' src/device_config.h.template > src/device_config.h
+            sed -i 's|^#define DEVICE_ESP8266_WIRED_SENSORS|// #define DEVICE_ESP8266_WIRED_SENSORS|' src/device_config.h
+          fi
 
       - name: Build firmware
         run: |
