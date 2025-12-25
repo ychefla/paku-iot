@@ -8,19 +8,33 @@ on:
         required: true
         type: choice
         options:
-          - test
+          - single-device
           - canary-10
           - canary-25
           - canary-50
           - full
-        default: 'test'
+        default: 'single-device'
       device_model:
-        description: 'Device model (e.g., esp32, esp8266)'
+        description: 'Device model'
         required: true
-        type: string
-        default: 'esp32'
+        type: choice
+        options:
+          - lilygo-t-display-s3
+          - esp32-ch340c-30pin
+          - esp8266-wired-sensors
+        default: 'lilygo-t-display-s3'
       test_devices:
-        description: 'Test device IDs (comma-separated, only for test strategy)'
+        description: 'Device IDs (comma-separated, only for single-device strategy)'
+        required: false
+        type: string
+        default: ''
+      additional_ssid:
+        description: 'Additional WiFi SSID (optional, for site-specific deployment)'
+        required: false
+        type: string
+        default: ''
+      additional_password:
+        description: 'Additional WiFi password (optional)'
         required: false
         type: string
         default: ''
@@ -76,6 +90,18 @@ jobs:
             # Write secrets to temp files to avoid bash special character issues
             echo '${{ secrets.WIFI_SSIDS }}' > /tmp/ssids.json
             echo '${{ secrets.WIFI_PASSWORDS }}' > /tmp/passwords.json
+            
+            # Add additional SSID if provided
+            if [ -n "${{ github.event.inputs.additional_ssid }}" ]; then
+              echo "Adding additional WiFi network: ${{ github.event.inputs.additional_ssid }}"
+              
+              # Append additional network to arrays
+              TEMP_SSIDS=$(jq '. + ["${{ github.event.inputs.additional_ssid }}"]' /tmp/ssids.json)
+              TEMP_PASSWORDS=$(jq '. + ["${{ github.event.inputs.additional_password }}"]' /tmp/passwords.json)
+              
+              echo "$TEMP_SSIDS" > /tmp/ssids.json
+              echo "$TEMP_PASSWORDS" > /tmp/passwords.json
+            fi
             
             # Convert JSON arrays to C arrays
             SSID_ARRAY=$(jq -r '.[] | @json' /tmp/ssids.json | paste -sd ',' -)
@@ -277,8 +303,8 @@ jobs:
           - **Rollout Name**: \`${{ github.event.inputs.device_model }}-${VERSION}-${{ github.event.inputs.rollout_strategy }}\`
           EOF
           
-          if [ "${{ github.event.inputs.rollout_strategy }}" = "test" ]; then
-            echo "- **Test Devices**: \`${{ github.event.inputs.test_devices }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.rollout_strategy }}" = "single-device" ]; then
+            echo "- **Target Devices**: \`${{ github.event.inputs.test_devices }}\`" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ github.event.inputs.rollout_strategy }}" == canary-* ]]; then
             PERCENTAGE=$(echo "${{ github.event.inputs.rollout_strategy }}" | cut -d- -f2)
             echo "- **Rollout Percentage**: ${PERCENTAGE}%" >> $GITHUB_STEP_SUMMARY
