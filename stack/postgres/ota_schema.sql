@@ -35,6 +35,7 @@ COMMENT ON COLUMN firmware_releases.is_signed IS 'Whether firmware is cryptograp
 CREATE TABLE IF NOT EXISTS devices (
     id BIGSERIAL PRIMARY KEY,
     device_id TEXT NOT NULL UNIQUE,
+    mac_address TEXT UNIQUE,
     device_model TEXT NOT NULL,
     current_firmware_version TEXT,
     last_seen TIMESTAMPTZ,
@@ -43,10 +44,12 @@ CREATE TABLE IF NOT EXISTS devices (
 );
 
 CREATE INDEX IF NOT EXISTS idx_devices_device_id ON devices(device_id);
+CREATE INDEX IF NOT EXISTS idx_devices_mac ON devices(mac_address);
 CREATE INDEX IF NOT EXISTS idx_devices_model ON devices(device_model);
 
 COMMENT ON TABLE devices IS 'Device registry for OTA update tracking';
 COMMENT ON COLUMN devices.device_id IS 'Unique device identifier (e.g., MAC address, serial number)';
+COMMENT ON COLUMN devices.mac_address IS 'Device MAC address for alternative targeting';
 
 -- Device update status tracking
 CREATE TABLE IF NOT EXISTS device_update_status (
@@ -97,7 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_rollout_configurations_version ON rollout_configu
 
 COMMENT ON TABLE rollout_configurations IS 'Firmware rollout orchestration and targeting rules';
 COMMENT ON COLUMN rollout_configurations.target_type IS 'Rollout targeting strategy';
-COMMENT ON COLUMN rollout_configurations.target_filter IS 'JSON filter for device selection (device IDs, groups, etc.)';
+COMMENT ON COLUMN rollout_configurations.target_filter IS 'JSON filter for device selection. Examples: {"device_ids": ["ESP32-AABBCCDD"]}, {"mac_addresses": ["AA:BB:CC:DD:EE:FF"]}, {"group": "production"}';
 COMMENT ON COLUMN rollout_configurations.rollout_percentage IS 'Percentage of target devices to update (for canary/phased rollouts)';
 
 -- Update events log

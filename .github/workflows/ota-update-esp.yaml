@@ -69,7 +69,44 @@ jobs:
       - name: Copy secrets template
         run: |
           cd paku_core
-          cp include/secrets.h.template include/secrets.h
+          # Use template or inject secrets from GitHub Secrets (if provided)
+          if [ -n "${{ secrets.WIFI_SSIDS }}" ]; then
+            echo "Using WiFi credentials from GitHub Secrets"
+            
+            # Parse JSON arrays from secrets
+            SSIDS='${{ secrets.WIFI_SSIDS }}'
+            PASSWORDS='${{ secrets.WIFI_PASSWORDS }}'
+            
+            # Convert JSON arrays to C arrays
+            SSID_ARRAY=$(echo "$SSIDS" | jq -r '.[] | "\"" + . + "\""' | paste -sd ',' -)
+            PASSWORD_ARRAY=$(echo "$PASSWORDS" | jq -r '.[] | "\"" + . + "\""' | paste -sd ',' -)
+            WIFI_COUNT=$(echo "$SSIDS" | jq '. | length')
+            
+            cat > include/secrets.h << EOF
+          #pragma once
+          
+          // Auto-generated from GitHub Secrets for OTA build
+          #define LOG_ENABLED 1
+          #define LOG_INFO_ENABLED 1
+          
+          static const char* WIFI_SSIDS[] = { $SSID_ARRAY };
+          static const char* WIFI_PASSWORDS[] = { $PASSWORD_ARRAY };
+          static const size_t WIFI_COUNT = $WIFI_COUNT;
+          
+          #define MQTT_SERVER "${{ secrets.MQTT_SERVER }}"
+          #define MQTT_PORT 1883
+          
+          #define PAKU_IOT_ENABLED 0
+          #define PAKU_IOT_HOST "localhost"
+          #define PAKU_IOT_PORT 443
+          #define PAKU_IOT_API_KEY "not-used"
+          #define PAKU_IOT_USE_TLS false
+          EOF
+          else
+            echo "Using secrets template (no GitHub Secrets configured)"
+            cp include/secrets.h.template include/secrets.h
+          fi
+          
           # Create device_config.h with the appropriate device based on build environment
           if [[ "${{ github.event.inputs.device_model }}" == *"lilygo"* ]] || [[ "${{ github.event.inputs.device_model }}" == "esp32-s3" ]]; then
             sed 's|// #define DEVICE_LILYGO_T_DISPLAY_S3|#define DEVICE_LILYGO_T_DISPLAY_S3|' src/device_config.h.template > src/device_config.h

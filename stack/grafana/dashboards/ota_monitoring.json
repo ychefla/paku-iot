@@ -189,7 +189,7 @@
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT d.device_id as \"Device ID\", d.device_model as \"Model\", d.current_firmware_version as \"Current FW\", (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as \"Latest FW\", CASE WHEN d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) THEN '✅ Up-to-date' ELSE '⚠️ Update Available' END as \"Status\", (SELECT status FROM device_update_status WHERE device_id = d.device_id ORDER BY reported_at DESC LIMIT 1) as \"Last Update\", d.last_seen as \"Last Seen\" FROM devices d ORDER BY d.last_seen DESC NULLS LAST",
+            "rawSql": "SELECT d.device_id as \"Device ID\", d.mac_address as \"MAC Address\", d.device_model as \"Model\", d.current_firmware_version as \"Current FW\", (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as \"Latest FW\", CASE WHEN d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) THEN '✅ Up-to-date' ELSE '⚠️ Update Available' END as \"Status\", (SELECT status FROM device_update_status WHERE device_id = d.device_id ORDER BY reported_at DESC LIMIT 1) as \"Last Update\", d.last_seen as \"Last Seen\" FROM devices d ORDER BY d.last_seen DESC NULLS LAST",
             "format": "table"
           }
         ],
@@ -201,6 +201,19 @@
                 {
                   "id": "custom.width",
                   "value": 150
+                }
+              ]
+            },
+            {
+              "matcher": {"id": "byName", "options": "MAC Address"},
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 150
+                },
+                {
+                  "id": "custom.displayMode",
+                  "value": "color-text"
                 }
               ]
             },
