@@ -197,14 +197,10 @@ jobs:
           # URL encode release notes
           ENCODED_NOTES=$(printf '%s' '${{ github.event.inputs.release_notes }}' | jq -sRr @uri)
           
-          UPLOAD_RESPONSE=$(curl -v -X POST \
-            "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/firmware/upload" \
+          UPLOAD_RESPONSE=$(curl -v \
+            "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/firmware/upload?version=${VERSION}&device_model=${{ github.event.inputs.device_model }}&is_signed=false&release_notes=${ENCODED_NOTES}" \
             -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
             -F "file=@${FIRMWARE_PATH}" \
-            -F "version=${VERSION}" \
-            -F "device_model=${{ github.event.inputs.device_model }}" \
-            -F "is_signed=false" \
-            -F "release_notes=${ENCODED_NOTES}" \
             -w "\nHTTP_CODE:%{http_code}" \
             2>&1)
           
