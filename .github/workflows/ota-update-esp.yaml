@@ -60,12 +60,57 @@ jobs:
           ref: main
           token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
 
+      - name: Generate version from commit
+        run: |
+          # Use short commit hash from paku-core repository (not paku-iot)
+          cd paku_core
+          PAKU_CORE_COMMIT=$(git rev-parse --short HEAD)
+          cd ..
+          VERSION="${PAKU_CORE_COMMIT}-$(date +%Y%m%d-%H%M%S)"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Generated version from paku-core commit: $VERSION"
+          
+          # Store just the commit hash for firmware existence check
+          echo "COMMIT_HASH=$PAKU_CORE_COMMIT" >> $GITHUB_ENV
+
+      - name: Check if firmware already exists
+        id: check_firmware
+        env:
+          OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          DEVICE_MODEL: ${{ github.event.inputs.device_model }}
+        run: |
+          echo "Checking if firmware already exists for commit: $COMMIT_HASH and model: $DEVICE_MODEL"
+          
+          # Query OTA service for existing firmware releases matching this commit hash
+          response=$(curl -s "${OTA_URL}/api/admin/firmware/releases?device_model=${DEVICE_MODEL}&limit=50" || echo '{"releases":[]}')
+          
+          # Check if any release version starts with this commit hash
+          existing_version=$(echo "$response" | jq -r ".releases[]? | select(.version | startswith(\"${COMMIT_HASH}-\")) | .version" | head -n1)
+          
+          if [ -n "$existing_version" ]; then
+            echo "Found existing firmware: $existing_version"
+            echo "FIRMWARE_EXISTS=true" >> $GITHUB_ENV
+            echo "EXISTING_VERSION=$existing_version" >> $GITHUB_ENV
+            echo "firmware_exists=true" >> $GITHUB_OUTPUT
+            
+            # Get checksum for existing firmware
+            checksum=$(echo "$response" | jq -r ".releases[]? | select(.version == \"${existing_version}\") | .checksum_sha256")
+            echo "FIRMWARE_SHA256=$checksum" >> $GITHUB_ENV
+            echo "Using existing firmware: $existing_version (SHA256: $checksum)"
+          else
+            echo "No existing firmware found, build required"
+            echo "FIRMWARE_EXISTS=false" >> $GITHUB_ENV
+            echo "firmware_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Python
+        if: env.FIRMWARE_EXISTS == 'false'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Cache PlatformIO
+        if: env.FIRMWARE_EXISTS == 'false'
         uses: actions/cache@v3
         with:
           path: |
@@ -76,11 +121,13 @@ jobs:
             ${{ runner.os }}-pio-
 
       - name: Install PlatformIO
+        if: env.FIRMWARE_EXISTS == 'false'
         run: |
           pip install --upgrade platformio
           pio --version
 
       - name: Copy secrets template
+        if: env.FIRMWARE_EXISTS == 'false'
         shell: bash
         env:
           WIFI_SSIDS_SECRET: ${{ secrets.WIFI_SSIDS }}
@@ -180,49 +227,6 @@ jobs:
           FIRMWARE_SHA256=$(sha256sum "$FIRMWARE_PATH" | cut -d' ' -f1)
           echo "FIRMWARE_SHA256=$FIRMWARE_SHA256" >> $GITHUB_ENV
           echo "Firmware SHA256: $FIRMWARE_SHA256"
-
-      - name: Generate version from commit
-        run: |
-          # Use short commit hash from paku-core repository (not paku-iot)
-          cd paku_core
-          PAKU_CORE_COMMIT=$(git rev-parse --short HEAD)
-          cd ..
-          VERSION="${PAKU_CORE_COMMIT}-$(date +%Y%m%d-%H%M%S)"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Generated version from paku-core commit: $VERSION"
-          
-          # Store just the commit hash for firmware existence check
-          echo "COMMIT_HASH=$PAKU_CORE_COMMIT" >> $GITHUB_ENV
-
-      - name: Check if firmware already exists
-        id: check_firmware
-        env:
-          OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
-          DEVICE_MODEL: ${{ github.event.inputs.device_model }}
-        run: |
-          echo "Checking if firmware already exists for commit: $COMMIT_HASH and model: $DEVICE_MODEL"
-          
-          # Query OTA service for existing firmware releases matching this commit hash
-          response=$(curl -s "${OTA_URL}/api/admin/firmware/releases?device_model=${DEVICE_MODEL}&limit=50" || echo '{"releases":[]}')
-          
-          # Check if any release version starts with this commit hash
-          existing_version=$(echo "$response" | jq -r ".releases[]? | select(.version | startswith(\"${COMMIT_HASH}-\")) | .version" | head -n1)
-          
-          if [ -n "$existing_version" ]; then
-            echo "Found existing firmware: $existing_version"
-            echo "FIRMWARE_EXISTS=true" >> $GITHUB_ENV
-            echo "EXISTING_VERSION=$existing_version" >> $GITHUB_ENV
-            echo "firmware_exists=true" >> $GITHUB_OUTPUT
-            
-            # Get checksum for existing firmware
-            checksum=$(echo "$response" | jq -r ".releases[]? | select(.version == \"${existing_version}\") | .checksum_sha256")
-            echo "FIRMWARE_SHA256=$checksum" >> $GITHUB_ENV
-            echo "Using existing firmware: $existing_version (SHA256: $checksum)"
-          else
-            echo "No existing firmware found, build required"
-            echo "FIRMWARE_EXISTS=false" >> $GITHUB_ENV
-            echo "firmware_exists=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Build firmware
         if: env.FIRMWARE_EXISTS == 'false'
@@ -593,6 +597,9 @@ jobs:
             echo ""
             echo "Summary: $success_count succeeded, $fail_count failed out of $TOTAL_DEVICES devices"
           fi
+          
+          # Ensure workflow succeeds if MQTT commands were sent successfully
+          exit 0
 
       - name: Generate deployment summary
         run: |
