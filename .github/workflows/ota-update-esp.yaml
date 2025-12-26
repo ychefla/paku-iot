@@ -365,7 +365,7 @@ jobs:
           
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
           DEVICE_MODEL="${{ github.event.inputs.device_model }}"
-          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/firmware/firmware_${DEVICE_MODEL}_${VERSION}.bin"
+          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${VERSION}"
           
           # Build OTA command JSON
           OTA_COMMAND=$(cat <<EOF
