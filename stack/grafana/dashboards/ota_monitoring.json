@@ -2,298 +2,371 @@
   "title": "OTA Update Monitoring",
   "uid": "ota-monitoring",
   "timezone": "browser",
-  "schemaVersion": 16,
-  "refresh": "30s",
+  "schemaVersion": 38,
+  "refresh": "5s",
   "time": {
     "from": "now-24h",
     "to": "now"
   },
   "panels": [
-      {
-        "id": 1,
-        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
-        "type": "stat",
-        "title": "Total Devices",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT COUNT(*) as total FROM devices",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short"
+    {
+      "id": 1,
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "type": "stat",
+      "title": "Total Devices",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as total FROM devices",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "type": "stat",
+      "title": "Latest Firmware",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT version FROM firmware_releases ORDER BY created_at DESC LIMIT 1",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "string",
+          "color": {"mode": "fixed", "fixedColor": "blue"}
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "type": "stat",
+      "title": "Devices Up-to-Date",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as uptodate FROM devices d WHERE d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1)",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 5, "color": "yellow"},
+              {"value": 8, "color": "green"}
+            ]
           }
         }
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "type": "stat",
+      "title": "Active Updates",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
       },
-      {
-        "id": 2,
-        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
-        "type": "stat",
-        "title": "Active Rollouts",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT COUNT(*) as active FROM rollout_configurations WHERE is_active = true",
-            "format": "table"
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as active FROM device_update_status WHERE status = 'in_progress'",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "blue"}
+            ]
           }
-        ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 1, "color": "yellow"},
-                {"value": 3, "color": "red"}
-              ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {"h": 14, "w": 24, "x": 0, "y": 4},
+      "type": "table",
+      "title": "Device Status & Update Progress",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "WITH latest_updates AS (\\n  SELECT DISTINCT ON (device_id)\\n    device_id,\\n    firmware_version as target_version,\\n    status,\\n    started_at,\\n    completed_at,\\n    EXTRACT(EPOCH FROM (COALESCE(completed_at, NOW()) - started_at)) as duration\\n  FROM device_update_status\\n  ORDER BY device_id, started_at DESC\\n),\\nlatest_progress AS (\\n  SELECT DISTINCT ON (device_id)\\n    device_id,\\n    progress_state,\\n    progress_percent\\n  FROM device_ota_progress\\n  WHERE reported_at > NOW() - INTERVAL '5 minutes'\\n  ORDER BY device_id, reported_at DESC\\n)\\nSELECT\\n  d.device_id as \"Device ID\",\\n  d.device_model as \"Model\",\\n  d.current_firmware_version as \"Current Version\",\\n  CASE\\n    WHEN lp.progress_percent IS NOT NULL THEN lp.progress_percent || '% ' || lp.progress_state\\n    ELSE '-'\\n  END as \"Update Progress\",\\n  COALESCE(lu.target_version, '-') as \"Target Version\",\\n  CASE\\n    WHEN d.online = true THEN '🟢 Online'\\n    ELSE '🔴 Offline'\\n  END as \"Online\",\\n  CASE\\n    WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN TO_CHAR(NOW() - d.last_seen, 'MI\"m\"')\\n    WHEN d.last_seen > NOW() - INTERVAL '1 hour' THEN TO_CHAR(NOW() - d.last_seen, 'HH24\"h\" MI\"m\"')\\n    WHEN d.last_seen IS NOT NULL THEN TO_CHAR(d.last_seen, 'YYYY-MM-DD HH24:MI')\\n    ELSE 'Never'\\n  END as \"Last Seen\",\\n  CASE\\n    WHEN lu.completed_at IS NOT NULL THEN TO_CHAR(lu.completed_at, 'YYYY-MM-DD HH24:MI')\\n    ELSE 'Never'\\n  END as \"Last Update\",\\n  CASE\\n    WHEN lu.status = 'in_progress' THEN '🔄 Updating'\\n    WHEN lu.status = 'success' THEN '✅ Success'\\n    WHEN lu.status = 'failed' THEN '❌ Failed'\\n    ELSE '-'\\n  END as \"Status\"\\nFROM devices d\\nLEFT JOIN latest_updates lu ON d.device_id = lu.device_id\\nLEFT JOIN latest_progress lp ON d.device_id = lp.device_id\\nORDER BY d.last_seen DESC NULLS LAST",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
             }
           }
-        }
-      },
-      {
-        "id": 3,
-        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
-        "type": "stat",
-        "title": "Success Rate (24h)",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) / COUNT(*), 1) as success_rate FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' AND status IN ('success', 'failed')",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value"
         },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percent",
-            "color": {"mode": "thresholds"},
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "red"},
-                {"value": 80, "color": "yellow"},
-                {"value": 95, "color": "green"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 4,
-        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
-        "type": "stat",
-        "title": "Updates (24h)",
-        "targets": [
+        "overrides": [
           {
-            "refId": "A",
-            "rawSql": "SELECT COUNT(*) as updates FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' AND status IN ('success', 'failed')",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "unit": "short"
-          }
-        }
-      },
-      {
-        "id": 5,
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
-        "type": "piechart",
-        "title": "Firmware Version Distribution",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT current_firmware_version as version, COUNT(*) as count FROM devices WHERE current_firmware_version IS NOT NULL GROUP BY current_firmware_version ORDER BY count DESC",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          }
-        }
-      },
-      {
-        "id": 6,
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
-        "type": "piechart",
-        "title": "Update Status (24h)",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT status, COUNT(*) as count FROM device_update_status WHERE reported_at > NOW() - INTERVAL '24 hours' GROUP BY status ORDER BY count DESC",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "legend": {
-            "displayMode": "table",
-            "placement": "right",
-            "values": ["value", "percent"]
-          }
-        }
-      },
-      {
-        "id": 7,
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
-        "type": "timeseries",
-        "title": "Update Activity Over Time",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT DATE_TRUNC('hour', reported_at) as time, status, COUNT(*) as count FROM device_update_status WHERE reported_at > NOW() - INTERVAL '7 days' GROUP BY time, status ORDER BY time",
-            "format": "time_series"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "drawStyle": "line",
-              "lineInterpolation": "smooth",
-              "fillOpacity": 10,
-              "stacking": {
-                "mode": "normal"
+            "matcher": {"id": "byName", "options": "Device ID"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
               }
-            },
-            "unit": "short"
-          }
-        }
-      },
-      {
-        "id": 8,
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
-        "type": "table",
-        "title": "All Devices - Software Status",
-        "targets": [
+            ]
+          },
           {
-            "refId": "A",
-            "rawSql": "SELECT d.device_id as \"Device ID\", d.mac_address as \"MAC Address\", d.device_model as \"Model\", d.current_firmware_version as \"Current FW\", (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as \"Latest FW\", CASE WHEN d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) THEN '✅ Up-to-date' ELSE '⚠️ Update Available' END as \"Status\", (SELECT status FROM device_update_status WHERE device_id = d.device_id ORDER BY reported_at DESC LIMIT 1) as \"Last Update\", d.last_seen as \"Last Seen\" FROM devices d ORDER BY d.last_seen DESC NULLS LAST",
-            "format": "table"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "Status"},
-              "properties": [
-                {
-                  "id": "custom.width",
-                  "value": 150
-                }
-              ]
-            },
-            {
-              "matcher": {"id": "byName", "options": "MAC Address"},
-              "properties": [
-                {
-                  "id": "custom.width",
-                  "value": 150
-                },
-                {
-                  "id": "custom.displayMode",
-                  "value": "color-text"
-                }
-              ]
-            },
-            {
-              "matcher": {"id": "byName", "options": "Last Seen"},
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "dateTimeAsIso"
-                }
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "id": 13,
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 30},
-        "type": "table",
-        "title": "Recent Firmware Releases",
-        "targets": [
+            "matcher": {"id": "byName", "options": "Model"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          },
           {
-            "refId": "A",
-            "rawSql": "SELECT version, device_model, ROUND(file_size / 1024.0 / 1024.0, 2) as size_mb, is_signed, created_at FROM firmware_releases ORDER BY created_at DESC LIMIT 10",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 9,
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 30},
-        "type": "table",
-        "title": "Active Rollouts",
-        "targets": [
+            "matcher": {"id": "byName", "options": "Current Version"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
           {
-            "refId": "A",
-            "rawSql": "SELECT name, firmware_version, device_model, target_type, rollout_percentage, created_at FROM rollout_configurations WHERE is_active = true ORDER BY created_at DESC",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 10,
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 38},
-        "type": "table",
-        "title": "Recent Update Failures",
-        "targets": [
+            "matcher": {"id": "byName", "options": "Update Progress"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          },
           {
-            "refId": "A",
-            "rawSql": "SELECT device_id, firmware_version, error_message, reported_at FROM device_update_status WHERE status = 'failed' AND reported_at > NOW() - INTERVAL '7 days' ORDER BY reported_at DESC LIMIT 20",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 11,
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46},
-        "type": "table",
-        "title": "Devices by Model",
-        "targets": [
+            "matcher": {"id": "byName", "options": "Online"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
           {
-            "refId": "A",
-            "rawSql": "SELECT device_model, COUNT(*) as device_count, COUNT(DISTINCT current_firmware_version) as version_count FROM devices GROUP BY device_model ORDER BY device_count DESC",
-            "format": "table"
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 46},
-        "type": "table",
-        "title": "Devices Needing Updates",
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT d.device_id, d.device_model, d.current_firmware_version as current, (SELECT version FROM firmware_releases WHERE device_model = d.device_model ORDER BY created_at DESC LIMIT 1) as latest, d.last_seen FROM devices d WHERE d.current_firmware_version != (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1) ORDER BY d.last_seen DESC LIMIT 20",
-            "format": "table"
+            "matcher": {"id": "byName", "options": "Status"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
           }
         ]
       }
-    ]
-  }
+    },
+    {
+      "id": 6,
+      "gridPos": {"h": 10, "w": 14, "x": 0, "y": 18},
+      "type": "table",
+      "title": "Recent Updates (Last 20)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\\n  TO_CHAR(dus.started_at, 'YYYY-MM-DD HH24:MI:SS') as \"Timestamp\",\\n  dus.device_id as \"Device ID\",\\n  d.device_model as \"Model\",\\n  d.current_firmware_version as \"From\",\\n  dus.firmware_version as \"To\",\\n  CASE\\n    WHEN dus.status = 'success' THEN '✅ Success'\\n    WHEN dus.status = 'failed' THEN '❌ Failed'\\n    WHEN dus.status = 'in_progress' THEN '🔄 In Progress'\\n    ELSE dus.status\\n  END as \"Status\",\\n  CASE\\n    WHEN dus.completed_at IS NOT NULL THEN\\n      ROUND(EXTRACT(EPOCH FROM (dus.completed_at - dus.started_at))::numeric, 0) || 's'\\n    ELSE '-'\\n  END as \"Duration\",\\n  COALESCE(dus.error_message, '-') as \"Message\"\\nFROM device_update_status dus\\nLEFT JOIN devices d ON dus.device_id = d.device_id\\nORDER BY dus.started_at DESC\\nLIMIT 20",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Timestamp"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Device ID"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Status"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Duration"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "gridPos": {"h": 10, "w": 10, "x": 14, "y": 18},
+      "type": "barchart",
+      "title": "Update Timeline (Last 30 Days)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\\n  DATE_TRUNC('day', started_at) as time,\\n  CASE\\n    WHEN status = 'success' THEN 'Success'\\n    WHEN status = 'failed' THEN 'Failed'\\n    WHEN status = 'in_progress' THEN 'In Progress'\\n    ELSE 'Other'\\n  END as status,\\n  COUNT(*) as count\\nFROM device_update_status\\nWHERE started_at > NOW() - INTERVAL '30 days'\\nGROUP BY time, status\\nORDER BY time",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "orientation": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "xTickLabelRotation": -45,
+        "showValue": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "stacking": {
+              "mode": "normal"
+            }
+          },
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Success"},
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Failed"},
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "In Progress"},
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
