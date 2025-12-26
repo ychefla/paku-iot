@@ -480,9 +480,9 @@ jobs:
             for device_id in "${DEVICES[@]}"; do
               device_id=$(echo "$device_id" | xargs)  # trim whitespace
               if send_ota_command "$device_id"; then
-                ((success_count++))
+                success_count=$((success_count + 1))
               else
-                ((fail_count++))
+                fail_count=$((fail_count + 1))
               fi
             done
             
@@ -538,12 +538,12 @@ jobs:
               fi
               
               if send_ota_command "$device_id"; then
-                ((success_count++))
+                success_count=$((success_count + 1))
               else
-                ((fail_count++))
+                fail_count=$((fail_count + 1))
               fi
               
-              ((count++))
+              count=$((count + 1))
             done <<< "$DEVICE_LIST"
             
             echo ""
@@ -584,9 +584,9 @@ jobs:
             
             while IFS= read -r device_id; do
               if send_ota_command "$device_id"; then
-                ((success_count++))
+                success_count=$((success_count + 1))
               else
-                ((fail_count++))
+                fail_count=$((fail_count + 1))
               fi
             done <<< "$DEVICE_LIST"
             
