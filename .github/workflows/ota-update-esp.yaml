@@ -402,17 +402,14 @@ jobs:
 
       - name: Trigger device updates via MQTT
         env:
-          PGHOST: 37.27.192.107
-          PGPORT: 5432
-          PGDATABASE: paku
-          PGUSER: paku
-          PGPASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
           MQTT_HOST: static.107.192.27.37.clients.your-server.de
           MQTT_PORT: 1883
         run: |
           echo "Installing dependencies..."
           sudo apt-get update -qq
-          sudo apt-get install -y mosquitto-clients postgresql-client
+          sudo apt-get install -y mosquitto-clients jq
           
           # Use existing version if firmware wasn't built
           if [ "$FIRMWARE_EXISTS" = "true" ]; then
@@ -497,33 +494,26 @@ jobs:
             PERCENTAGE=$(echo "$STRATEGY" | cut -d- -f2)
             
             echo "Strategy: Canary ($PERCENTAGE%)"
-            echo "Querying database for devices with model: $DEVICE_MODEL"
-            echo "Database: $POSTGRES_HOST"
+            echo "Querying OTA service for devices with model: $DEVICE_MODEL"
             echo ""
             
-            # Test database connection first
-            if ! timeout 10 psql -c "SELECT 1" > /dev/null 2>&1; then
-              echo "Error: Cannot connect to database"
+            # Query devices from OTA service API
+            response=$(curl -s -f -H "X-API-Key: $OTA_API_KEY" \
+              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_MODEL}&limit=500")
+            
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to query devices from OTA service"
               exit 1
             fi
             
-            # Query devices from database
-            DEVICE_LIST=$(timeout 30 psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC" 2>&1)
-            QUERY_EXIT=$?
-            
-            if [ $QUERY_EXIT -eq 124 ]; then
-              echo "Error: Database query timed out after 30 seconds"
-              exit 1
-            elif [ $QUERY_EXIT -ne 0 ]; then
-              echo "Error: Database query failed with exit code $QUERY_EXIT"
-              echo "$DEVICE_LIST"
-              exit 1
-            fi
+            # Extract active devices (seen in last 7 days)
+            SEVEN_DAYS_AGO=$(date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%S' 2>/dev/null || date -u -v-7d '+%Y-%m-%dT%H:%M:%S')
+            DEVICE_LIST=$(echo "$response" | jq -r ".devices[]? | select(.last_seen > \"$SEVEN_DAYS_AGO\") | .device_id")
             
             if [ -z "$DEVICE_LIST" ]; then
-              echo "Warning: No devices found in database for model $DEVICE_MODEL"
-              echo "Debug: Checking what devices exist..."
-              psql -c "SELECT device_id, device_model, last_seen FROM devices ORDER BY last_seen DESC LIMIT 10"
+              echo "Warning: No active devices found for model $DEVICE_MODEL"
+              echo "Debug: All devices for this model:"
+              echo "$response" | jq -r '.devices[]? | "\(.device_id) - last seen: \(.last_seen)"'
               exit 0
             fi
             
@@ -562,32 +552,26 @@ jobs:
           elif [ "$STRATEGY" = "full" ]; then
             # Full: notify all active devices of this model
             echo "Strategy: Full Rollout"
-            echo "Querying database for all active devices with model: $DEVICE_MODEL"
-            echo "Database: $POSTGRES_HOST"
+            echo "Querying OTA service for all active devices with model: $DEVICE_MODEL"
             echo ""
             
-            # Test database connection first
-            if ! timeout 10 psql -c "SELECT 1" > /dev/null 2>&1; then
-              echo "Error: Cannot connect to database"
+            # Query devices from OTA service API
+            response=$(curl -s -f -H "X-API-Key: $OTA_API_KEY" \
+              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_MODEL}&limit=500")
+            
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to query devices from OTA service"
               exit 1
             fi
             
-            DEVICE_LIST=$(timeout 30 psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC" 2>&1)
-            QUERY_EXIT=$?
-            
-            if [ $QUERY_EXIT -eq 124 ]; then
-              echo "Error: Database query timed out after 30 seconds"
-              exit 1
-            elif [ $QUERY_EXIT -ne 0 ]; then
-              echo "Error: Database query failed with exit code $QUERY_EXIT"
-              echo "$DEVICE_LIST"
-              exit 1
-            fi
+            # Extract active devices (seen in last 7 days)
+            SEVEN_DAYS_AGO=$(date -u -d '7 days ago' '+%Y-%m-%dT%H:%M:%S' 2>/dev/null || date -u -v-7d '+%Y-%m-%dT%H:%M:%S')
+            DEVICE_LIST=$(echo "$response" | jq -r ".devices[]? | select(.last_seen > \"$SEVEN_DAYS_AGO\") | .device_id")
             
             if [ -z "$DEVICE_LIST" ]; then
-              echo "Warning: No devices found in database for model $DEVICE_MODEL"
-              echo "Debug: Checking what devices exist..."
-              psql -c "SELECT device_id, device_model, last_seen FROM devices ORDER BY last_seen DESC LIMIT 10"
+              echo "Warning: No active devices found for model $DEVICE_MODEL"
+              echo "Debug: All devices for this model:"
+              echo "$response" | jq -r '.devices[]? | "\(.device_id) - last seen: \(.last_seen)"'
               exit 0
             fi
             
