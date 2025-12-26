@@ -598,6 +598,7 @@ jobs:
           exit 0
 
       - name: Generate deployment summary
+        if: always()
         run: |
           # Determine which version was deployed (use env vars set in earlier steps)
           if [ "${{ env.FIRMWARE_EXISTS }}" = "true" ]; then
@@ -606,10 +607,18 @@ jobs:
             DEPLOYED_VERSION="${{ env.VERSION }}"
           fi
           
-          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # Fallback if VERSION is empty
+          if [ -z "$DEPLOYED_VERSION" ]; then
+            DEPLOYED_VERSION="${{ env.VERSION }}"
+          fi
+          
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
           # ESP OTA Deployment Summary
           
           ## Firmware Details
+          EOF
+          
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           - **Version**: \`${DEPLOYED_VERSION}\`
           - **Device Model**: \`${{ github.event.inputs.device_model }}\`
           - **Commit**: \`${{ env.COMMIT_HASH }}\`
