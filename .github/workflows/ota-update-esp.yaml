@@ -599,6 +599,7 @@ jobs:
 
       - name: Generate deployment summary
         if: always()
+        continue-on-error: true
         run: |
           # Determine which version was deployed (use env vars set in earlier steps)
           if [ "${{ env.FIRMWARE_EXISTS }}" = "true" ]; then
@@ -645,6 +646,8 @@ jobs:
           echo "1. Monitor device update progress" >> $GITHUB_STEP_SUMMARY
           echo "2. Check for any failed updates" >> $GITHUB_STEP_SUMMARY
           echo "3. If using canary rollout, gradually increase percentage after validation" >> $GITHUB_STEP_SUMMARY
+          
+          exit 0
 
       - name: Notify on failure
         if: failure()
