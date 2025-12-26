@@ -104,13 +104,13 @@ jobs:
           fi
 
       - name: Set up Python
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Cache PlatformIO
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         uses: actions/cache@v3
         with:
           path: |
@@ -121,13 +121,13 @@ jobs:
             ${{ runner.os }}-pio-
 
       - name: Install PlatformIO
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         run: |
           pip install --upgrade platformio
           platformio --version
 
       - name: Copy secrets template
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         shell: bash
         env:
           WIFI_SSIDS_SECRET: ${{ secrets.WIFI_SSIDS }}
@@ -203,7 +203,7 @@ jobs:
           fi
 
       - name: Build firmware
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         run: |
           cd paku_core
           echo "Building firmware for ${{ github.event.inputs.device_model }}..."
@@ -230,7 +230,7 @@ jobs:
           echo "Firmware SHA256: $FIRMWARE_SHA256"
 
       - name: Upload firmware to OTA service
-        if: env.FIRMWARE_EXISTS == 'false'
+        if: env.FIRMWARE_EXISTS != 'true'
         env:
           OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
           OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
