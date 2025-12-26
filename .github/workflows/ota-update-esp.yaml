@@ -124,7 +124,7 @@ jobs:
         if: env.FIRMWARE_EXISTS == 'false'
         run: |
           pip install --upgrade platformio
-          pio --version
+          platformio --version
 
       - name: Copy secrets template
         if: env.FIRMWARE_EXISTS == 'false'
