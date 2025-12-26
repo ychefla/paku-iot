@@ -441,7 +441,7 @@ jobs:
           # Function to send OTA command to a device
           send_ota_command() {
             local device_id=$1
-            local topic="paku/devices/${device_id}/cmd/ota"
+            local topic="paku/edge/${device_id}/cmd/ota"
             
             echo "→ Sending to: $device_id"
             
