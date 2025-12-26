@@ -327,15 +327,18 @@ jobs:
           if [ "$FIRMWARE_EXISTS" = "true" ]; then
             DEPLOY_VERSION="$EXISTING_VERSION"
             echo "Using existing firmware version: $DEPLOY_VERSION"
+            # Add timestamp suffix to make rollout name unique when reusing firmware
+            ROLLOUT_SUFFIX="-$(date +%H%M%S)"
           else
             DEPLOY_VERSION="$VERSION"
             echo "Using newly built firmware version: $DEPLOY_VERSION"
+            ROLLOUT_SUFFIX=""
           fi
           
           echo "Creating rollout configuration for strategy: ${{ github.event.inputs.rollout_strategy }}..."
           
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
-          ROLLOUT_NAME="${{ github.event.inputs.device_model }}-${DEPLOY_VERSION}-${STRATEGY}"
+          ROLLOUT_NAME="${{ github.event.inputs.device_model }}-${DEPLOY_VERSION}-${STRATEGY}${ROLLOUT_SUFFIX}"
           
           # Prepare rollout payload based on strategy
           case "$STRATEGY" in
