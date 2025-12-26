@@ -385,11 +385,12 @@ jobs:
             
             echo "→ Sending to: $device_id"
             
-            echo "$OTA_COMMAND" | mosquitto_pub \
+            # Use -m to send as single message (not -l which sends line by line)
+            mosquitto_pub \
               -h "$MQTT_HOST" \
               -p "$MQTT_PORT" \
               -t "$topic" \
-              -l
+              -m "$OTA_COMMAND"
             
             if [ $? -eq 0 ]; then
               echo "  ✓ Success"
