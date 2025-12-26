@@ -596,18 +596,25 @@ jobs:
 
       - name: Generate deployment summary
         run: |
+          # Determine which version was deployed
+          if [ "$FIRMWARE_EXISTS" = "true" ]; then
+            DEPLOYED_VERSION="$EXISTING_VERSION"
+          else
+            DEPLOYED_VERSION="$VERSION"
+          fi
+          
           cat >> $GITHUB_STEP_SUMMARY << EOF
           # ESP OTA Deployment Summary
           
           ## Firmware Details
-          - **Version**: \`${VERSION}\`
+          - **Version**: \`${DEPLOYED_VERSION}\`
           - **Device Model**: \`${{ github.event.inputs.device_model }}\`
-          - **Commit**: \`${GITHUB_SHA:0:7}\`
+          - **Commit**: \`${COMMIT_HASH}\`
           - **SHA256**: \`${FIRMWARE_SHA256}\`
+          - **Build Status**: $([ "$FIRMWARE_EXISTS" = "true" ] && echo "Reused existing firmware" || echo "Newly built")
           
           ## Rollout Configuration
           - **Strategy**: \`${{ github.event.inputs.rollout_strategy }}\`
-          - **Rollout Name**: \`${{ github.event.inputs.device_model }}-${VERSION}-${{ github.event.inputs.rollout_strategy }}\`
           EOF
           
           if [ "${{ github.event.inputs.rollout_strategy }}" = "single-device" ]; then
@@ -623,14 +630,13 @@ jobs:
           ${{ github.event.inputs.release_notes }}
           
           ## Monitoring
-          - Check OTA service metrics: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/metrics
-          - View Grafana dashboard for real-time update status
+          - Check OTA service: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          - View device status in database
           
           ## Next Steps
-          1. Monitor device update progress in Grafana
+          1. Monitor device update progress
           2. Check for any failed updates
           3. If using canary rollout, gradually increase percentage after validation
-          4. For issues, deactivate rollout via admin API
           EOF
 
       - name: Notify on failure
