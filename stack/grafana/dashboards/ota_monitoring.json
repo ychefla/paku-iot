@@ -16,7 +16,7 @@
       "title": "Total Devices",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -44,7 +44,7 @@
       "title": "Latest Firmware",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -72,7 +72,7 @@
       "title": "Devices Up-to-Date",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -108,7 +108,7 @@
       "title": "Active Updates",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -143,7 +143,7 @@
       "title": "Device Status & Update Progress",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -230,7 +230,7 @@
       "title": "Recent Updates (Last 20)",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
@@ -296,7 +296,7 @@
       "title": "Update Timeline (Last 30 Days)",
       "datasource": {
         "type": "postgres",
-        "uid": "postgres"
+        "uid": "DS_POSTGRESQL"
       },
       "targets": [
         {
