@@ -164,10 +164,36 @@ def insert_edge_status(
         "uptime_s": 12345,
         "wifi": {...},
         "mqtt": {...},
+        "device_id": "ESP32-27C136B8",
+        "firmware_version": "1.3.0",
+        "device_model": "lilygo-t-display-s3",
         ...
     }
     """
     with conn.cursor() as cur:
+        # Register or update device in OTA devices table if device info is present
+        device_model = payload.get("device_model")
+        firmware_version = payload.get("firmware_version")
+        
+        if device_model:
+            cur.execute(
+                """
+                INSERT INTO devices (device_id, device_model, current_firmware_version, last_seen)
+                VALUES (%(device_id)s, %(device_model)s, %(firmware_version)s, NOW())
+                ON CONFLICT (device_id) 
+                DO UPDATE SET 
+                    device_model = EXCLUDED.device_model,
+                    current_firmware_version = EXCLUDED.current_firmware_version,
+                    last_seen = NOW()
+                """,
+                {
+                    "device_id": device_id,
+                    "device_model": device_model,
+                    "firmware_version": firmware_version,
+                },
+            )
+        
+        # Insert status record
         cur.execute(
             """
             INSERT INTO edge_device_status (
