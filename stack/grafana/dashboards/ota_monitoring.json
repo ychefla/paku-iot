@@ -148,7 +148,59 @@
       "targets": [
         {
           "refId": "A",
-          "rawSql": "WITH latest_updates AS (\\n  SELECT DISTINCT ON (device_id)\\n    device_id,\\n    firmware_version as target_version,\\n    status,\\n    started_at,\\n    completed_at,\\n    EXTRACT(EPOCH FROM (COALESCE(completed_at, NOW()) - started_at)) as duration\\n  FROM device_update_status\\n  ORDER BY device_id, started_at DESC\\n),\\nlatest_progress AS (\\n  SELECT DISTINCT ON (device_id)\\n    device_id,\\n    progress_state,\\n    progress_percent\\n  FROM device_ota_progress\\n  WHERE reported_at > NOW() - INTERVAL '5 minutes'\\n  ORDER BY device_id, reported_at DESC\\n)\\nSELECT\\n  d.device_id as \"Device ID\",\\n  d.device_model as \"Model\",\\n  d.current_firmware_version as \"Current Version\",\\n  CASE\\n    WHEN lp.progress_percent IS NOT NULL THEN lp.progress_percent || '% ' || lp.progress_state\\n    ELSE '-'\\n  END as \"Update Progress\",\\n  COALESCE(lu.target_version, '-') as \"Target Version\",\\n  CASE\\n    WHEN d.online = true THEN '🟢 Online'\\n    ELSE '🔴 Offline'\\n  END as \"Online\",\\n  CASE\\n    WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN TO_CHAR(NOW() - d.last_seen, 'MI\"m\"')\\n    WHEN d.last_seen > NOW() - INTERVAL '1 hour' THEN TO_CHAR(NOW() - d.last_seen, 'HH24\"h\" MI\"m\"')\\n    WHEN d.last_seen IS NOT NULL THEN TO_CHAR(d.last_seen, 'YYYY-MM-DD HH24:MI')\\n    ELSE 'Never'\\n  END as \"Last Seen\",\\n  CASE\\n    WHEN lu.completed_at IS NOT NULL THEN TO_CHAR(lu.completed_at, 'YYYY-MM-DD HH24:MI')\\n    ELSE 'Never'\\n  END as \"Last Update\",\\n  CASE\\n    WHEN lu.status = 'in_progress' THEN '🔄 Updating'\\n    WHEN lu.status = 'success' THEN '✅ Success'\\n    WHEN lu.status = 'failed' THEN '❌ Failed'\\n    ELSE '-'\\n  END as \"Status\"\\nFROM devices d\\nLEFT JOIN latest_updates lu ON d.device_id = lu.device_id\\nLEFT JOIN latest_progress lp ON d.device_id = lp.device_id\\nORDER BY d.last_seen DESC NULLS LAST",
+          "rawSql": "WITH latest_updates AS (
+  SELECT DISTINCT ON (device_id)
+    device_id,
+    firmware_version as target_version,
+    status,
+    started_at,
+    completed_at,
+    EXTRACT(EPOCH FROM (COALESCE(completed_at, NOW()) - started_at)) as duration
+  FROM device_update_status
+  ORDER BY device_id, started_at DESC
+),
+latest_progress AS (
+  SELECT DISTINCT ON (device_id)
+    device_id,
+    progress_state,
+    progress_percent
+  FROM device_ota_progress
+  WHERE reported_at > NOW() - INTERVAL '5 minutes'
+  ORDER BY device_id, reported_at DESC
+)
+SELECT
+  d.device_id as \"Device ID\",
+  d.device_model as \"Model\",
+  d.current_firmware_version as \"Current Version\",
+  CASE
+    WHEN lp.progress_percent IS NOT NULL THEN lp.progress_percent || '% ' || lp.progress_state
+    ELSE '-'
+  END as \"Update Progress\",
+  COALESCE(lu.target_version, '-') as \"Target Version\",
+  CASE
+    WHEN d.online = true THEN '🟢 Online'
+    ELSE '🔴 Offline'
+  END as \"Online\",
+  CASE
+    WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN TO_CHAR(NOW() - d.last_seen, 'MI\"m\"')
+    WHEN d.last_seen > NOW() - INTERVAL '1 hour' THEN TO_CHAR(NOW() - d.last_seen, 'HH24\"h\" MI\"m\"')
+    WHEN d.last_seen IS NOT NULL THEN TO_CHAR(d.last_seen, 'YYYY-MM-DD HH24:MI')
+    ELSE 'Never'
+  END as \"Last Seen\",
+  CASE
+    WHEN lu.completed_at IS NOT NULL THEN TO_CHAR(lu.completed_at, 'YYYY-MM-DD HH24:MI')
+    ELSE 'Never'
+  END as \"Last Update\",
+  CASE
+    WHEN lu.status = 'in_progress' THEN '🔄 Updating'
+    WHEN lu.status = 'success' THEN '✅ Success'
+    WHEN lu.status = 'failed' THEN '❌ Failed'
+    ELSE '-'
+  END as \"Status\"
+FROM devices d
+LEFT JOIN latest_updates lu ON d.device_id = lu.device_id
+LEFT JOIN latest_progress lp ON d.device_id = lp.device_id
+ORDER BY d.last_seen DESC NULLS LAST",
           "format": "table"
         }
       ],
@@ -235,7 +287,28 @@
       "targets": [
         {
           "refId": "A",
-          "rawSql": "SELECT\\n  TO_CHAR(dus.started_at, 'YYYY-MM-DD HH24:MI:SS') as \"Timestamp\",\\n  dus.device_id as \"Device ID\",\\n  d.device_model as \"Model\",\\n  d.current_firmware_version as \"From\",\\n  dus.firmware_version as \"To\",\\n  CASE\\n    WHEN dus.status = 'success' THEN '✅ Success'\\n    WHEN dus.status = 'failed' THEN '❌ Failed'\\n    WHEN dus.status = 'in_progress' THEN '🔄 In Progress'\\n    ELSE dus.status\\n  END as \"Status\",\\n  CASE\\n    WHEN dus.completed_at IS NOT NULL THEN\\n      ROUND(EXTRACT(EPOCH FROM (dus.completed_at - dus.started_at))::numeric, 0) || 's'\\n    ELSE '-'\\n  END as \"Duration\",\\n  COALESCE(dus.error_message, '-') as \"Message\"\\nFROM device_update_status dus\\nLEFT JOIN devices d ON dus.device_id = d.device_id\\nORDER BY dus.started_at DESC\\nLIMIT 20",
+          "rawSql": "SELECT
+  TO_CHAR(dus.started_at, 'YYYY-MM-DD HH24:MI:SS') as \"Timestamp\",
+  dus.device_id as \"Device ID\",
+  d.device_model as \"Model\",
+  d.current_firmware_version as \"From\",
+  dus.firmware_version as \"To\",
+  CASE
+    WHEN dus.status = 'success' THEN '✅ Success'
+    WHEN dus.status = 'failed' THEN '❌ Failed'
+    WHEN dus.status = 'in_progress' THEN '🔄 In Progress'
+    ELSE dus.status
+  END as \"Status\",
+  CASE
+    WHEN dus.completed_at IS NOT NULL THEN
+      ROUND(EXTRACT(EPOCH FROM (dus.completed_at - dus.started_at))::numeric, 0) || 's'
+    ELSE '-'
+  END as \"Duration\",
+  COALESCE(dus.error_message, '-') as \"Message\"
+FROM device_update_status dus
+LEFT JOIN devices d ON dus.device_id = d.device_id
+ORDER BY dus.started_at DESC
+LIMIT 20",
           "format": "table"
         }
       ],
@@ -301,7 +374,19 @@
       "targets": [
         {
           "refId": "A",
-          "rawSql": "SELECT\\n  DATE_TRUNC('day', started_at) as time,\\n  CASE\\n    WHEN status = 'success' THEN 'Success'\\n    WHEN status = 'failed' THEN 'Failed'\\n    WHEN status = 'in_progress' THEN 'In Progress'\\n    ELSE 'Other'\\n  END as status,\\n  COUNT(*) as count\\nFROM device_update_status\\nWHERE started_at > NOW() - INTERVAL '30 days'\\nGROUP BY time, status\\nORDER BY time",
+          "rawSql": "SELECT
+  DATE_TRUNC('day', started_at) as time,
+  CASE
+    WHEN status = 'success' THEN 'Success'
+    WHEN status = 'failed' THEN 'Failed'
+    WHEN status = 'in_progress' THEN 'In Progress'
+    ELSE 'Other'
+  END as status,
+  COUNT(*) as count
+FROM device_update_status
+WHERE started_at > NOW() - INTERVAL '30 days'
+GROUP BY time, status
+ORDER BY time",
           "format": "time_series"
         }
       ],
