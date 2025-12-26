@@ -183,10 +183,13 @@ jobs:
 
       - name: Generate version from commit
         run: |
-          # Use short commit hash and timestamp for version
-          VERSION="${GITHUB_SHA:0:7}-$(date +%Y%m%d-%H%M%S)"
+          # Use short commit hash from paku-core repository (not paku-iot)
+          cd paku_core
+          PAKU_CORE_COMMIT=$(git rev-parse --short HEAD)
+          cd ..
+          VERSION="${PAKU_CORE_COMMIT}-$(date +%Y%m%d-%H%M%S)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Generated version: $VERSION"
+          echo "Generated version from paku-core commit: $VERSION"
 
       - name: Upload firmware to OTA service
         env:
