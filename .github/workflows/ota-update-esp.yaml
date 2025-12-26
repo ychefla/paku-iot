@@ -3,17 +3,6 @@ name: OTA Update ESP Devices
 "on":
   workflow_dispatch:
     inputs:
-      rollout_strategy:
-        description: 'Rollout strategy'
-        required: true
-        type: choice
-        options:
-          - single-device
-          - canary-10
-          - canary-25
-          - canary-50
-          - full
-        default: 'single-device'
       device_model:
         description: 'Device model'
         required: true
@@ -23,6 +12,17 @@ name: OTA Update ESP Devices
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
         default: 'lilygo-t-display-s3'
+      rollout_strategy:
+        description: 'Rollout strategy'
+        required: true
+        type: choice
+        options:
+          - full
+          - canary-50
+          - canary-25
+          - canary-10
+          - single-device
+        default: 'full'
       test_devices:
         description: 'Device IDs (comma-separated, only for single-device strategy)'
         required: false
@@ -612,22 +612,19 @@ jobs:
             DEPLOYED_VERSION="${{ env.VERSION }}"
           fi
           
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # ESP OTA Deployment Summary
+          BUILD_STATUS=$([ "${{ env.FIRMWARE_EXISTS }}" = "true" ] && echo "Reused existing firmware" || echo "Newly built")
           
-          ## Firmware Details
-          EOF
-          
-          cat >> $GITHUB_STEP_SUMMARY << EOF
-          - **Version**: \`${DEPLOYED_VERSION}\`
-          - **Device Model**: \`${{ github.event.inputs.device_model }}\`
-          - **Commit**: \`${{ env.COMMIT_HASH }}\`
-          - **SHA256**: \`${{ env.FIRMWARE_SHA256 }}\`
-          - **Build Status**: $([ "${{ env.FIRMWARE_EXISTS }}" = "true" ] && echo "Reused existing firmware" || echo "Newly built")
-          
-          ## Rollout Configuration
-          - **Strategy**: \`${{ github.event.inputs.rollout_strategy }}\`
-          EOF
+          echo "# ESP OTA Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Firmware Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: \`${DEPLOYED_VERSION}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Device Model**: \`${{ github.event.inputs.device_model }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ env.COMMIT_HASH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA256**: \`${{ env.FIRMWARE_SHA256 }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status**: ${BUILD_STATUS}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Rollout Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Strategy**: \`${{ github.event.inputs.rollout_strategy }}\`" >> $GITHUB_STEP_SUMMARY
           
           if [ "${{ github.event.inputs.rollout_strategy }}" = "single-device" ]; then
             echo "- **Target Devices**: \`${{ github.event.inputs.test_devices }}\`" >> $GITHUB_STEP_SUMMARY
