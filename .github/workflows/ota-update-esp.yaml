@@ -347,13 +347,22 @@ jobs:
           fi
 
       - name: Trigger device updates via MQTT
+        env:
+          PGHOST: 37.27.192.107
+          PGPORT: 5432
+          PGDATABASE: paku
+          PGUSER: paku
+          PGPASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          MQTT_HOST: static.107.192.27.37.clients.your-server.de
+          MQTT_PORT: 1883
         run: |
-          echo "Installing mosquitto MQTT client..."
+          echo "Installing dependencies..."
           sudo apt-get update -qq
-          sudo apt-get install -y mosquitto-clients
+          sudo apt-get install -y mosquitto-clients postgresql-client
           
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
-          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/firmware/firmware_${{ github.event.inputs.device_model }}_${VERSION}.bin"
+          DEVICE_MODEL="${{ github.event.inputs.device_model }}"
+          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/firmware/firmware_${DEVICE_MODEL}_${VERSION}.bin"
           
           # Build OTA command JSON
           OTA_COMMAND=$(cat <<EOF
@@ -367,38 +376,136 @@ jobs:
           
           echo "OTA Command to send:"
           echo "$OTA_COMMAND" | jq '.'
+          echo ""
           
+          # Function to send OTA command to a device
+          send_ota_command() {
+            local device_id=$1
+            local topic="paku/devices/${device_id}/cmd/ota"
+            
+            echo "→ Sending to: $device_id"
+            
+            echo "$OTA_COMMAND" | mosquitto_pub \
+              -h "$MQTT_HOST" \
+              -p "$MQTT_PORT" \
+              -t "$topic" \
+              -l
+            
+            if [ $? -eq 0 ]; then
+              echo "  ✓ Success"
+              return 0
+            else
+              echo "  ✗ Failed"
+              return 1
+            fi
+          }
+          
+          # Discover and notify devices based on strategy
           if [ "$STRATEGY" = "single-device" ]; then
-            # Send to specific devices
+            # Single device: use provided device IDs
             if [ -z "${{ github.event.inputs.test_devices }}" ]; then
               echo "Error: No test devices specified for single-device strategy"
               exit 1
             fi
             
-            # Split comma-separated device IDs and send to each
+            echo "Strategy: Single Device"
+            echo "Target devices: ${{ github.event.inputs.test_devices }}"
+            echo ""
+            
             IFS=',' read -ra DEVICES <<< "${{ github.event.inputs.test_devices }}"
+            success_count=0
+            fail_count=0
+            
             for device_id in "${DEVICES[@]}"; do
               device_id=$(echo "$device_id" | xargs)  # trim whitespace
-              topic="paku/devices/${device_id}/cmd/ota"
-              echo "Sending OTA command to device: $device_id"
-              echo "Topic: $topic"
-              
-              echo "$OTA_COMMAND" | mosquitto_pub \
-                -h static.107.192.27.37.clients.your-server.de \
-                -p 1883 \
-                -t "$topic" \
-                -l
-              
-              if [ $? -eq 0 ]; then
-                echo "✓ OTA command sent to $device_id"
+              if send_ota_command "$device_id"; then
+                ((success_count++))
               else
-                echo "✗ Failed to send OTA command to $device_id"
+                ((fail_count++))
               fi
             done
-          else
-            echo "Note: Canary and full rollout strategies require device discovery from database"
-            echo "For now, devices will check for updates on their next check-in"
-            echo "TODO: Query database for devices matching rollout criteria and send MQTT commands"
+            
+            echo ""
+            echo "Summary: $success_count succeeded, $fail_count failed"
+            
+          elif [[ "$STRATEGY" == canary-* ]]; then
+            # Canary: query database for devices and select percentage
+            PERCENTAGE=$(echo "$STRATEGY" | cut -d- -f2)
+            
+            echo "Strategy: Canary ($PERCENTAGE%)"
+            echo "Querying database for devices with model: $DEVICE_MODEL"
+            echo ""
+            
+            # Query devices from database
+            DEVICE_LIST=$(psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC")
+            
+            if [ -z "$DEVICE_LIST" ]; then
+              echo "Warning: No devices found in database for model $DEVICE_MODEL"
+              exit 0
+            fi
+            
+            TOTAL_DEVICES=$(echo "$DEVICE_LIST" | wc -l | xargs)
+            TARGET_COUNT=$(( TOTAL_DEVICES * PERCENTAGE / 100 ))
+            
+            if [ $TARGET_COUNT -lt 1 ]; then
+              TARGET_COUNT=1
+            fi
+            
+            echo "Found $TOTAL_DEVICES devices"
+            echo "Targeting $TARGET_COUNT devices ($PERCENTAGE%)"
+            echo ""
+            
+            success_count=0
+            fail_count=0
+            count=0
+            
+            while IFS= read -r device_id; do
+              if [ $count -ge $TARGET_COUNT ]; then
+                break
+              fi
+              
+              if send_ota_command "$device_id"; then
+                ((success_count++))
+              else
+                ((fail_count++))
+              fi
+              
+              ((count++))
+            done <<< "$DEVICE_LIST"
+            
+            echo ""
+            echo "Summary: $success_count succeeded, $fail_count failed out of $TARGET_COUNT targets"
+            
+          elif [ "$STRATEGY" = "full" ]; then
+            # Full: notify all active devices of this model
+            echo "Strategy: Full Rollout"
+            echo "Querying database for all active devices with model: $DEVICE_MODEL"
+            echo ""
+            
+            DEVICE_LIST=$(psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC")
+            
+            if [ -z "$DEVICE_LIST" ]; then
+              echo "Warning: No devices found in database for model $DEVICE_MODEL"
+              exit 0
+            fi
+            
+            TOTAL_DEVICES=$(echo "$DEVICE_LIST" | wc -l | xargs)
+            echo "Found $TOTAL_DEVICES devices"
+            echo ""
+            
+            success_count=0
+            fail_count=0
+            
+            while IFS= read -r device_id; do
+              if send_ota_command "$device_id"; then
+                ((success_count++))
+              else
+                ((fail_count++))
+              fi
+            done <<< "$DEVICE_LIST"
+            
+            echo ""
+            echo "Summary: $success_count succeeded, $fail_count failed out of $TOTAL_DEVICES devices"
           fi
 
       - name: Generate deployment summary
