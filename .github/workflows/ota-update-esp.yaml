@@ -190,8 +190,69 @@ jobs:
           VERSION="${PAKU_CORE_COMMIT}-$(date +%Y%m%d-%H%M%S)"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Generated version from paku-core commit: $VERSION"
+          
+          # Store just the commit hash for firmware existence check
+          echo "COMMIT_HASH=$PAKU_CORE_COMMIT" >> $GITHUB_ENV
+
+      - name: Check if firmware already exists
+        id: check_firmware
+        env:
+          OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
+          DEVICE_MODEL: ${{ github.event.inputs.device_model }}
+        run: |
+          echo "Checking if firmware already exists for commit: $COMMIT_HASH and model: $DEVICE_MODEL"
+          
+          # Query OTA service for existing firmware releases matching this commit hash
+          response=$(curl -s "${OTA_URL}/api/admin/firmware/releases?device_model=${DEVICE_MODEL}&limit=50" || echo '{"releases":[]}')
+          
+          # Check if any release version starts with this commit hash
+          existing_version=$(echo "$response" | jq -r ".releases[]? | select(.version | startswith(\"${COMMIT_HASH}-\")) | .version" | head -n1)
+          
+          if [ -n "$existing_version" ]; then
+            echo "Found existing firmware: $existing_version"
+            echo "FIRMWARE_EXISTS=true" >> $GITHUB_ENV
+            echo "EXISTING_VERSION=$existing_version" >> $GITHUB_ENV
+            echo "firmware_exists=true" >> $GITHUB_OUTPUT
+            
+            # Get checksum for existing firmware
+            checksum=$(echo "$response" | jq -r ".releases[]? | select(.version == \"${existing_version}\") | .checksum_sha256")
+            echo "FIRMWARE_SHA256=$checksum" >> $GITHUB_ENV
+            echo "Using existing firmware: $existing_version (SHA256: $checksum)"
+          else
+            echo "No existing firmware found, build required"
+            echo "FIRMWARE_EXISTS=false" >> $GITHUB_ENV
+            echo "firmware_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build firmware
+        if: env.FIRMWARE_EXISTS == 'false'
+        run: |
+          cd paku_core
+          echo "Building firmware for ${{ github.event.inputs.device_model }}..."
+          pio run --environment ${{ github.event.inputs.device_model }}
+          
+          # Find the built firmware (specifically firmware.bin, not partitions.bin)
+          FIRMWARE_PATH=".pio/build/${{ github.event.inputs.device_model }}/firmware.bin"
+          
+          if [ ! -f "$FIRMWARE_PATH" ]; then
+            echo "Error: Firmware binary not found at $FIRMWARE_PATH"
+            ls -la ".pio/build/${{ github.event.inputs.device_model }}/" || true
+            exit 1
+          fi
+          
+          echo "Firmware built successfully: $FIRMWARE_PATH"
+          echo "Firmware size: $(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || stat -f%z "$FIRMWARE_PATH") bytes"
+          
+          # Store path relative to repo root
+          echo "FIRMWARE_PATH=paku_core/$FIRMWARE_PATH" >> $GITHUB_ENV
+          
+          # Calculate checksum
+          FIRMWARE_SHA256=$(sha256sum "$FIRMWARE_PATH" | cut -d' ' -f1)
+          echo "FIRMWARE_SHA256=$FIRMWARE_SHA256" >> $GITHUB_ENV
+          echo "Firmware SHA256: $FIRMWARE_SHA256"
 
       - name: Upload firmware to OTA service
+        if: env.FIRMWARE_EXISTS == 'false'
         env:
           OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
           OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
@@ -262,10 +323,19 @@ jobs:
 
       - name: Create rollout configuration
         run: |
+          # Use existing version if firmware wasn't built
+          if [ "$FIRMWARE_EXISTS" = "true" ]; then
+            DEPLOY_VERSION="$EXISTING_VERSION"
+            echo "Using existing firmware version: $DEPLOY_VERSION"
+          else
+            DEPLOY_VERSION="$VERSION"
+            echo "Using newly built firmware version: $DEPLOY_VERSION"
+          fi
+          
           echo "Creating rollout configuration for strategy: ${{ github.event.inputs.rollout_strategy }}..."
           
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
-          ROLLOUT_NAME="${{ github.event.inputs.device_model }}-${VERSION}-${STRATEGY}"
+          ROLLOUT_NAME="${{ github.event.inputs.device_model }}-${DEPLOY_VERSION}-${STRATEGY}"
           
           # Prepare rollout payload based on strategy
           case "$STRATEGY" in
@@ -278,7 +348,7 @@ jobs:
               DEVICE_ARRAY=$(echo '${{ github.event.inputs.test_devices }}' | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";""))')
               PAYLOAD=$(jq -n \
                 --arg name "$ROLLOUT_NAME" \
-                --arg version "$VERSION" \
+                --arg version "$DEPLOY_VERSION" \
                 --arg model "${{ github.event.inputs.device_model }}" \
                 --argjson devices "$DEVICE_ARRAY" \
                 '{
@@ -294,7 +364,7 @@ jobs:
               PERCENTAGE=$(echo "$STRATEGY" | cut -d- -f2)
               PAYLOAD=$(jq -n \
                 --arg name "$ROLLOUT_NAME" \
-                --arg version "$VERSION" \
+                --arg version "$DEPLOY_VERSION" \
                 --arg model "${{ github.event.inputs.device_model }}" \
                 --argjson pct "$PERCENTAGE" \
                 '{
@@ -309,7 +379,7 @@ jobs:
             full)
               PAYLOAD=$(jq -n \
                 --arg name "$ROLLOUT_NAME" \
-                --arg version "$VERSION" \
+                --arg version "$DEPLOY_VERSION" \
                 --arg model "${{ github.event.inputs.device_model }}" \
                 '{
                   name: $name,
@@ -363,15 +433,24 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y mosquitto-clients postgresql-client
           
+          # Use existing version if firmware wasn't built
+          if [ "$FIRMWARE_EXISTS" = "true" ]; then
+            DEPLOY_VERSION="$EXISTING_VERSION"
+            echo "Deploying existing firmware version: $DEPLOY_VERSION"
+          else
+            DEPLOY_VERSION="$VERSION"
+            echo "Deploying newly built firmware version: $DEPLOY_VERSION"
+          fi
+          
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
           DEVICE_MODEL="${{ github.event.inputs.device_model }}"
-          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${VERSION}"
+          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${DEPLOY_VERSION}"
           
           # Build OTA command JSON
           OTA_COMMAND=$(cat <<EOF
           {
             "url": "$FIRMWARE_URL",
-            "version": "$VERSION",
+            "version": "$DEPLOY_VERSION",
             "checksum": "$FIRMWARE_SHA256"
           }
           EOF
