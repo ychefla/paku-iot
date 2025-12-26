@@ -203,37 +203,11 @@ jobs:
           fi
 
       - name: Build firmware
-        run: |
-          cd paku_core
-          echo "Building firmware for ${{ github.event.inputs.device_model }}..."
-          pio run --environment ${{ github.event.inputs.device_model }}
-          
-          # Find the built firmware (specifically firmware.bin, not partitions.bin)
-          FIRMWARE_PATH=".pio/build/${{ github.event.inputs.device_model }}/firmware.bin"
-          
-          if [ ! -f "$FIRMWARE_PATH" ]; then
-            echo "Error: Firmware binary not found at $FIRMWARE_PATH"
-            ls -la ".pio/build/${{ github.event.inputs.device_model }}/" || true
-            exit 1
-          fi
-          
-          echo "Firmware built successfully: $FIRMWARE_PATH"
-          echo "Firmware size: $(stat -c%s "$FIRMWARE_PATH" 2>/dev/null || stat -f%z "$FIRMWARE_PATH") bytes"
-          
-          # Store path relative to repo root
-          echo "FIRMWARE_PATH=paku_core/$FIRMWARE_PATH" >> $GITHUB_ENV
-          
-          # Calculate checksum
-          FIRMWARE_SHA256=$(sha256sum "$FIRMWARE_PATH" | cut -d' ' -f1)
-          echo "FIRMWARE_SHA256=$FIRMWARE_SHA256" >> $GITHUB_ENV
-          echo "Firmware SHA256: $FIRMWARE_SHA256"
-
-      - name: Build firmware
         if: env.FIRMWARE_EXISTS == 'false'
         run: |
           cd paku_core
           echo "Building firmware for ${{ github.event.inputs.device_model }}..."
-          pio run --environment ${{ github.event.inputs.device_model }}
+          platformio run --environment ${{ github.event.inputs.device_model }}
           
           # Find the built firmware (specifically firmware.bin, not partitions.bin)
           FIRMWARE_PATH=".pio/build/${{ github.event.inputs.device_model }}/firmware.bin"
