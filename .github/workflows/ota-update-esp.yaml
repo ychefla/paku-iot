@@ -266,9 +266,9 @@ jobs:
           
           # Prepare rollout payload based on strategy
           case "$STRATEGY" in
-            test)
+            single-device)
               if [ -z "${{ github.event.inputs.test_devices }}" ]; then
-                echo "Error: test_devices must be provided for test strategy"
+                echo "Error: test_devices must be provided for single-device strategy"
                 exit 1
               fi
               # Convert comma-separated list to JSON array
