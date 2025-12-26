@@ -498,13 +498,32 @@ jobs:
             
             echo "Strategy: Canary ($PERCENTAGE%)"
             echo "Querying database for devices with model: $DEVICE_MODEL"
+            echo "Database: $POSTGRES_HOST"
             echo ""
             
+            # Test database connection first
+            if ! timeout 10 psql -c "SELECT 1" > /dev/null 2>&1; then
+              echo "Error: Cannot connect to database"
+              exit 1
+            fi
+            
             # Query devices from database
-            DEVICE_LIST=$(psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC")
+            DEVICE_LIST=$(timeout 30 psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC" 2>&1)
+            QUERY_EXIT=$?
+            
+            if [ $QUERY_EXIT -eq 124 ]; then
+              echo "Error: Database query timed out after 30 seconds"
+              exit 1
+            elif [ $QUERY_EXIT -ne 0 ]; then
+              echo "Error: Database query failed with exit code $QUERY_EXIT"
+              echo "$DEVICE_LIST"
+              exit 1
+            fi
             
             if [ -z "$DEVICE_LIST" ]; then
               echo "Warning: No devices found in database for model $DEVICE_MODEL"
+              echo "Debug: Checking what devices exist..."
+              psql -c "SELECT device_id, device_model, last_seen FROM devices ORDER BY last_seen DESC LIMIT 10"
               exit 0
             fi
             
@@ -544,12 +563,31 @@ jobs:
             # Full: notify all active devices of this model
             echo "Strategy: Full Rollout"
             echo "Querying database for all active devices with model: $DEVICE_MODEL"
+            echo "Database: $POSTGRES_HOST"
             echo ""
             
-            DEVICE_LIST=$(psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC")
+            # Test database connection first
+            if ! timeout 10 psql -c "SELECT 1" > /dev/null 2>&1; then
+              echo "Error: Cannot connect to database"
+              exit 1
+            fi
+            
+            DEVICE_LIST=$(timeout 30 psql -t -A -c "SELECT device_id FROM devices WHERE device_model = '$DEVICE_MODEL' AND last_seen > NOW() - INTERVAL '7 days' ORDER BY last_seen DESC" 2>&1)
+            QUERY_EXIT=$?
+            
+            if [ $QUERY_EXIT -eq 124 ]; then
+              echo "Error: Database query timed out after 30 seconds"
+              exit 1
+            elif [ $QUERY_EXIT -ne 0 ]; then
+              echo "Error: Database query failed with exit code $QUERY_EXIT"
+              echo "$DEVICE_LIST"
+              exit 1
+            fi
             
             if [ -z "$DEVICE_LIST" ]; then
               echo "Warning: No devices found in database for model $DEVICE_MODEL"
+              echo "Debug: Checking what devices exist..."
+              psql -c "SELECT device_id, device_model, last_seen FROM devices ORDER BY last_seen DESC LIMIT 10"
               exit 0
             fi
             
