@@ -346,6 +346,61 @@ jobs:
             echo "Note: No response body returned"
           fi
 
+      - name: Trigger device updates via MQTT
+        run: |
+          echo "Installing mosquitto MQTT client..."
+          sudo apt-get update -qq
+          sudo apt-get install -y mosquitto-clients
+          
+          STRATEGY="${{ github.event.inputs.rollout_strategy }}"
+          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/firmware/firmware_${{ github.event.inputs.device_model }}_${VERSION}.bin"
+          
+          # Build OTA command JSON
+          OTA_COMMAND=$(cat <<EOF
+          {
+            "url": "$FIRMWARE_URL",
+            "version": "$VERSION",
+            "checksum": "$FIRMWARE_SHA256"
+          }
+          EOF
+          )
+          
+          echo "OTA Command to send:"
+          echo "$OTA_COMMAND" | jq '.'
+          
+          if [ "$STRATEGY" = "single-device" ]; then
+            # Send to specific devices
+            if [ -z "${{ github.event.inputs.test_devices }}" ]; then
+              echo "Error: No test devices specified for single-device strategy"
+              exit 1
+            fi
+            
+            # Split comma-separated device IDs and send to each
+            IFS=',' read -ra DEVICES <<< "${{ github.event.inputs.test_devices }}"
+            for device_id in "${DEVICES[@]}"; do
+              device_id=$(echo "$device_id" | xargs)  # trim whitespace
+              topic="paku/devices/${device_id}/cmd/ota"
+              echo "Sending OTA command to device: $device_id"
+              echo "Topic: $topic"
+              
+              echo "$OTA_COMMAND" | mosquitto_pub \
+                -h static.107.192.27.37.clients.your-server.de \
+                -p 1883 \
+                -t "$topic" \
+                -l
+              
+              if [ $? -eq 0 ]; then
+                echo "✓ OTA command sent to $device_id"
+              else
+                echo "✗ Failed to send OTA command to $device_id"
+              fi
+            done
+          else
+            echo "Note: Canary and full rollout strategies require device discovery from database"
+            echo "For now, devices will check for updates on their next check-in"
+            echo "TODO: Query database for devices matching rollout criteria and send MQTT commands"
+          fi
+
       - name: Generate deployment summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
