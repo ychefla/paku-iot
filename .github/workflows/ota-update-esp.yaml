@@ -340,7 +340,11 @@ jobs:
           fi
           
           echo "Rollout created successfully!"
-          cat /tmp/rollout_response.json | jq '.'
+          if [ -s /tmp/rollout_response.json ]; then
+            cat /tmp/rollout_response.json | jq '.' || echo "Warning: Response is not valid JSON"
+          else
+            echo "Note: No response body returned"
+          fi
 
       - name: Generate deployment summary
         run: |
