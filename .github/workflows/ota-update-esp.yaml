@@ -326,24 +326,21 @@ jobs:
           echo "$PAYLOAD" | jq '.'
           
           # Create rollout
-          ROLLOUT_RESPONSE=$(curl -v -X POST \
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/rollout_response.json \
+            -X POST \
             "${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/admin/rollout/create" \
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.OTA_API_KEY }}" \
-            -d "$PAYLOAD" \
-            -w "\nHTTP_CODE:%{http_code}" \
-            2>&1)
-          
-          HTTP_CODE=$(echo "$ROLLOUT_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+            -d "$PAYLOAD")
           
           if [ "$HTTP_CODE" != "200" ]; then
             echo "Error: Failed to create rollout (HTTP $HTTP_CODE)"
-            echo "$ROLLOUT_RESPONSE"
+            cat /tmp/rollout_response.json
             exit 1
           fi
           
           echo "Rollout created successfully!"
-          echo "$ROLLOUT_RESPONSE" | grep -v "HTTP_CODE:" | jq '.'
+          cat /tmp/rollout_response.json | jq '.'
 
       - name: Generate deployment summary
         run: |
