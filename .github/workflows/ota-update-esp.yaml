@@ -577,11 +577,11 @@ jobs:
 
       - name: Generate deployment summary
         run: |
-          # Determine which version was deployed
-          if [ "$FIRMWARE_EXISTS" = "true" ]; then
-            DEPLOYED_VERSION="$EXISTING_VERSION"
+          # Determine which version was deployed (use env vars set in earlier steps)
+          if [ "${{ env.FIRMWARE_EXISTS }}" = "true" ]; then
+            DEPLOYED_VERSION="${{ env.EXISTING_VERSION }}"
           else
-            DEPLOYED_VERSION="$VERSION"
+            DEPLOYED_VERSION="${{ env.VERSION }}"
           fi
           
           cat >> $GITHUB_STEP_SUMMARY << EOF
@@ -590,9 +590,9 @@ jobs:
           ## Firmware Details
           - **Version**: \`${DEPLOYED_VERSION}\`
           - **Device Model**: \`${{ github.event.inputs.device_model }}\`
-          - **Commit**: \`${COMMIT_HASH}\`
-          - **SHA256**: \`${FIRMWARE_SHA256}\`
-          - **Build Status**: $([ "$FIRMWARE_EXISTS" = "true" ] && echo "Reused existing firmware" || echo "Newly built")
+          - **Commit**: \`${{ env.COMMIT_HASH }}\`
+          - **SHA256**: \`${{ env.FIRMWARE_SHA256 }}\`
+          - **Build Status**: $([ "${{ env.FIRMWARE_EXISTS }}" = "true" ] && echo "Reused existing firmware" || echo "Newly built")
           
           ## Rollout Configuration
           - **Strategy**: \`${{ github.event.inputs.rollout_strategy }}\`
