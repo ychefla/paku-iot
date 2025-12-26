@@ -1,0 +1,539 @@
+{
+  "title": "Edge Devices Overview",
+  "uid": "edge-devices",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "device",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "DS_POSTGRESQL"
+        },
+        "query": "SELECT device_id FROM devices ORDER BY device_id",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "gridPos": {"h": 3, "w": 4, "x": 0, "y": 0},
+      "type": "stat",
+      "title": "Total Devices",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as total FROM devices",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": {"h": 3, "w": 4, "x": 4, "y": 0},
+      "type": "stat",
+      "title": "Online Devices",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as online FROM devices WHERE last_seen > NOW() - INTERVAL '5 minutes'",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "yellow"},
+              {"value": 5, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {"h": 3, "w": 4, "x": 8, "y": 0},
+      "type": "stat",
+      "title": "Devices Up-to-Date",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as uptodate FROM devices d WHERE d.current_firmware_version = (SELECT version FROM firmware_releases fr WHERE fr.device_model = d.device_model ORDER BY created_at DESC LIMIT 1)",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 5, "color": "yellow"},
+              {"value": 8, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": {"h": 3, "w": 6, "x": 12, "y": 0},
+      "type": "stat",
+      "title": "Latest Firmware",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT device_model || ': ' || version as latest FROM firmware_releases ORDER BY created_at DESC LIMIT 1",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "string",
+          "color": {"mode": "fixed", "fixedColor": "blue"}
+        }
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {"h": 3, "w": 6, "x": 18, "y": 0},
+      "type": "stat",
+      "title": "Status Updates (Last Hour)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT COUNT(*) as count FROM edge_device_status WHERE ts > NOW() - INTERVAL '1 hour'",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 6,
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 3},
+      "type": "table",
+      "title": "Device Status Overview",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "WITH latest_status AS (\n  SELECT DISTINCT ON (device_id)\n    device_id,\n    status,\n    ts as last_status_ts\n  FROM edge_device_status\n  ORDER BY device_id, ts DESC\n),\nlatest_update AS (\n  SELECT DISTINCT ON (device_id)\n    device_id,\n    firmware_version as target_version,\n    status as update_status,\n    completed_at\n  FROM device_update_status\n  ORDER BY device_id, started_at DESC\n)\nSELECT\n  d.device_id as \"Device ID\",\n  d.device_model as \"Model\",\n  d.current_firmware_version as \"Current FW\",\n  (\n    SELECT version FROM firmware_releases fr\n    WHERE fr.device_model = d.device_model\n    ORDER BY created_at DESC LIMIT 1\n  ) as \"Latest FW\",\n  CASE\n    WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN '🟢 Online'\n    WHEN d.last_seen > NOW() - INTERVAL '1 hour' THEN '🟡 Recent'\n    ELSE '🔴 Offline'\n  END as \"Status\",\n  CASE\n    WHEN d.last_seen > NOW() - INTERVAL '5 minutes' THEN EXTRACT(EPOCH FROM (NOW() - d.last_seen))::int || 's ago'\n    WHEN d.last_seen > NOW() - INTERVAL '1 hour' THEN ROUND(EXTRACT(EPOCH FROM (NOW() - d.last_seen))/60)::int || 'm ago'\n    WHEN d.last_seen IS NOT NULL THEN TO_CHAR(d.last_seen, 'MM-DD HH24:MI')\n    ELSE 'Never'\n  END as \"Last Seen\",\n  CASE\n    WHEN ls.last_status_ts > NOW() - INTERVAL '10 minutes' THEN EXTRACT(EPOCH FROM (NOW() - ls.last_status_ts))::int || 's ago'\n    WHEN ls.last_status_ts > NOW() - INTERVAL '1 hour' THEN ROUND(EXTRACT(EPOCH FROM (NOW() - ls.last_status_ts))/60)::int || 'm ago'\n    WHEN ls.last_status_ts IS NOT NULL THEN TO_CHAR(ls.last_status_ts, 'MM-DD HH24:MI')\n    ELSE 'No data'\n  END as \"Last Status\",\n  COALESCE((ls.status->>'signal_strength_dbm')::text, '-') as \"WiFi (dBm)\",\n  CASE\n    WHEN (ls.status->>'uptime_seconds')::numeric >= 86400 THEN ((ls.status->>'uptime_seconds')::numeric / 86400)::int || 'd'\n    WHEN (ls.status->>'uptime_seconds')::numeric >= 3600 THEN ((ls.status->>'uptime_seconds')::numeric / 3600)::int || 'h'\n    WHEN (ls.status->>'uptime_seconds')::numeric >= 60 THEN ((ls.status->>'uptime_seconds')::numeric / 60)::int || 'm'\n    WHEN ls.status->>'uptime_seconds' IS NOT NULL THEN (ls.status->>'uptime_seconds')::int || 's'\n    ELSE '-'\n  END as \"Uptime\",\n  COALESCE(ls.status->>'state', '-') as \"State\",\n  CASE\n    WHEN lu.update_status IN ('downloading', 'installing', 'pending') THEN '🔄 Updating'\n    WHEN lu.update_status = 'success' THEN '✅ Success'\n    WHEN lu.update_status = 'failed' THEN '❌ Failed'\n    ELSE '-'\n  END as \"Update Status\",\n  TO_CHAR(d.created_at, 'YYYY-MM-DD') as \"Registered\"\nFROM devices d\nLEFT JOIN latest_status ls ON d.device_id = ls.device_id\nLEFT JOIN latest_update lu ON d.device_id = lu.device_id\nWHERE d.device_id ~ '${device}'\nORDER BY d.last_seen DESC NULLS LAST",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Device ID"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Status"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Current FW"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Latest FW"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 15},
+      "type": "timeseries",
+      "title": "Status Update Rate (Messages/5min)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\n  DATE_TRUNC('minute', ts) - (EXTRACT(MINUTE FROM ts)::int % 5) * INTERVAL '1 minute' as time,\n  device_id,\n  COUNT(*) as messages\nFROM edge_device_status\nWHERE\n  ts > $__timeFrom()\n  AND ts < $__timeTo()\n  AND device_id ~ '${device}'\nGROUP BY time, device_id\nORDER BY time",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "spanNulls": true
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 15},
+      "type": "timeseries",
+      "title": "WiFi Signal Strength (RSSI)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\n  ts as time,\n  device_id,\n  (status->>'signal_strength_dbm')::numeric as rssi\nFROM edge_device_status\nWHERE\n  status ? 'signal_strength_dbm'\n  AND ts > $__timeFrom()\n  AND ts < $__timeTo()\n  AND device_id ~ '${device}'\nORDER BY ts",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dBm",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "spanNulls": true
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": -90, "color": "red"},
+              {"value": -70, "color": "yellow"},
+              {"value": -50, "color": "green"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 25},
+      "type": "table",
+      "title": "Recent Status Updates (Last 50)",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\n  TO_CHAR(ts, 'YYYY-MM-DD HH24:MI:SS') as \"Timestamp\",\n  device_id as \"Device\",\n  COALESCE(status->>'state', '-') as \"State\",\n  COALESCE((status->>'signal_strength_dbm')::text, '-') as \"WiFi (dBm)\",\n  CASE\n    WHEN (status->>'uptime_seconds')::numeric >= 3600 THEN ((status->>'uptime_seconds')::numeric / 3600)::int || 'h'\n    WHEN (status->>'uptime_seconds')::numeric >= 60 THEN ((status->>'uptime_seconds')::numeric / 60)::int || 'm'\n    WHEN status->>'uptime_seconds' IS NOT NULL THEN (status->>'uptime_seconds')::int || 's'\n    ELSE '-'\n  END as \"Uptime\",\n  COALESCE(status->>'firmware_version', '-') as \"FW Ver\",\n  COALESCE(status->>'heater_status'::text, '-') as \"Heater\",\n  COALESCE(status->>'active_scenario', '-') as \"Scenario\"\nFROM edge_device_status\nWHERE\n  device_id ~ '${device}'\nORDER BY ts DESC\nLIMIT 50",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Timestamp"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 25},
+      "type": "table",
+      "title": "Device Update History",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\n  TO_CHAR(dus.started_at, 'YYYY-MM-DD HH24:MI:SS') as \"Started\",\n  dus.device_id as \"Device\",\n  dus.firmware_version as \"Target Version\",\n  CASE\n    WHEN dus.status = 'success' THEN '✅ Success'\n    WHEN dus.status = 'failed' THEN '❌ Failed'\n    WHEN dus.status IN ('downloading', 'installing', 'pending') THEN '🔄 In Progress'\n    ELSE dus.status\n  END as \"Status\",\n  CASE\n    WHEN dus.completed_at IS NOT NULL THEN\n      ROUND(EXTRACT(EPOCH FROM (dus.completed_at - dus.started_at))::numeric, 0) || 's'\n    ELSE 'Ongoing'\n  END as \"Duration\",\n  COALESCE(\n    CASE\n      WHEN LENGTH(dus.error_message) > 50 THEN LEFT(dus.error_message, 50) || '...'\n      ELSE dus.error_message\n    END,\n    '-'\n  ) as \"Message\"\nFROM device_update_status dus\nWHERE dus.device_id ~ '${device}'\nORDER BY dus.started_at DESC\nLIMIT 30",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Started"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Status"},
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 33},
+      "type": "timeseries",
+      "title": "Device Uptime Trends",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT\n  ts as time,\n  device_id,\n  (status->>'uptime_seconds')::numeric / 3600 as uptime_hours\nFROM edge_device_status\nWHERE\n  status ? 'uptime_seconds'\n  AND ts > $__timeFrom()\n  AND ts < $__timeTo()\n  AND device_id ~ '${device}'\nORDER BY ts",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "spanNulls": true
+          },
+          "min": 0
+        }
+      }
+    },
+    {
+      "id": 12,
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 33},
+      "type": "stat",
+      "title": "Current Device States",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "WITH latest_status AS (\n  SELECT DISTINCT ON (device_id)\n    device_id,\n    status->>'state' as state,\n    status->>'active_scenario' as scenario\n  FROM edge_device_status\n  WHERE device_id ~ '${device}'\n  ORDER BY device_id, ts DESC\n)\nSELECT\n  device_id,\n  COALESCE(state, 'unknown') || ' (' || COALESCE(scenario, 'default') || ')' as current_state\nFROM latest_status",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "orientation": "vertical"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "string",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "id": 13,
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 33},
+      "type": "stat",
+      "title": "Device Uptime",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "WITH latest_uptime AS (\n  SELECT DISTINCT ON (device_id)\n    device_id,\n    (status->>'uptime_seconds')::numeric as uptime_seconds\n  FROM edge_device_status\n  WHERE\n    status ? 'uptime_seconds'\n    AND device_id ~ '${device}'\n  ORDER BY device_id, ts DESC\n)\nSELECT\n  device_id,\n  CASE\n    WHEN uptime_seconds >= 86400 THEN (uptime_seconds / 86400)::int || 'd ' || ((uptime_seconds % 86400) / 3600)::int || 'h'\n    WHEN uptime_seconds >= 3600 THEN (uptime_seconds / 3600)::int || 'h ' || ((uptime_seconds % 3600) / 60)::int || 'm'\n    WHEN uptime_seconds >= 60 THEN (uptime_seconds / 60)::int || 'm'\n    ELSE uptime_seconds::int || 's'\n  END as uptime\nFROM latest_uptime",
+          "format": "table"
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "orientation": "vertical"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "string",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    }
+  ]
+}
