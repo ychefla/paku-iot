@@ -11,5 +11,6 @@ FROM postgres:16-alpine
 # in alphabetical order
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
 COPY ota_schema.sql /docker-entrypoint-initdb.d/02-ota_schema.sql
+COPY edge_devices_schema.sql /docker-entrypoint-initdb.d/03-edge_devices_schema.sql
 
 CMD ["postgres"]
