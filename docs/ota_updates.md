@@ -153,53 +153,6 @@ curl "http://localhost:8080/api/admin/update-status?limit=50"
 curl "http://localhost:8080/metrics"
 ```
 
-### 5. Manage Device Groups (Optional)
-
-Device groups enable targeting updates to specific sets of devices based on their metadata (e.g., location, function, environment). Groups are stored in the device's metadata JSONB field in the database.
-
-**Setting device groups:**
-
-Devices are automatically registered when they check for updates. To assign groups to a device, update its metadata in the database:
-
-```sql
--- Assign groups to a device
-UPDATE devices 
-SET metadata = jsonb_set(
-    COALESCE(metadata, '{}'::jsonb),
-    '{groups}',
-    '["location:warehouse", "function:sensor", "env:production"]'::jsonb
-)
-WHERE device_id = 'esp32_001';
-
--- Query devices by group
-SELECT device_id, device_model, metadata->'groups' as groups
-FROM devices
-WHERE metadata->'groups' ? 'location:warehouse';
-```
-
-**Creating a group-based rollout:**
-
-```bash
-curl -X POST "http://localhost:8080/api/admin/rollout/create" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-secret-api-key-here" \
-  -d '{
-    "name": "v1.0.0-warehouse-sensors",
-    "firmware_version": "1.0.0",
-    "device_model": "esp32",
-    "target_type": "group",
-    "target_filter": {"groups": ["location:warehouse", "function:sensor"]},
-    "rollout_percentage": 100,
-    "is_active": true
-  }'
-```
-
-**How group targeting works:**
-- A device matches if it belongs to **ANY** of the specified groups (OR logic)
-- Example: `target_filter: {"groups": ["location:warehouse", "function:sensor"]}` matches devices with either group
-- The `rollout_percentage` applies to devices that match the group criteria
-- Devices without metadata or groups are excluded from group-based rollouts
-
 ## Device Integration
 
 ### ESP32/ESP8266 Client Code
@@ -435,39 +388,8 @@ Best for: Targeting devices by location or function
   "target_type": "group",
   "target_filter": {
     "groups": ["location:warehouse", "function:sensor"]
-  },
-  "rollout_percentage": 100
+  }
 }
-```
-
-**Example use cases:**
-- Deploy updates to all sensors in a specific location: `{"groups": ["location:warehouse"]}`
-- Target devices by environment: `{"groups": ["env:production"]}`
-- Update specific device functions: `{"groups": ["function:gateway", "function:sensor"]}`
-- Combine criteria: `{"groups": ["location:warehouse", "env:production"]}`
-
-**Phased group rollout:**
-Start with a small percentage of the group, then increase:
-```bash
-# Phase 1: 25% of warehouse sensors
-curl -X POST "http://localhost:8080/api/admin/rollout/create" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-secret-api-key-here" \
-  -d '{
-    "name": "v1.2.0-warehouse-phase1",
-    "firmware_version": "1.2.0",
-    "device_model": "esp32",
-    "target_type": "group",
-    "target_filter": {"groups": ["location:warehouse"]},
-    "rollout_percentage": 25,
-    "is_active": true
-  }'
-
-# Phase 2: Increase to 100% after monitoring Phase 1
-curl -X PATCH "http://localhost:8080/api/admin/rollout/v1.2.0-warehouse-phase1" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-secret-api-key-here" \
-  -d '{"rollout_percentage": 100}'
 ```
 
 ## Security Best Practices
