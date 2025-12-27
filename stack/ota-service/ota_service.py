@@ -871,9 +871,44 @@ def _check_device_eligibility(
     
     # Group-based targeting
     if target_type == "group":
-        # TODO: Implement group membership check
-        # This would query device metadata for group assignments
-        return _percentage_match(device_id, rollout_percentage)
+        if not target_filter:
+            return False
+        try:
+            filter_dict = json.loads(target_filter) if isinstance(target_filter, str) else target_filter
+            target_groups = filter_dict.get("groups", [])
+            
+            if not target_groups:
+                return False
+            
+            # Query device metadata to get group assignments
+            conn = get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT metadata
+                        FROM devices
+                        WHERE device_id = %(device_id)s
+                    """, {"device_id": device_id})
+                    
+                    row = cur.fetchone()
+                    if not row or not row[0]:
+                        # Device not found or has no metadata
+                        return False
+                    
+                    device_metadata = row[0]
+                    device_groups = device_metadata.get("groups", []) if device_metadata else []
+                    
+                    # Check if device belongs to any of the target groups
+                    if not any(group in target_groups for group in device_groups):
+                        return False
+                    
+                    # Device is in target group, apply percentage rollout
+                    return _percentage_match(device_id, rollout_percentage)
+            finally:
+                conn.close()
+        except Exception as e:
+            logger.error(f"Error checking group membership for device {device_id}: {e}")
+            return False
     
     return False
 
