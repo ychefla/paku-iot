@@ -97,46 +97,46 @@ def test_check_device_eligibility_group():
         # Test 1: Device in target group should match (with 100% rollout)
         mock_cursor.fetchone.return_value = ({"groups": ["location:warehouse", "env:production"]},)
         result = _check_device_eligibility("device1", "group", target_filter, 100)
-        assert result == True
+        assert result is True
         
         # Test 2: Device in different target group should also match
         mock_cursor.fetchone.return_value = ({"groups": ["function:sensor", "env:testing"]},)
         result = _check_device_eligibility("device2", "group", target_filter, 100)
-        assert result == True
+        assert result is True
         
         # Test 3: Device not in any target group should not match
         mock_cursor.fetchone.return_value = ({"groups": ["location:office", "env:development"]},)
         result = _check_device_eligibility("device3", "group", target_filter, 100)
-        assert result == False
+        assert result is False
         
         # Test 4: Device with no groups should not match
         mock_cursor.fetchone.return_value = ({"groups": []},)
         result = _check_device_eligibility("device4", "group", target_filter, 100)
-        assert result == False
+        assert result is False
         
         # Test 5: Device with no metadata should not match
         mock_cursor.fetchone.return_value = (None,)
         result = _check_device_eligibility("device5", "group", target_filter, 100)
-        assert result == False
+        assert result is False
         
         # Test 6: Device not found should not match
         mock_cursor.fetchone.return_value = None
         result = _check_device_eligibility("device6", "group", target_filter, 100)
-        assert result == False
+        assert result is False
         
         # Test 7: Empty target filter should return False
         result = _check_device_eligibility("device7", "group", json.dumps({"groups": []}), 100)
-        assert result == False
+        assert result is False
         
         # Test 8: No target filter should return False
         result = _check_device_eligibility("device8", "group", None, 100)
-        assert result == False
+        assert result is False
         
         # Test 9: Percentage rollout should apply to eligible devices
         mock_cursor.fetchone.return_value = ({"groups": ["location:warehouse"]},)
         # With 0% rollout, even eligible devices should not get update
         result = _check_device_eligibility("device9", "group", target_filter, 0)
-        assert result == False
+        assert result is False
         
         # Test 10: Consistency check - same device should get same result
         mock_cursor.fetchone.return_value = ({"groups": ["location:warehouse"]},)
