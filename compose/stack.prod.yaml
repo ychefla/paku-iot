@@ -24,6 +24,8 @@ services:
     restart: always
     ports:
       - "1883:1883"
+    volumes:
+      - paku_mqttdata:/mosquitto/data
     deploy:
       resources:
         limits:
@@ -263,3 +265,4 @@ volumes:
   paku_pgdata:
   paku_grafana:
   paku_firmware:
+  paku_mqttdata:
