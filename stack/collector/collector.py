@@ -270,10 +270,10 @@ def validate_payload(data: Dict[str, Any]) -> bool:
     """
     Validate payload structure for new schema.
     
-    Required: timestamp, device_id, metrics
-    Optional: location
+    Required: device_id, metrics
+    Optional: timestamp, location
     """
-    required_fields = ["timestamp", "device_id", "metrics"]
+    required_fields = ["device_id", "metrics"]
     missing = [f for f in required_fields if f not in data]
     
     if missing:
