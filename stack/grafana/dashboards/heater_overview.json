@@ -16,35 +16,35 @@
       "type": "stat",
       "title": "Heater State",
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "DS_POSTGRESQL"
       },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "DS_POSTGRESQL" },
           "format": "table",
-          "rawSql": "SELECT\n  metrics->>'heater_state' AS \"State\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'heater_state'\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  CASE metrics->>'heater_state'\n    WHEN 'Off' THEN 0\n    WHEN 'Starting' THEN 1\n    WHEN 'Warming' THEN 2\n    WHEN 'Running' THEN 3\n    WHEN 'ShuttingDown' THEN 4\n    WHEN 'Cooling' THEN 5\n    ELSE -1\n  END AS \"State\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics->>'heater_state' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "editorMode": "code"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "Running": { "color": "green", "text": "🔥 Running" } } },
-            { "type": "value", "options": { "Starting": { "color": "yellow", "text": "⏳ Starting" } } },
-            { "type": "value", "options": { "Warming": { "color": "yellow", "text": "⏳ Warming" } } },
-            { "type": "value", "options": { "Off": { "color": "text", "text": "⏹ Off" } } },
-            { "type": "value", "options": { "ShuttingDown": { "color": "orange", "text": "↓ Shutting Down" } } },
-            { "type": "value", "options": { "Cooling": { "color": "orange", "text": "❄ Cooling" } } }
+            { "type": "value", "options": { "0": { "color": "text", "text": "⏹ Off" } } },
+            { "type": "value", "options": { "1": { "color": "yellow", "text": "⏳ Starting" } } },
+            { "type": "value", "options": { "2": { "color": "yellow", "text": "⏳ Warming" } } },
+            { "type": "value", "options": { "3": { "color": "green", "text": "🔥 Running" } } },
+            { "type": "value", "options": { "4": { "color": "orange", "text": "↓ Shutting Down" } } },
+            { "type": "value", "options": { "5": { "color": "orange", "text": "❄ Cooling" } } }
           ],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": [], "fields": "", "values": true },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
@@ -56,31 +56,31 @@
       "type": "stat",
       "title": "Safety",
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "DS_POSTGRESQL"
       },
       "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "DS_POSTGRESQL" },
           "format": "table",
-          "rawSql": "SELECT\n  CASE WHEN (metrics->>'safety_ok')::int = 1 THEN 'OK' ELSE 'TRIPPED' END AS \"Safety\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'safety_ok'\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  (metrics->>'safety_ok')::int AS \"Safety\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics->>'safety_ok' IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "editorMode": "code"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "OK": { "color": "green", "text": "✅ OK" } } },
-            { "type": "value", "options": { "TRIPPED": { "color": "red", "text": "🚨 TRIPPED" } } }
+            { "type": "value", "options": { "1": { "color": "green", "text": "✅ OK" } } },
+            { "type": "value", "options": { "0": { "color": "red", "text": "🚨 TRIPPED" } } }
           ],
           "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": [], "fields": "", "values": true },
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
