@@ -4,7 +4,7 @@
   "tags": ["paku", "heater", "autoterm"],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": {
     "from": "now-3h",
@@ -44,7 +44,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": { "calcs": [], "fields": "", "values": true },
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
@@ -80,7 +80,7 @@
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": { "calcs": [], "fields": "", "values": true },
         "textMode": "value",
         "colorMode": "value",
         "graphMode": "none",
