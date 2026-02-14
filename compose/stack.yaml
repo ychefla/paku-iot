@@ -2,7 +2,7 @@
 # PAKU IoT – UNIFIED STACK
 #
 # This compose file starts the full lightweight environment:
-#   ruuvi-emulator → mosquitto → collector → postgres → grafana
+#   ruuvi-emulator + heater-emulator → mosquitto → collector → postgres → grafana
 #
 # Each service has its own directory under stack/.
 # In this phase the goal is to run a clean end-to-end pipeline.
@@ -90,6 +90,27 @@ services:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
       MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
+
+  # ------------------------------------------------------------
+  # HEATER EMULATOR
+  # Simulates an Autoterm Flow 5D hydronic heater on MQTT.
+  # Publishes state + telemetry, responds to start/stop commands.
+  # Runs for MAX_RUNTIME_SECONDS then exits automatically.
+  # ------------------------------------------------------------
+  heater-emulator:
+    build:
+      context: ../stack/heater-emulator
+    container_name: paku_heater_emulator
+    restart: "no"
+    depends_on:
+      mosquitto:
+        condition: service_started
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: ${HEATER_DEVICE_ID:-emu01}
+      MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
+      PUBLISH_INTERVAL: ${HEATER_PUBLISH_INTERVAL:-5}
 
   # ------------------------------------------------------------
   # COLLECTOR

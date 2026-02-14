@@ -17,7 +17,7 @@
         "showReuseMessage": false,
         "clear": false
       },
-      "detail": "Start the PAKU IoT unified Docker stack (ruuvi-emulator, mosquitto, collector, postgres, grafana)"
+      "detail": "Start the PAKU IoT unified Docker stack (ruuvi-emulator, heater-emulator, mosquitto, collector, postgres, grafana)"
     },
     {
       "label": "docker down",
@@ -131,6 +131,25 @@
       },
       "isBackground": true,
       "detail": "Tail logs for the grafana visualization service"
+    },
+    {
+      "label": "docker logs: heater-emulator",
+      "type": "shell",
+      "command": "docker compose -f compose/stack.yaml logs -f heater-emulator",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "detail": "Tail logs for the heater-emulator service"
     }
   ]
 }

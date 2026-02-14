@@ -1,0 +1,381 @@
+{
+  "uid": "paku-heater",
+  "title": "Hydronic Heater Overview",
+  "tags": ["paku", "heater", "autoterm"],
+  "timezone": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Heater State",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "table",
+          "rawSql": "SELECT\n  metrics->>'heater_state' AS \"State\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'heater_state'\nORDER BY ts DESC\nLIMIT 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "Running": { "color": "green", "text": "🔥 Running" } } },
+            { "type": "value", "options": { "Starting": { "color": "yellow", "text": "⏳ Starting" } } },
+            { "type": "value", "options": { "Warming": { "color": "yellow", "text": "⏳ Warming" } } },
+            { "type": "value", "options": { "Off": { "color": "text", "text": "⏹ Off" } } },
+            { "type": "value", "options": { "ShuttingDown": { "color": "orange", "text": "↓ Shutting Down" } } },
+            { "type": "value", "options": { "Cooling": { "color": "orange", "text": "❄ Cooling" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Safety",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "table",
+          "rawSql": "SELECT\n  CASE WHEN (metrics->>'safety_ok')::int = 1 THEN 'OK' ELSE 'TRIPPED' END AS \"Safety\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'safety_ok'\nORDER BY ts DESC\nLIMIT 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "OK": { "color": "green", "text": "✅ OK" } } },
+            { "type": "value", "options": { "TRIPPED": { "color": "red", "text": "🚨 TRIPPED" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Battery",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "table",
+          "rawSql": "SELECT\n  (metrics->>'battery_v')::numeric AS \"Battery V\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'battery_v'\nORDER BY ts DESC\nLIMIT 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "volt",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "red", "value": 11.0 },
+              { "color": "yellow", "value": 11.5 },
+              { "color": "green", "value": 12.2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Coolant Temperature",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "table",
+          "rawSql": "SELECT\n  (metrics->>'coolant_temp_c')::numeric AS \"Coolant °C\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'coolant_temp_c'\nORDER BY ts DESC\nLIMIT 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 30 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "Flow Rate",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 4 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "table",
+          "rawSql": "SELECT\n  (metrics->>'flow_lpm')::numeric AS \"Flow L/min\"\nFROM measurements\nWHERE system = 'heater'\n  AND metrics ? 'flow_lpm'\nORDER BY ts DESC\nLIMIT 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Lpm",
+          "decimals": 1,
+          "min": 0,
+          "max": 10,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "green", "value": 1.5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Coolant Temperature History",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, '30s') AS \"time\",\n  AVG((metrics->>'coolant_temp_c')::numeric) AS value,\n  'Coolant' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND system = 'heater'\n  AND metrics ? 'coolant_temp_c'\nGROUP BY 1\nORDER BY 1",
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, '30s') AS \"time\",\n  AVG((metrics->>'core_temp_c')::numeric) AS value,\n  'Core' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND system = 'heater'\n  AND metrics ? 'core_temp_c'\nGROUP BY 1\nORDER BY 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "axisSoftMin": 0,
+            "thresholdsStyle": { "mode": "dashed" }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 95 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Core" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Coolant" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Battery Voltage & Flow Rate",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, '30s') AS \"time\",\n  AVG((metrics->>'battery_v')::numeric) AS value,\n  'Battery V' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND system = 'heater'\n  AND metrics ? 'battery_v'\nGROUP BY 1\nORDER BY 1",
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, '30s') AS \"time\",\n  AVG((metrics->>'flow_lpm')::numeric) AS value,\n  'Flow L/min' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND system = 'heater'\n  AND metrics ? 'flow_lpm'\nGROUP BY 1\nORDER BY 1",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Battery V" },
+            "properties": [
+              { "id": "unit", "value": "volt" },
+              { "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } },
+              { "id": "custom.axisPlacement", "value": "left" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Flow L/min" },
+            "properties": [
+              { "id": "unit", "value": "Lpm" },
+              { "id": "color", "value": { "fixedColor": "cyan", "mode": "fixed" } },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 8,
+      "type": "state-timeline",
+      "title": "Heater State History",
+      "datasource": {
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 26 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "postgres", "uid": "DS_POSTGRESQL" },
+          "format": "time_series",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  metrics->>'heater_state' AS value,\n  'State' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND system = 'heater'\n  AND metrics ? 'heater_state'\nORDER BY ts",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "Running": { "color": "green" } } },
+            { "type": "value", "options": { "Starting": { "color": "yellow" } } },
+            { "type": "value", "options": { "Warming": { "color": "yellow" } } },
+            { "type": "value", "options": { "Off": { "color": "dark-gray" } } },
+            { "type": "value", "options": { "ShuttingDown": { "color": "orange" } } },
+            { "type": "value", "options": { "Cooling": { "color": "blue" } } },
+            { "type": "value", "options": { "Ventilation": { "color": "purple" } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "auto",
+        "rowHeight": 0.8,
+        "mergeValues": true,
+        "alignValue": "left"
+      }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] }
+}
