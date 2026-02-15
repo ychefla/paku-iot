@@ -61,6 +61,7 @@ def load_config() -> Dict[str, Any]:
             "+/+/+/data",    # Sensor data measurements
             "+/edge/+/status",  # Edge device status
             "+/edge/+/config",  # Edge device configuration
+            "+/edge/+/ota/+",   # OTA status/progress/result
         ],
         "pg_host": get_env("PGHOST", "postgres"),
         "pg_port": int(os.getenv("PGPORT", "5432")),
@@ -264,6 +265,120 @@ def upsert_edge_config(
 
 
 # ---------------------------------------------------------------------
+# OTA message handling
+# ---------------------------------------------------------------------
+def handle_ota_message(
+    conn: psycopg.Connection,
+    device_id: str,
+    ota_type: str,
+    payload: Dict[str, Any],
+) -> None:
+    """
+    Process OTA MQTT messages (status / progress / result) and write
+    into device_update_status + ota_events tables.
+
+    ota_type is one of: "status", "progress", "result"
+    """
+    firmware_version = payload.get("target_version", payload.get("version", "unknown"))
+
+    with conn.cursor() as cur:
+        if ota_type == "status":
+            # OTA command acknowledged – create initial tracking row
+            cur.execute(
+                """
+                INSERT INTO device_update_status
+                    (device_id, firmware_version, status, started_at, reported_at)
+                VALUES (%(device_id)s, %(fw)s, 'pending', NOW(), NOW())
+                """,
+                {"device_id": device_id, "fw": firmware_version},
+            )
+            cur.execute(
+                """
+                INSERT INTO ota_events
+                    (event_type, device_id, firmware_version, event_data)
+                VALUES ('update_started', %(device_id)s, %(fw)s, %(data)s::jsonb)
+                """,
+                {
+                    "device_id": device_id,
+                    "fw": firmware_version,
+                    "data": json.dumps(payload),
+                },
+            )
+
+        elif ota_type == "progress":
+            # Update the latest tracking row with progress
+            status = "downloading"
+            state = payload.get("state", "").lower()
+            if state == "installing":
+                status = "installing"
+            elif state == "verifying":
+                status = "downloaded"
+
+            cur.execute(
+                """
+                UPDATE device_update_status
+                SET status = %(status)s,
+                    progress_percent = %(pct)s,
+                    reported_at = NOW()
+                WHERE id = (
+                    SELECT id FROM device_update_status
+                    WHERE device_id = %(device_id)s
+                    ORDER BY reported_at DESC
+                    LIMIT 1
+                )
+                """,
+                {
+                    "device_id": device_id,
+                    "status": status,
+                    "pct": payload.get("percent", 0),
+                },
+            )
+
+        elif ota_type == "result":
+            success = payload.get("success", False)
+            final_status = "success" if success else "failed"
+            error_msg = None if success else payload.get("message")
+
+            cur.execute(
+                """
+                UPDATE device_update_status
+                SET status = %(status)s,
+                    progress_percent = CASE WHEN %(success)s THEN 100 ELSE progress_percent END,
+                    error_message = %(err)s,
+                    completed_at = NOW(),
+                    reported_at = NOW()
+                WHERE id = (
+                    SELECT id FROM device_update_status
+                    WHERE device_id = %(device_id)s
+                    ORDER BY reported_at DESC
+                    LIMIT 1
+                )
+                """,
+                {
+                    "device_id": device_id,
+                    "status": final_status,
+                    "success": success,
+                    "err": error_msg,
+                },
+            )
+
+            event_type = "update_completed" if success else "update_failed"
+            cur.execute(
+                """
+                INSERT INTO ota_events
+                    (event_type, device_id, firmware_version, event_data)
+                VALUES (%(evt)s, %(device_id)s, %(fw)s, %(data)s::jsonb)
+                """,
+                {
+                    "evt": event_type,
+                    "device_id": device_id,
+                    "fw": firmware_version,
+                    "data": json.dumps(payload),
+                },
+            )
+
+
+# ---------------------------------------------------------------------
 # Payload validation
 # ---------------------------------------------------------------------
 def validate_payload(data: Dict[str, Any]) -> bool:
@@ -293,7 +408,9 @@ def validate_payload(data: Dict[str, Any]) -> bool:
 
 def parse_topic(topic: str) -> Optional[tuple[str, str, str, str]]:
     """
-    Parse topic structure: {site_id}/{system}/{device_id}/{topic_type}
+    Parse topic structure:
+      4-segment: {site_id}/{system}/{device_id}/{topic_type}
+      5-segment: {site_id}/edge/{device_id}/ota/{ota_type}
     
     Returns: (site_id, system, device_id, topic_type) or None if invalid
     
@@ -301,10 +418,21 @@ def parse_topic(topic: str) -> Optional[tuple[str, str, str, str]]:
     - data: sensor measurements
     - status: edge device status updates  
     - config: edge device configuration
+    - ota_status, ota_progress, ota_result: OTA update messages
     """
     parts = topic.split("/")
+
+    # 5-segment OTA topics: {site_id}/edge/{device_id}/ota/{ota_type}
+    if len(parts) == 5 and parts[1] == "edge" and parts[3] == "ota":
+        site_id, system, device_id, _, ota_type = parts
+        if ota_type in ["status", "progress", "result"]:
+            return (site_id, system, device_id, f"ota_{ota_type}")
+        logger.debug("Ignoring unknown OTA sub-topic '%s': %s", ota_type, topic)
+        return None
+
+    # 4-segment standard topics
     if len(parts) != 4:
-        logger.warning("Invalid topic structure (expected 4 levels): %s", topic)
+        logger.warning("Invalid topic structure (expected 4 or 5 levels): %s", topic)
         return None
     
     site_id, system, device_id, topic_type = parts
@@ -415,6 +543,17 @@ class CollectorApp:
                     "Updated edge config: %s/edge/%s",
                     site_id,
                     device_id
+                )
+
+            elif topic_type.startswith("ota_") and system == "edge":
+                # Handle OTA status/progress/result messages
+                ota_type = topic_type[4:]  # strip "ota_" prefix
+                handle_ota_message(self.conn, device_id, ota_type, data)
+                logger.info(
+                    "OTA %s from %s/edge/%s",
+                    ota_type,
+                    site_id,
+                    device_id,
                 )
             else:
                 logger.debug("Unhandled topic type: %s (system=%s)", topic_type, system)

@@ -207,6 +207,8 @@ jobs:
         run: |
           cd paku_core
           echo "Building firmware for ${{ github.event.inputs.device_model }}..."
+          echo "Injecting FIRMWARE_VERSION=$VERSION"
+          export PLATFORMIO_BUILD_FLAGS="-DFIRMWARE_VERSION=\\\"${VERSION}\\\""
           platformio run --environment ${{ github.event.inputs.device_model }}
           
           # Find the built firmware (specifically firmware.bin, not partitions.bin)
