@@ -19,6 +19,9 @@ services:
   mosquitto:
     build:
       context: ../stack/mosquitto
+      args:
+        MQTT_USER: ${MQTT_USER:-paku}
+        MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
     container_name: paku_mosquitto
     restart: unless-stopped
     ports:
@@ -91,6 +94,8 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
       MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
 
   # ------------------------------------------------------------
@@ -110,6 +115,8 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
       DEVICE_ID: ${HEATER_DEVICE_ID:-emu01}
       MAX_RUNTIME_SECONDS: ${MAX_RUNTIME_SECONDS:-300}
       PUBLISH_INTERVAL: ${HEATER_PUBLISH_INTERVAL:-5}
@@ -133,6 +140,8 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
       MQTT_TOPIC_PATTERN: "+/+/+/data"
       PGHOST: postgres
       PGPORT: 5432

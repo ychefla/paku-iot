@@ -57,6 +57,8 @@ def load_config() -> Dict[str, Any]:
     return {
         "mqtt_host": get_env("MQTT_HOST", "mosquitto"),
         "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
+        "mqtt_user": os.getenv("MQTT_USER"),
+        "mqtt_password": os.getenv("MQTT_PASSWORD"),
         "mqtt_topic_patterns": [
             "+/+/+/data",    # Sensor data measurements
             "+/edge/+/status",  # Edge device status
@@ -461,6 +463,13 @@ class CollectorApp:
     def start(self) -> None:
         # Connect to DB once at startup
         self.conn = connect_to_database(self.cfg)
+
+        # Set MQTT credentials if provided
+        mqtt_user = self.cfg.get("mqtt_user")
+        mqtt_password = self.cfg.get("mqtt_password")
+        if mqtt_user and mqtt_password:
+            self.client.username_pw_set(mqtt_user, mqtt_password)
+            logger.info("MQTT authentication enabled (user=%s)", mqtt_user)
 
         logger.info(
             "Connecting to MQTT at %s:%s, subscribing to: %s",

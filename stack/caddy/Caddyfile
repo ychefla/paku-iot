@@ -1,0 +1,9 @@
+{$PAKU_DOMAIN} {
+    # Grafana dashboard
+    reverse_proxy grafana:3000
+
+    # OTA firmware service
+    handle_path /ota/* {
+        reverse_proxy ota-service:8080
+    }
+}

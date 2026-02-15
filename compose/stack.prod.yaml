@@ -20,6 +20,9 @@ services:
   mosquitto:
     build:
       context: ../stack/mosquitto
+      args:
+        MQTT_USER: ${MQTT_USER:-paku}
+        MQTT_PASSWORD: ${MQTT_PASSWORD}
     container_name: paku_mosquitto
     restart: always
     ports:
@@ -60,10 +63,7 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - paku_pgdata:/var/lib/postgresql/data
-    deploy:
-      resources:
-        limits:
-          memory: 512M
+      - paku_backups:/backups
     logging:
       driver: "json-file"
       options:
@@ -96,8 +96,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-paku}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-paku}
-    ports:
-      - "3000:3000"
+    # Port exposed via Caddy reverse proxy — no direct access
+    # ports:
+    #   - "3000:3000"
     volumes:
       - paku_grafana:/var/lib/grafana
     deploy:
@@ -165,6 +166,8 @@ services:
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
       MQTT_TOPIC_PATTERN: "+/+/+/data"
       PGHOST: postgres
       PGPORT: 5432
@@ -237,8 +240,9 @@ services:
       FIRMWARE_STORAGE_PATH: /firmware
       API_KEY: ${OTA_API_KEY:-}
       PORT: 8080
-    ports:
-      - "8080:8080"
+    # Port exposed via Caddy reverse proxy — no direct access
+    # ports:
+    #   - \"8080:8080\"
     volumes:
       - paku_firmware:/firmware
     deploy:
@@ -257,6 +261,71 @@ services:
       retries: 3
       start_period: 20s
 
+  # ------------------------------------------------------------
+  # PG-BACKUP
+  # Runs daily pg_dump inside the postgres container via
+  # docker exec, keeping the last 7 days of backups.
+  # Backups are stored in the paku_backups volume.
+  # To restore: docker exec paku_postgres sh -c 'gunzip -c /backups/<file> | psql -U paku paku'
+  # ------------------------------------------------------------
+  pg-backup:
+    image: docker:cli
+    container_name: paku_pg_backup
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    entrypoint: |
+      sh -c 'while true; do
+        echo "[pg-backup] Starting backup at $$(date -Iseconds)";
+        docker exec paku_postgres /usr/local/bin/backup.sh 2>&1 || true;
+        echo "[pg-backup] Next backup in 24h";
+        sleep 86400;
+      done'
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ------------------------------------------------------------
+  # CADDY – REVERSE PROXY + AUTOMATIC TLS
+  # Terminates HTTPS for Grafana (and optionally OTA service).
+  # Set PAKU_DOMAIN in .env to your domain for automatic Let's Encrypt.
+  # Without a domain, Caddy serves on :80 only.
+  # ------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    container_name: paku_caddy
+    restart: always
+    depends_on:
+      grafana:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../stack/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - paku_caddy_data:/data
+      - paku_caddy_config:/config
+    environment:
+      PAKU_DOMAIN: ${PAKU_DOMAIN:-:80}
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 # ------------------------------------------------------------
 # VOLUMES
 # Centralized definitions for all persistent data directories.
@@ -266,3 +335,6 @@ volumes:
   paku_grafana:
   paku_firmware:
   paku_mqttdata:
+  paku_backups:
+  paku_caddy_data:
+  paku_caddy_config:

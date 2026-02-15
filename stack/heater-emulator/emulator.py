@@ -234,6 +234,12 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
 
+    # Set credentials if provided
+    mqtt_user = os.getenv("MQTT_USER")
+    mqtt_password = os.getenv("MQTT_PASSWORD")
+    if mqtt_user and mqtt_password:
+        client.username_pw_set(mqtt_user, mqtt_password)
+
     # Retry connection
     for attempt in range(1, 11):
         try:

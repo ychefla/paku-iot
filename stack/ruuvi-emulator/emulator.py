@@ -64,7 +64,13 @@ def main():
     client = mqtt.Client(callback_api_version=CallbackAPIVersion.VERSION2)
     client.on_connect = on_connect
     client.on_publish = on_publish
-    
+
+    # Set credentials if provided
+    mqtt_user = os.getenv("MQTT_USER")
+    mqtt_password = os.getenv("MQTT_PASSWORD")
+    if mqtt_user and mqtt_password:
+        client.username_pw_set(mqtt_user, mqtt_password)
+
     # Connect to broker with retry logic
     max_retries = 10
     retry_count = 0

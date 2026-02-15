@@ -13,4 +13,8 @@ COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
 COPY ota_schema.sql /docker-entrypoint-initdb.d/02-ota_schema.sql
 COPY edge_devices_schema.sql /docker-entrypoint-initdb.d/03-edge_devices_schema.sql
 
+# Backup script (invoked by pg-backup service or manual docker exec)
+COPY backup.sh /usr/local/bin/backup.sh
+RUN chmod +x /usr/local/bin/backup.sh
+
 CMD ["postgres"]
