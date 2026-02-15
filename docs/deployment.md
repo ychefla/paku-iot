@@ -80,17 +80,16 @@ Set up UFW firewall rules:
 # Allow SSH
 ufw allow 22/tcp
 
-# Allow Grafana (or consider using a reverse proxy)
-ufw allow 3000/tcp
+# Allow HTTP/HTTPS (Caddy reverse proxy)
+ufw allow 80/tcp
+ufw allow 443/tcp
 
-# Allow MQTT (if devices connect directly)
+# Allow MQTT (edge devices connect directly)
 ufw allow 1883/tcp
 
 # Enable firewall
 ufw enable
 ```
-
-**Note**: In production, consider using a reverse proxy (Caddy/Nginx) with HTTPS instead of exposing ports directly.
 
 ## Deployment
 
@@ -128,7 +127,14 @@ nano compose/.env
 # Generate secure passwords
 openssl rand -base64 32  # For POSTGRES_PASSWORD
 openssl rand -base64 32  # For GF_SECURITY_ADMIN_PASSWORD
+openssl rand -base64 32  # For MQTT_PASSWORD
 ```
+
+Key variables to set:
+- `POSTGRES_PASSWORD` — database
+- `GF_SECURITY_ADMIN_PASSWORD` — Grafana admin
+- `MQTT_USER` / `MQTT_PASSWORD` — MQTT broker (same credentials go into edge device `secrets.h`)
+- `PAKU_DOMAIN` — your domain for automatic TLS (e.g. `paku.example.com`), or `:80` for HTTP-only
 
 5. Start the stack:
 
@@ -160,6 +166,9 @@ Add the following secrets to your GitHub repository:
 | `HETZNER_SSH_KEY` | Private SSH key for deployment |
 | `POSTGRES_PASSWORD` | Strong password for PostgreSQL |
 | `GF_SECURITY_ADMIN_PASSWORD` | Strong password for Grafana admin |
+| `MQTT_USER` | MQTT broker username |
+| `MQTT_PASSWORD` | MQTT broker password |
+| `PAKU_DOMAIN` | Domain for Caddy TLS (e.g. `paku.example.com`) |
 
 #### Generate Deployment SSH Key
 
@@ -215,12 +224,18 @@ docker compose -f compose/stack.prod.yaml up -d --build
 
 ### Backup Database
 
-```bash
-# Create backup
-docker exec paku_postgres pg_dump -U paku paku > backup_$(date +%Y%m%d).sql
+Backups run automatically every 24 hours via the `pg-backup` service (prod stack only).
+Backups are stored in the `paku_backups` volume with 7-day retention.
 
-# Restore backup
-cat backup_20240101.sql | docker exec -i paku_postgres psql -U paku paku
+```bash
+# List existing backups
+docker exec paku_postgres ls -lh /backups/
+
+# Manual backup
+docker exec paku_postgres /usr/local/bin/backup.sh
+
+# Restore from backup
+docker exec -i paku_postgres sh -c 'gunzip -c /backups/<file>.sql.gz | psql -U paku paku'
 ```
 
 ## Monitoring
@@ -241,18 +256,22 @@ docker stats
 
 ### Grafana Access
 
-Access Grafana at `http://<server-ip>:3000`
-
-**Production recommendation**: Set up a reverse proxy with HTTPS using Caddy or Nginx.
+Access Grafana at `https://<your-domain>` (via Caddy reverse proxy with automatic TLS).
+In dev mode (`PAKU_DOMAIN=:80`): `http://<server-ip>`.
 
 ## Security Considerations
 
-1. **Strong Passwords**: Always use strong, unique passwords in production
-2. **Firewall**: Limit exposed ports to only what's necessary
-3. **HTTPS**: Use a reverse proxy with TLS certificates for web interfaces
-4. **MQTT Security**: Consider enabling authentication and TLS for MQTT
-5. **Updates**: Keep the server and Docker images updated
-6. **Backups**: Implement regular database backups
+**Implemented:**
+1. **MQTT Authentication**: Username/password required (`allow_anonymous false`)
+2. **HTTPS**: Caddy reverse proxy with automatic Let's Encrypt TLS
+3. **Firewall**: Only SSH, HTTP/S, and MQTT ports exposed
+4. **Backups**: Automated daily `pg_dump` with 7-day retention
+5. **Strong Passwords**: Generated via `openssl rand` for all services
+
+**Pending (see BACKLOG.md):**
+- MQTT TLS encryption (port 8883)
+- MQTT topic ACLs (per-device access control)
+- OTA firmware signature verification
 
 ## Troubleshooting
 
@@ -342,8 +361,11 @@ docker compose -f compose/stack.prod.yaml up -d
 ### MQTT Connection Issues
 
 ```bash
-# Check if mosquitto is listening
-docker exec -it paku_mosquitto mosquitto_sub -t "#" -v
+# Check if mosquitto is accepting connections (with auth)
+docker exec paku_mosquitto mosquitto_sub -u "$MQTT_USER" -P "$MQTT_PASSWORD" -t "#" -v -C 1
+
+# Check mosquitto logs for auth failures
+docker compose -f compose/stack.prod.yaml logs mosquitto | grep -i "denied\|auth"
 ```
 
 ## Costs
