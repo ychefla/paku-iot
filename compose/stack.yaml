@@ -22,10 +22,12 @@ services:
       args:
         MQTT_USER: ${MQTT_USER:-paku}
         MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
+        MQTT_CN: ${MQTT_CN:-mosquitto}
     container_name: paku_mosquitto
     restart: unless-stopped
     ports:
       - "1883:1883"
+      - "8883:8883"
     volumes:
       - paku_mqttdata:/mosquitto/data
 

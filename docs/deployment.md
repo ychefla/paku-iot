@@ -84,8 +84,9 @@ ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 
-# Allow MQTT (edge devices connect directly)
-ufw allow 1883/tcp
+# Allow MQTT — both listeners
+ufw allow 1883/tcp   # plain TCP (legacy devices, anonymous)
+ufw allow 8883/tcp   # TLS (new devices, auth required)
 
 # Enable firewall
 ufw enable
@@ -134,6 +135,7 @@ Key variables to set:
 - `POSTGRES_PASSWORD` — database
 - `GF_SECURITY_ADMIN_PASSWORD` — Grafana admin
 - `MQTT_USER` / `MQTT_PASSWORD` — MQTT broker (same credentials go into edge device `secrets.h`)
+- `MQTT_CN` — hostname/IP for the MQTT TLS certificate (e.g. your server's public hostname)
 - `PAKU_DOMAIN` — your domain for automatic TLS (e.g. `paku.example.com`), or `:80` for HTTP-only
 
 5. Start the stack:
@@ -168,6 +170,7 @@ Add the following secrets to your GitHub repository:
 | `GF_SECURITY_ADMIN_PASSWORD` | Strong password for Grafana admin |
 | `MQTT_USER` | MQTT broker username |
 | `MQTT_PASSWORD` | MQTT broker password |
+| `MQTT_CN` | Hostname/IP for MQTT TLS cert SAN |
 | `PAKU_DOMAIN` | Domain for Caddy TLS (e.g. `paku.example.com`) |
 
 #### Generate Deployment SSH Key
@@ -262,16 +265,18 @@ In dev mode (`PAKU_DOMAIN=:80`): `http://<server-ip>`.
 ## Security Considerations
 
 **Implemented:**
-1. **MQTT Authentication**: Username/password required (`allow_anonymous false`)
-2. **HTTPS**: Caddy reverse proxy with automatic Let's Encrypt TLS
-3. **Firewall**: Only SSH, HTTP/S, and MQTT ports exposed
-4. **Backups**: Automated daily `pg_dump` with 7-day retention
-5. **Strong Passwords**: Generated via `openssl rand` for all services
+1. **MQTT Authentication**: Username/password required on TLS listener (`allow_anonymous false`)
+2. **MQTT TLS**: Port 8883 with self-signed CA + server cert (generated at build time)
+3. **MQTT Legacy**: Port 1883 plain TCP, anonymous allowed (for devices that can't OTA)
+4. **HTTPS**: Caddy reverse proxy with automatic Let's Encrypt TLS
+5. **Firewall**: Only SSH, HTTP/S, and MQTT ports exposed
+6. **Backups**: Automated daily `pg_dump` with 7-day retention
+7. **Strong Passwords**: Generated via `openssl rand` for all services
 
 **Pending (see BACKLOG.md):**
-- MQTT TLS encryption (port 8883)
 - MQTT topic ACLs (per-device access control)
 - OTA firmware signature verification
+- Deprecate port 1883 once all devices support TLS
 
 ## Troubleshooting
 
