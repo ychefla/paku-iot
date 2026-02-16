@@ -19,17 +19,18 @@ services:
   mosquitto:
     build:
       context: ../stack/mosquitto
-      args:
-        MQTT_USER: ${MQTT_USER:-paku}
-        MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
-        MQTT_CN: ${MQTT_CN:-mosquitto}
     container_name: paku_mosquitto
     restart: unless-stopped
+    environment:
+      MQTT_USER: ${MQTT_USER:-edge}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
+      MQTT_CN: ${MQTT_CN:-mosquitto}
     ports:
       - "1883:1883"
       - "8883:8883"
     volumes:
       - paku_mqttdata:/mosquitto/data
+      - paku_mqttcerts:/mosquitto/certs
 
   # ------------------------------------------------------------
   # POSTGRES – PERSISTENT STORAGE
@@ -213,3 +214,4 @@ volumes:
   paku_grafana:
   paku_firmware:
   paku_mqttdata:
+  paku_mqttcerts:

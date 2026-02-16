@@ -195,7 +195,7 @@ jobs:
             export POSTGRES_PASSWORD='${POSTGRES_PASSWORD}'
             export GF_SECURITY_ADMIN_PASSWORD='${GF_SECURITY_ADMIN_PASSWORD}'
             export OTA_API_KEY='${OTA_API_KEY}'
-            export MQTT_USER='${MQTT_USER:-paku}'
+            export MQTT_USER='${MQTT_USER:-edge}'
             export MQTT_PASSWORD='${MQTT_PASSWORD}'
             export MQTT_CN='${MQTT_CN:-paku-mqtt}'
             export PAKU_DOMAIN='${PAKU_DOMAIN:-:80}'

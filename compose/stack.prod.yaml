@@ -20,17 +20,18 @@ services:
   mosquitto:
     build:
       context: ../stack/mosquitto
-      args:
-        MQTT_USER: ${MQTT_USER:-paku}
-        MQTT_PASSWORD: ${MQTT_PASSWORD}
-        MQTT_CN: ${MQTT_CN:-paku-mqtt}
     container_name: paku_mosquitto
     restart: always
+    environment:
+      MQTT_USER: ${MQTT_USER:-edge}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
+      MQTT_CN: ${MQTT_CN:-paku-mqtt}
     ports:
       - "1883:1883"
       - "8883:8883"
     volumes:
       - paku_mqttdata:/mosquitto/data
+      - paku_mqttcerts:/mosquitto/certs
     deploy:
       resources:
         limits:
@@ -337,6 +338,7 @@ volumes:
   paku_grafana:
   paku_firmware:
   paku_mqttdata:
+  paku_mqttcerts:
   paku_backups:
   paku_caddy_data:
   paku_caddy_config:
