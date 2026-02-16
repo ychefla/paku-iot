@@ -55,10 +55,14 @@ else
   openssl x509 -noout -enddate -in "$CERT_DIR/ca.crt" 2>/dev/null || true
 fi
 
+# Ensure cert files are readable by mosquitto
+chown -R mosquitto:mosquitto "$CERT_DIR"
+
 # --- Always regenerate password file from env vars ---
 MQTT_USER="${MQTT_USER:-edge}"
 MQTT_PASSWORD="${MQTT_PASSWORD:-changeme}"
 mosquitto_passwd -b -c /mosquitto/config/passwd "$MQTT_USER" "$MQTT_PASSWORD"
+chown mosquitto:mosquitto /mosquitto/config/passwd
 echo "=== MQTT password file updated for user: $MQTT_USER ==="
 
 # --- Start Mosquitto ---

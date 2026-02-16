@@ -10,5 +10,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 1883 8883
 
-# Entrypoint generates certs (if missing) + password file, then starts Mosquitto
+# Run entrypoint as root so it can write certs/passwd,
+# then it exec's mosquitto which drops to 'mosquitto' user
+USER root
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
