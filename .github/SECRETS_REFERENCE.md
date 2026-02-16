@@ -12,7 +12,7 @@ Used for automated deployment to Hetzner server.
 | `HETZNER_HOST` | Server hostname or IP address | ✅ Yes |
 | `POSTGRES_PASSWORD` | PostgreSQL database password | ✅ Yes |
 | `GF_SECURITY_ADMIN_PASSWORD` | Grafana admin password | ✅ Yes |
-| `MQTT_USER` | MQTT broker username (port 8883 TLS listener) | ✅ Yes |
+| `MQTT_USER` | MQTT broker username (port 8883 TLS listener, default: `edge`) | ✅ Yes |
 | `MQTT_PASSWORD` | MQTT broker password | ✅ Yes |
 | `MQTT_CN` | Hostname/IP for MQTT TLS certificate SAN | ⚠️ Optional (default: `paku-mqtt`) |
 | `PAKU_DOMAIN` | Domain for Caddy auto-TLS (e.g. `paku.example.com`) | ⚠️ Optional (default: `:80`) |

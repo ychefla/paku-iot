@@ -96,7 +96,7 @@ jobs:
           sed -i "s|__POSTGRES_PASSWORD__|${POSTGRES_PASSWORD}|g" compose/.env
           sed -i "s|__GF_SECURITY_ADMIN_PASSWORD__|${GF_SECURITY_ADMIN_PASSWORD}|g" compose/.env
           sed -i "s|__OTA_API_KEY__|${OTA_API_KEY}|g" compose/.env
-          sed -i "s|__MQTT_USER__|${MQTT_USER:-paku}|g" compose/.env
+          sed -i "s|__MQTT_USER__|${MQTT_USER:-edge}|g" compose/.env
           sed -i "s|__MQTT_PASSWORD__|${MQTT_PASSWORD}|g" compose/.env
           sed -i "s|__MQTT_CN__|${MQTT_CN:-paku-mqtt}|g" compose/.env
           sed -i "s|__PAKU_DOMAIN__|${PAKU_DOMAIN:-:80}|g" compose/.env
