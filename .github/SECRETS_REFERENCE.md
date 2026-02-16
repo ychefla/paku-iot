@@ -12,6 +12,11 @@ Used for automated deployment to Hetzner server.
 | `HETZNER_HOST` | Server hostname or IP address | ✅ Yes |
 | `POSTGRES_PASSWORD` | PostgreSQL database password | ✅ Yes |
 | `GF_SECURITY_ADMIN_PASSWORD` | Grafana admin password | ✅ Yes |
+| `MQTT_USER` | MQTT broker username (port 8883 TLS listener) | ✅ Yes |
+| `MQTT_PASSWORD` | MQTT broker password | ✅ Yes |
+| `MQTT_CN` | Hostname/IP for MQTT TLS certificate SAN | ⚠️ Optional (default: `paku-mqtt`) |
+| `PAKU_DOMAIN` | Domain for Caddy auto-TLS (e.g. `paku.example.com`) | ⚠️ Optional (default: `:80`) |
+| `OTA_API_KEY` | API key for OTA admin endpoints | ✅ Yes |
 | `ECOFLOW_ACCESS_KEY` | EcoFlow API access key | ⚠️ Optional |
 | `ECOFLOW_SECRET_KEY` | EcoFlow API secret key | ⚠️ Optional |
 | `ECOFLOW_DEVICE_SN` | EcoFlow device serial number | ⚠️ Optional |
