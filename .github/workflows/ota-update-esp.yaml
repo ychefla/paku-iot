@@ -462,6 +462,9 @@ jobs:
           
           STRATEGY="${{ github.event.inputs.rollout_strategy }}"
           DEVICE_MODEL="${{ github.event.inputs.device_model }}"
+          # Derive base model for device discovery (e.g. lilygo-t-display-s3-heater-emu → lilygo-t-display-s3)
+          DEVICE_FAMILY=$(echo "$DEVICE_MODEL" | sed 's/-heater\(-emu\)\{0,1\}$//' | sed 's/-heater$//')
+          echo "Device model: $DEVICE_MODEL (family: $DEVICE_FAMILY)"
           FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${DEPLOY_VERSION}"
           
           # Build OTA command JSON
@@ -534,12 +537,12 @@ jobs:
             PERCENTAGE=$(echo "$STRATEGY" | cut -d- -f2)
             
             echo "Strategy: Canary ($PERCENTAGE%)"
-            echo "Querying OTA service for devices with model: $DEVICE_MODEL"
+            echo "Querying OTA service for devices in family: $DEVICE_FAMILY"
             echo ""
             
-            # Query devices from OTA service API
+            # Query devices from OTA service API (use DEVICE_FAMILY to match all variants)
             response=$(curl -s -f -H "X-API-Key: $OTA_API_KEY" \
-              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_MODEL}&limit=500")
+              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_FAMILY}&limit=500")
             
             if [ $? -ne 0 ]; then
               echo "Error: Failed to query devices from OTA service"
@@ -592,12 +595,12 @@ jobs:
           elif [ "$STRATEGY" = "full" ]; then
             # Full: notify all active devices of this model
             echo "Strategy: Full Rollout"
-            echo "Querying OTA service for all active devices with model: $DEVICE_MODEL"
+            echo "Querying OTA service for all active devices in family: $DEVICE_FAMILY"
             echo ""
             
-            # Query devices from OTA service API
+            # Query devices from OTA service API (use DEVICE_FAMILY to match all variants)
             response=$(curl -s -f -H "X-API-Key: $OTA_API_KEY" \
-              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_MODEL}&limit=500")
+              "${OTA_URL}/api/admin/devices?device_model=${DEVICE_FAMILY}&limit=500")
             
             if [ $? -ne 0 ]; then
               echo "Error: Failed to query devices from OTA service"
@@ -609,14 +612,14 @@ jobs:
             DEVICE_LIST=$(echo "$response" | jq -r ".devices[]? | select(.last_seen > \"$SEVEN_DAYS_AGO\") | .device_id")
             
             if [ -z "$DEVICE_LIST" ]; then
-              echo "Warning: No active devices found for model $DEVICE_MODEL"
-              echo "Debug: All devices for this model:"
+              echo "Warning: No active devices found for family $DEVICE_FAMILY"
+              echo "Debug: All devices for this family:"
               echo "$response" | jq -r '.devices[]? | "\(.device_id) - last seen: \(.last_seen)"'
               exit 0
             fi
             
             TOTAL_DEVICES=$(echo "$DEVICE_LIST" | wc -l | xargs)
-            echo "Found $TOTAL_DEVICES devices"
+            echo "Found $TOTAL_DEVICES devices in family $DEVICE_FAMILY"
             echo ""
             
             success_count=0
