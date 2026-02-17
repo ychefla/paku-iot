@@ -30,8 +30,19 @@ Used for automated firmware updates to ESP devices.
 |-------------|-------------|----------|---------|
 | `OTA_SERVICE_URL` | URL of OTA service | ✅ Yes | `https://your-server.com:8080` |
 | `OTA_API_KEY` | API key for OTA admin endpoints | ✅ Yes | Same as `OTA_API_KEY` in compose/.env |
+| `WIFI_SSIDS` | WiFi SSIDs as JSON array | ✅ Yes | `["MyWifi", "Hotspot"]` |
+| `WIFI_PASSWORDS` | WiFi passwords as JSON array | ✅ Yes | `["pass1", "pass2"]` |
+| `MQTT_SERVER` | Cloud MQTT broker hostname | ✅ Yes | `mqtt.example.com` |
+| `MQTT_USER` | Cloud MQTT username | ✅ Yes | `edge` |
+| `MQTT_PASSWORD` | Cloud MQTT password | ✅ Yes | *(your password)* |
+| `MQTT_LOCAL` | Local RPi/HA MQTT hostname | ⚠️ Optional | `homeassistant.local` (default) |
 | `PAKU_CORE_REPO` | Full path to paku-core repository | ⚠️ Optional* | `ychefla/paku-core` |
 | `PAKU_CORE_TOKEN` | GitHub token for private paku-core | ⚠️ Optional** | Personal Access Token |
+
+**MQTT broker mapping in firmware:**
+- `MQTT_LOCAL` → primary broker (`MQTT_SERVER` define, tried first)
+- `MQTT_SERVER` → fallback broker (`MQTT_FALLBACK_SERVER` define, cloud with TLS)
+- `MQTT_USER` / `MQTT_PASSWORD` → fallback broker credentials
 
 \* Required if paku-core is in a different organization or has a different name  
 \*\* Required only if paku-core repository is private

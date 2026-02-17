@@ -9,6 +9,9 @@ name: OTA Update ESP Devices
         type: choice
         options:
           - lilygo-t-display-s3
+          - lilygo-t-display-s3-heater
+          - lilygo-t-display-s3-heater-emu
+          - esp32-heater
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
         default: 'lilygo-t-display-s3'
@@ -59,6 +62,26 @@ jobs:
           repository: ${{ secrets.PAKU_CORE_REPO || 'ychefla/paku-core' }}
           ref: main
           token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
+
+      - name: Checkout hydronic-heater library
+        if: contains(github.event.inputs.device_model, 'heater')
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.HYDRONIC_HEATER_REPO || 'ychefla/hydronic-heater' }}
+          ref: main
+          token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
+          path: hydronic-heater
+
+      - name: Link hydronic-heater for PlatformIO
+        if: contains(github.event.inputs.device_model, 'heater')
+        run: |
+          # platformio.ini: lib_extra_dirs = ../../hydronic-heater/lib
+          # From paku_core/, ../../ goes to $GITHUB_WORKSPACE/..
+          # So it expects $GITHUB_WORKSPACE/../hydronic-heater/lib
+          # Symlink from there to the actual checkout location
+          ln -s "$GITHUB_WORKSPACE/hydronic-heater" "$GITHUB_WORKSPACE/../hydronic-heater"
+          echo "Symlinked hydronic-heater for PlatformIO build"
+          ls -la "$GITHUB_WORKSPACE/../hydronic-heater/lib/"
 
       - name: Generate version from commit
         run: |
@@ -133,6 +156,9 @@ jobs:
           WIFI_SSIDS_SECRET: ${{ secrets.WIFI_SSIDS }}
           WIFI_PASSWORDS_SECRET: ${{ secrets.WIFI_PASSWORDS }}
           MQTT_SERVER_SECRET: ${{ secrets.MQTT_SERVER }}
+          MQTT_USER_SECRET: ${{ secrets.MQTT_USER }}
+          MQTT_PASSWORD_SECRET: ${{ secrets.MQTT_PASSWORD }}
+          MQTT_LOCAL_SECRET: ${{ secrets.MQTT_LOCAL }}
           ADDITIONAL_SSID: ${{ github.event.inputs.additional_ssid }}
           ADDITIONAL_PASSWORD: ${{ github.event.inputs.additional_password }}
         run: |
@@ -169,6 +195,8 @@ jobs:
           #pragma once
           
           // Auto-generated from GitHub Secrets for OTA build
+          // Mapping: MQTT_LOCAL → primary, MQTT_SERVER → fallback (cloud)
+          // Code defines the order: primary first, cloud if unreachable
           #define LOG_ENABLED 1
           #define LOG_INFO_ENABLED 1
           
@@ -176,8 +204,18 @@ jobs:
           static const char* WIFI_PASSWORDS[] = { $PASSWORD_ARRAY };
           static const size_t WIFI_COUNT = $WIFI_COUNT;
           
-          #define MQTT_SERVER "$MQTT_SERVER_SECRET"
+          // Primary: local RPi / HA (MQTT_LOCAL secret, default homeassistant.local)
+          #define MQTT_SERVER "${MQTT_LOCAL_SECRET:-homeassistant.local}"
           #define MQTT_PORT 1883
+          #define MQTT_USER ""
+          #define MQTT_PASSWORD ""
+          
+          // Fallback: cloud (existing MQTT_SERVER + MQTT_USER + MQTT_PASSWORD secrets)
+          #define MQTT_FALLBACK_SERVER "${MQTT_SERVER_SECRET:-}"
+          #define MQTT_FALLBACK_PORT 8883
+          #define MQTT_FALLBACK_USER "${MQTT_USER_SECRET:-}"
+          #define MQTT_FALLBACK_PASSWORD "${MQTT_PASSWORD_SECRET:-}"
+          #define MQTT_FALLBACK_USE_TLS 1
           
           #define PAKU_IOT_ENABLED 0
           #define PAKU_IOT_HOST "localhost"
