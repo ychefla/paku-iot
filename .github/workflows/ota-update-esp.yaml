@@ -195,8 +195,7 @@ jobs:
           #pragma once
           
           // Auto-generated from GitHub Secrets for OTA build
-          // Mapping: MQTT_LOCAL → primary, MQTT_SERVER → fallback (cloud)
-          // Code defines the order: primary first, cloud if unreachable
+          // Firmware define names match GitHub secret names 1:1
           #define LOG_ENABLED 1
           #define LOG_INFO_ENABLED 1
           
@@ -204,18 +203,18 @@ jobs:
           static const char* WIFI_PASSWORDS[] = { $PASSWORD_ARRAY };
           static const size_t WIFI_COUNT = $WIFI_COUNT;
           
-          // Primary: local RPi / HA (MQTT_LOCAL secret, default homeassistant.local)
-          #define MQTT_SERVER "${MQTT_LOCAL_SECRET:-homeassistant.local}"
-          #define MQTT_PORT 1883
-          #define MQTT_USER ""
-          #define MQTT_PASSWORD ""
+          // Cloud broker (MQTT_SERVER secret)
+          #define MQTT_SERVER "${MQTT_SERVER_SECRET:-}"
+          #define MQTT_PORT 8883
+          #define MQTT_USER "${MQTT_USER_SECRET:-}"
+          #define MQTT_PASSWORD "${MQTT_PASSWORD_SECRET:-}"
+          #define MQTT_USE_TLS 1
           
-          // Fallback: cloud (existing MQTT_SERVER + MQTT_USER + MQTT_PASSWORD secrets)
-          #define MQTT_FALLBACK_SERVER "${MQTT_SERVER_SECRET:-}"
-          #define MQTT_FALLBACK_PORT 8883
-          #define MQTT_FALLBACK_USER "${MQTT_USER_SECRET:-}"
-          #define MQTT_FALLBACK_PASSWORD "${MQTT_PASSWORD_SECRET:-}"
-          #define MQTT_FALLBACK_USE_TLS 1
+          // Local HA broker (MQTT_LOCAL secret, default homeassistant.local)
+          #define MQTT_LOCAL "${MQTT_LOCAL_SECRET:-homeassistant.local}"
+          #define MQTT_LOCAL_PORT 1883
+          #define MQTT_LOCAL_USER ""
+          #define MQTT_LOCAL_PASSWORD ""
           
           #define PAKU_IOT_ENABLED 0
           #define PAKU_IOT_HOST "localhost"
