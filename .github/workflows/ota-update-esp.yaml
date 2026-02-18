@@ -11,6 +11,8 @@ name: OTA Update ESP Devices
           - lilygo-t-display-s3
           - lilygo-t-display-s3-heater
           - lilygo-t-display-s3-heater-emu
+          - lilygo-t-display-s3-cabin
+          - lilygo-t-display-s3-cabin-emu
           - esp32-heater
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
@@ -64,7 +66,7 @@ jobs:
           token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
 
       - name: Checkout hydronic-heater library
-        if: contains(github.event.inputs.device_model, 'heater')
+        if: contains(github.event.inputs.device_model, 'heater') || contains(github.event.inputs.device_model, 'cabin')
         uses: actions/checkout@v4
         with:
           repository: ${{ secrets.HYDRONIC_HEATER_REPO || 'ychefla/hydronic-heater' }}
@@ -73,7 +75,7 @@ jobs:
           path: hydronic-heater
 
       - name: Link hydronic-heater for PlatformIO
-        if: contains(github.event.inputs.device_model, 'heater')
+        if: contains(github.event.inputs.device_model, 'heater') || contains(github.event.inputs.device_model, 'cabin')
         run: |
           # platformio.ini: lib_extra_dirs = ../../hydronic-heater/lib
           # From paku_core/, ../../ goes to $GITHUB_WORKSPACE/..
