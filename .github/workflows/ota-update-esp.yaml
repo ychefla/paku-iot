@@ -162,6 +162,8 @@ jobs:
           MQTT_LOCAL_USER_SECRET: ${{ secrets.MQTT_LOCAL_USER }}
           MQTT_LOCAL_PASSWORD_SECRET: ${{ secrets.MQTT_LOCAL_PASSWORD }}
           MQTT_CA_CERT_SECRET: ${{ secrets.MQTT_CA_CERT }}
+          RUUVI_TAGS_SECRET: ${{ secrets.RUUVI_TAGS }}
+          MOKO_SENSORS_SECRET: ${{ secrets.MOKO_SENSORS }}
           ADDITIONAL_SSID: ${{ github.event.inputs.additional_ssid }}
           ADDITIONAL_PASSWORD: ${{ github.event.inputs.additional_password }}
         run: |
@@ -240,6 +242,36 @@ jobs:
               # Remove trailing backslash from last line by overwriting it
               sed -i '$ s/ \\$//' include/secrets.h
               echo "" >> include/secrets.h
+            fi
+
+            # Inject RuuviTag configuration if provided
+            # Secret format: JSON array of objects [{"mac":"AA:BB:CC:DD:EE:FF","location":"name"}, ...]
+            if [ -n "$RUUVI_TAGS_SECRET" ]; then
+              RUUVI_COUNT=$(echo "$RUUVI_TAGS_SECRET" | jq length)
+              echo "" >> include/secrets.h
+              echo "// RuuviTag configuration (injected from GitHub Secret)" >> include/secrets.h
+              echo "#define RUUVI_TAG_COUNT $RUUVI_COUNT" >> include/secrets.h
+              # Build MAC array
+              MACS=$(echo "$RUUVI_TAGS_SECRET" | jq -r '[.[].mac] | map("\"" + . + "\"") | join(", ")')
+              echo "static const char* RUUVI_TAG_MACS[] = { $MACS };" >> include/secrets.h
+              # Build location array
+              LOCS=$(echo "$RUUVI_TAGS_SECRET" | jq -r '[.[].location] | map("\"" + . + "\"") | join(", ")')
+              echo "static const char* RUUVI_TAG_LOCATIONS[] = { $LOCS };" >> include/secrets.h
+              echo "Injected $RUUVI_COUNT RuuviTag(s) from secret"
+            fi
+
+            # Inject MoKo sensor configuration if provided
+            # Secret format: JSON array of objects [{"mac":"AA:BB:CC:DD:EE:FF","location":"name"}, ...]
+            if [ -n "$MOKO_SENSORS_SECRET" ]; then
+              MOKO_COUNT=$(echo "$MOKO_SENSORS_SECRET" | jq length)
+              echo "" >> include/secrets.h
+              echo "// MoKo sensor configuration (injected from GitHub Secret)" >> include/secrets.h
+              echo "#define MOKO_SENSOR_COUNT $MOKO_COUNT" >> include/secrets.h
+              MACS=$(echo "$MOKO_SENSORS_SECRET" | jq -r '[.[].mac] | map("\"" + . + "\"") | join(", ")')
+              echo "static const char* MOKO_SENSOR_MACS[] = { $MACS };" >> include/secrets.h
+              LOCS=$(echo "$MOKO_SENSORS_SECRET" | jq -r '[.[].location] | map("\"" + . + "\"") | join(", ")')
+              echo "static const char* MOKO_SENSOR_LOCATIONS[] = { $LOCS };" >> include/secrets.h
+              echo "Injected $MOKO_COUNT MoKo sensor(s) from secret"
             fi
 
           else
