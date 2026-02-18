@@ -159,6 +159,8 @@ jobs:
           MQTT_USER_SECRET: ${{ secrets.MQTT_USER }}
           MQTT_PASSWORD_SECRET: ${{ secrets.MQTT_PASSWORD }}
           MQTT_LOCAL_SECRET: ${{ secrets.MQTT_LOCAL }}
+          MQTT_LOCAL_USER_SECRET: ${{ secrets.MQTT_LOCAL_USER }}
+          MQTT_LOCAL_PASSWORD_SECRET: ${{ secrets.MQTT_LOCAL_PASSWORD }}
           MQTT_CA_CERT_SECRET: ${{ secrets.MQTT_CA_CERT }}
           ADDITIONAL_SSID: ${{ github.event.inputs.additional_ssid }}
           ADDITIONAL_PASSWORD: ${{ github.event.inputs.additional_password }}
@@ -214,8 +216,8 @@ jobs:
           // Local HA broker (MQTT_LOCAL secret, default homeassistant.local)
           #define MQTT_LOCAL "${MQTT_LOCAL_SECRET:-homeassistant.local}"
           #define MQTT_LOCAL_PORT 1883
-          #define MQTT_LOCAL_USER ""
-          #define MQTT_LOCAL_PASSWORD ""
+          #define MQTT_LOCAL_USER "${MQTT_LOCAL_USER_SECRET:-}"
+          #define MQTT_LOCAL_PASSWORD "${MQTT_LOCAL_PASSWORD_SECRET:-}"
           
           #define PAKU_IOT_ENABLED 0
           #define PAKU_IOT_HOST "localhost"
