@@ -64,6 +64,7 @@ jobs:
           repository: ${{ secrets.PAKU_CORE_REPO || 'ychefla/paku-core' }}
           ref: main
           token: ${{ secrets.PAKU_CORE_TOKEN || github.token }}
+          fetch-depth: 0  # full history so git describe finds semver tags
 
       - name: Checkout hydronic-heater library
         if: contains(github.event.inputs.device_model, 'heater') || contains(github.event.inputs.device_model, 'cabin')
@@ -85,18 +86,19 @@ jobs:
           echo "Symlinked hydronic-heater for PlatformIO build"
           ls -la "$GITHUB_WORKSPACE/../hydronic-heater/lib/"
 
-      - name: Generate version from commit
+      - name: Set up Python for versioning
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate version from git tags
         run: |
-          # Use short commit hash from paku-core repository (not paku-iot)
-          cd paku_core
-          PAKU_CORE_COMMIT=$(git rev-parse --short HEAD)
-          cd ..
-          VERSION="${PAKU_CORE_COMMIT}-$(date +%Y%m%d-%H%M%S)"
+          # Derive semantic version from git tags (e.g. 1.4.2 or 1.4.2-3-gabcdef)
+          VERSION=$(python scripts/version_bump.py --check)
+          COMMIT_HASH=$(git rev-parse --short HEAD)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Generated version from paku-core commit: $VERSION"
-          
-          # Store just the commit hash for firmware existence check
-          echo "COMMIT_HASH=$PAKU_CORE_COMMIT" >> $GITHUB_ENV
+          echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+          echo "Generated version from git tags: $VERSION (commit: $COMMIT_HASH)"
 
       - name: Check if firmware already exists
         id: check_firmware
@@ -281,17 +283,9 @@ jobs:
             cp include/secrets.h.template include/secrets.h
           fi
           
-          # Create device_config.h with the appropriate device based on build environment
-          if [[ "${{ github.event.inputs.device_model }}" == *"lilygo"* ]] || [[ "${{ github.event.inputs.device_model }}" == "esp32-s3" ]]; then
-            sed 's|// #define DEVICE_LILYGO_T_DISPLAY_S3|#define DEVICE_LILYGO_T_DISPLAY_S3|' src/device_config.h.template > src/device_config.h
-            sed -i 's|^#define DEVICE_ESP8266_WIRED_SENSORS|// #define DEVICE_ESP8266_WIRED_SENSORS|' src/device_config.h
-          elif [[ "${{ github.event.inputs.device_model }}" == "esp8266"* ]]; then
-            cp src/device_config.h.template src/device_config.h
-          else
-            # Generic ESP32
-            sed 's|// #define DEVICE_ESP32_CH340C_30PIN|#define DEVICE_ESP32_CH340C_30PIN|' src/device_config.h.template > src/device_config.h
-            sed -i 's|^#define DEVICE_ESP8266_WIRED_SENSORS|// #define DEVICE_ESP8266_WIRED_SENSORS|' src/device_config.h
-          fi
+          # device_config.h is now committed to version control with a
+          # build-flag fallback guard — each PlatformIO environment already
+          # passes -DDEVICE_xxx, so no sed/copy step is needed.
 
       - name: Build firmware
         if: env.FIRMWARE_EXISTS != 'true'
