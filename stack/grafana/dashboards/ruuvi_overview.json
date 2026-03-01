@@ -7,7 +7,7 @@
   ],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 3,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -17,7 +17,7 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Temperature (\u00b0C)",
+      "title": "Temperature (°C)",
       "datasource": {
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
@@ -36,8 +36,9 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, '1m') AS \"time\",\n  AVG((metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\nGROUP BY 1, device_id, location\nORDER BY 1",
-          "editorMode": "code"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "editorMode": "code",
+          "rawQuery": true
         },
         {
           "datasource": {
@@ -48,7 +49,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outTemp')::numeric, 0) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'inv.outTemp') IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'inv.outTemp')::numeric, 0)) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'inv.outTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_Inverter",
           "select": [
             [
@@ -67,7 +68,8 @@
               "params": [],
               "type": "macro"
             }
-          ]
+          ],
+          "editorMode": "code"
         },
         {
           "datasource": {
@@ -78,7 +80,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.temp') IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0)) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.temp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_BMS",
           "select": [
             [
@@ -97,7 +99,8 @@
               "params": [],
               "type": "macro"
             }
-          ]
+          ],
+          "editorMode": "code"
         },
         {
           "datasource": {
@@ -108,7 +111,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.maxCellTemp')::numeric, 0) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.maxCellTemp') IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.maxCellTemp')::numeric, 0)) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.maxCellTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_MaxCell",
           "select": [
             [
@@ -127,7 +130,8 @@
               "params": [],
               "type": "macro"
             }
-          ]
+          ],
+          "editorMode": "code"
         },
         {
           "datasource": {
@@ -138,7 +142,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.minCellTemp')::numeric, 0) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.minCellTemp') IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.minCellTemp')::numeric, 0)) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.minCellTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_MinCell",
           "select": [
             [
@@ -157,7 +161,8 @@
               "params": [],
               "type": "macro"
             }
-          ]
+          ],
+          "editorMode": "code"
         }
       ],
       "options": {
@@ -243,8 +248,9 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, '1m') AS \"time\",\n  AVG((metrics->>'humidity_percent')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\nGROUP BY 1, device_id, location\nORDER BY 1",
-          "editorMode": "code"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'humidity_percent')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "editorMode": "code",
+          "rawQuery": true
         }
       ],
       "options": {
@@ -311,7 +317,7 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "Dew Point (\u00b0C)",
+      "title": "Dew Point (°C)",
       "datasource": {
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
@@ -330,8 +336,9 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (237.7 * (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) / \n  (17.27 - (ln((metrics->>'humidity_percent')::numeric / 100.0) + \n    (17.27 * (metrics->>'temperature_c')::numeric) / (237.7 + (metrics->>'temperature_c')::numeric))) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\nORDER BY ts ASC",
-          "editorMode": "code"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (237.7 * (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric))))\n  / (17.27 - (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric)))) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "editorMode": "code",
+          "rawQuery": true
         }
       ],
       "options": {
@@ -398,7 +405,7 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Absolute Humidity (g/m\u00b3)",
+      "title": "Absolute Humidity (g/m³)",
       "datasource": {
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
@@ -417,8 +424,9 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  ts AS \"time\",\n  ((metrics->>'humidity_percent')::numeric / 100.0 * \n   6.112 * exp((17.67 * (metrics->>'temperature_c')::numeric) / ((metrics->>'temperature_c')::numeric + 243.5)) * \n   2.1674) / (273.15 + (metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\nORDER BY ts ASC",
-          "editorMode": "code"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (AVG((metrics->>'humidity_percent')::numeric) / 100.0\n   * 6.112\n   * exp((17.67 * AVG((metrics->>'temperature_c')::numeric))\n     / (AVG((metrics->>'temperature_c')::numeric) + 243.5))\n   * 2.1674)\n  / (273.15 + AVG((metrics->>'temperature_c')::numeric)) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "editorMode": "code",
+          "rawQuery": true
         }
       ],
       "options": {
@@ -434,7 +442,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "g/m\u00b3",
+          "unit": "g/m³",
           "color": {
             "mode": "palette-classic"
           },
@@ -561,7 +569,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Temperature (\u00b0C)"
+                "value": "Temperature (°C)"
               },
               {
                 "id": "unit",
