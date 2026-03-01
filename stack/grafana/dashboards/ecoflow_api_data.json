@@ -604,7 +604,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'mppt.inWatts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(pv_in_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -685,7 +685,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'inv.outputWatts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(ac_out_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -766,7 +766,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'inv.inputWatts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(inv_input_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -847,7 +847,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.carWatts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(car_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -928,7 +928,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.typec1Watts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(typec1_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1009,7 +1009,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.typec2Watts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(typec2_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1090,7 +1090,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.usb1Watts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(usb1_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1171,7 +1171,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.usb2Watts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(usb2_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1252,7 +1252,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'pd.qcUsb1Watts')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(qcusb1_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1812,7 +1812,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'mppt.inWatts')::numeric, 0) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(pv_in_watts, 0) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1924,7 +1924,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'inv.inputWatts')::numeric, 0) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'inv.outputWatts')::numeric, 0) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_input_watts, 0) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(ac_out_watts, 0) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -2101,6 +2101,6 @@
   "timezone": "",
   "title": "EcoFlow API Data",
   "uid": "ecoflow-api-data",
-  "version": 10,
+  "version": 11,
   "weekStart": ""
 }

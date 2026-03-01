@@ -40,6 +40,23 @@ ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_max_cell_temp NUME
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_min_cell_temp NUMERIC;
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS mppt_temp NUMERIC;
 
+-- Power/energy fields (previously only stored in raw_data JSONB flat dot-keys)
+-- inv.inputWatts - AC input power (ac_out_watts already covers inv.outputWatts)
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_input_watts NUMERIC;
+-- inv voltage/current fields (keys: inv.acInVol, inv.invOutVol, inv.acInAmp, inv.invOutAmp)
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_ac_in_vol NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_out_vol NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_ac_in_amp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_out_amp NUMERIC;
+-- BMS fields (keys: bmsMaster.amp, bmsMaster.vol, etc.)
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_amp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_vol NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_min_cell_vol NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_max_cell_vol NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_remain_cap NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_full_cap NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_cycles INTEGER;
+
 -- WiFi signal strength
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS wifi_rssi INTEGER;
 

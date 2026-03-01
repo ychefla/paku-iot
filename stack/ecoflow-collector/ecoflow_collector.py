@@ -158,13 +158,27 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     typec_out_watts = typec1 + typec2
     usb_out_watts = usb1 + usb2 + qcusb1 + qcusb2
     
-    # Temperature – extracted to dedicated columns so Grafana can query
-    # them via index rather than scanning raw_data JSONB
+    # Temperature & power/voltage/BMS – extracted to dedicated columns so
+    # Grafana can query via index rather than scanning raw_data JSONB
     inv_temp = data.get('inv.outTemp')
     mppt_temp = data.get('mppt.mpptTemp')
     bms_temp = data.get('bmsMaster.temp')
     bms_max_cell_temp = data.get('bmsMaster.maxCellTemp')
     bms_min_cell_temp = data.get('bmsMaster.minCellTemp')
+
+    # Power / voltage / BMS fields
+    inv_input_watts = data.get('inv.inputWatts')
+    inv_ac_in_vol   = data.get('inv.acInVol')
+    inv_out_vol     = data.get('inv.invOutVol')
+    inv_ac_in_amp   = data.get('inv.acInAmp')
+    inv_out_amp     = data.get('inv.invOutAmp')
+    bms_amp         = data.get('bmsMaster.amp')
+    bms_vol         = data.get('bmsMaster.vol')
+    bms_min_cell_vol = data.get('bmsMaster.minCellVol')
+    bms_max_cell_vol = data.get('bmsMaster.maxCellVol')
+    bms_remain_cap  = data.get('bmsMaster.remainCap')
+    bms_full_cap    = data.get('bmsMaster.fullCap')
+    bms_cycles      = data.get('bmsMaster.cycles')
 
     sql = """
         INSERT INTO ecoflow_measurements (
@@ -176,6 +190,9 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             usb1_watts, usb2_watts, qcusb1_watts, qcusb2_watts,
             typec1_watts, typec2_watts,
             inv_out_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
+            inv_input_watts, inv_ac_in_vol, inv_out_vol, inv_ac_in_amp, inv_out_amp,
+            bms_amp, bms_vol, bms_min_cell_vol, bms_max_cell_vol,
+            bms_remain_cap, bms_full_cap, bms_cycles,
             raw_data
         ) VALUES (
             %s, %s,
@@ -186,6 +203,9 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             %s, %s, %s, %s,
             %s, %s,
             %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s,
+            %s, %s, %s, %s,
+            %s, %s, %s,
             %s
         )
     """
@@ -200,6 +220,9 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             usb1, usb2, qcusb1, qcusb2,
             typec1, typec2,
             inv_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
+            inv_input_watts, inv_ac_in_vol, inv_out_vol, inv_ac_in_amp, inv_out_amp,
+            bms_amp, bms_vol, bms_min_cell_vol, bms_max_cell_vol,
+            bms_remain_cap, bms_full_cap, bms_cycles,
             json.dumps(data)
         ))
         conn.commit()
