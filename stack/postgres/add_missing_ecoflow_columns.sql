@@ -33,6 +33,13 @@ ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS pd_lcd_off_sec INTEGER
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS pd_lcd_brightness INTEGER;
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS pd_standby_mode INTEGER;
 
+-- Temperature sensors (previously only stored in raw_data JSONB)
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS inv_out_temp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_temp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_max_cell_temp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS bms_min_cell_temp NUMERIC;
+ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS mppt_temp NUMERIC;
+
 -- WiFi signal strength
 ALTER TABLE ecoflow_measurements ADD COLUMN IF NOT EXISTS wifi_rssi INTEGER;
 

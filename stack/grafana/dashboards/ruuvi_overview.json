@@ -7,7 +7,7 @@
   ],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -49,7 +49,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'inv.outTemp')::numeric, 0)) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'inv.outTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND inv_out_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_Inverter",
           "select": [
             [
@@ -80,7 +80,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0)) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.temp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_temp) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_BMS",
           "select": [
             [
@@ -111,7 +111,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.maxCellTemp')::numeric, 0)) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.maxCellTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_max_cell_temp) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_max_cell_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_MaxCell",
           "select": [
             [
@@ -142,7 +142,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE((raw_data->>'bmsMaster.minCellTemp')::numeric, 0)) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND raw_data IS NOT NULL\n  AND (raw_data->>'bmsMaster.minCellTemp') IS NOT NULL\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_min_cell_temp) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_min_cell_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "EcoFlow_MinCell",
           "select": [
             [

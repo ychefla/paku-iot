@@ -158,11 +158,14 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     typec_out_watts = typec1 + typec2
     usb_out_watts = usb1 + usb2 + qcusb1 + qcusb2
     
-    # Temperature
-    inv_temp = data.get('inv.outTemp', 0)
-    mppt_temp = data.get('mppt.mpptTemp', 0)
-    bms_temp = data.get('bmsMaster.temp', 0)
-    
+    # Temperature – extracted to dedicated columns so Grafana can query
+    # them via index rather than scanning raw_data JSONB
+    inv_temp = data.get('inv.outTemp')
+    mppt_temp = data.get('mppt.mpptTemp')
+    bms_temp = data.get('bmsMaster.temp')
+    bms_max_cell_temp = data.get('bmsMaster.maxCellTemp')
+    bms_min_cell_temp = data.get('bmsMaster.minCellTemp')
+
     sql = """
         INSERT INTO ecoflow_measurements (
             device_sn, ts,
@@ -172,6 +175,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             pv_in_watts, car_watts,
             usb1_watts, usb2_watts, qcusb1_watts, qcusb2_watts,
             typec1_watts, typec2_watts,
+            inv_out_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
             raw_data
         ) VALUES (
             %s, %s,
@@ -181,10 +185,11 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             %s, %s,
             %s, %s, %s, %s,
             %s, %s,
+            %s, %s, %s, %s, %s,
             %s
         )
     """
-    
+
     with conn.cursor() as cur:
         cur.execute(sql, (
             device_sn, datetime.now(),
@@ -194,6 +199,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             pv_in_watts, car_watts,
             usb1, usb2, qcusb1, qcusb2,
             typec1, typec2,
+            inv_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
             json.dumps(data)
         ))
         conn.commit()
