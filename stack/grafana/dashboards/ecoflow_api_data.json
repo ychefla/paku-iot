@@ -256,7 +256,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(bms_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -345,7 +345,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE((raw_data->>'inv.outTemp')::numeric, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(inv_out_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -1364,7 +1364,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  soc_percent AS value,\n  'Battery SOC' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  soc_percent AS value,\n  'Battery SOC' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "refId": "A",
           "select": [
             [
@@ -1476,7 +1476,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  remain_time_min / 60.0 AS value,\n  'Runtime (hours)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND remain_time_min IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  remain_time_min / 60.0 AS value,\n  'Runtime (hours)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND remain_time_min IS NOT NULL\nORDER BY ts ASC",
           "refId": "A",
           "select": [
             [
@@ -1588,7 +1588,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  watts_in_sum AS value,\n  'Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nUNION ALL\nSELECT\n  ts AS \"time\",\n  watts_out_sum AS value,\n  'Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY time ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  watts_in_sum AS value,\n  'Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  watts_out_sum AS value,\n  'Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1700,7 +1700,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  (watts_in_sum - watts_out_sum) AS value,\n  'Net Power' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (watts_in_sum - watts_out_sum) AS value,\n  'Net Power' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "refId": "A",
           "select": [
             [
@@ -1812,7 +1812,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'mppt.inWatts')::numeric, 0) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'mppt.inWatts')::numeric, 0) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
           "refId": "A",
           "select": [
             [
@@ -1924,7 +1924,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.inputWatts')::numeric, 0) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outputWatts')::numeric, 0) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY time ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'inv.inputWatts')::numeric, 0) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->>'inv.outputWatts')::numeric, 0) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -2036,7 +2036,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'bmsMaster.temp')::numeric, 0) AS value,\n  'Battery (BMS)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'inv.outTemp')::numeric, 0) AS value,\n  'Inverter' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nUNION ALL\nSELECT\n  ts AS \"time\",\n  COALESCE((raw_data->>'mppt.mpptTemp')::numeric, 0) AS value,\n  'MPPT' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY time ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_temp) AS value,\n  'Battery (BMS)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) AS value,\n  'Inverter' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(mppt_temp) AS value,\n  'MPPT' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -2101,6 +2101,6 @@
   "timezone": "",
   "title": "EcoFlow API Data",
   "uid": "ecoflow-api-data",
-  "version": 0,
+  "version": 1,
   "weekStart": ""
 }

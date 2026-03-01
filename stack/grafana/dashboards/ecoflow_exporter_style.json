@@ -2,10 +2,14 @@
   "uid": "ecoflow-exporter-style",
   "title": "EcoFlow (Exporter Style)",
   "description": "EcoFlow dashboard based on berezhinskiy/ecoflow_exporter dashboard design, adapted for PostgreSQL data source",
-  "tags": ["ecoflow", "power", "battery"],
+  "tags": [
+    "ecoflow",
+    "power",
+    "battery"
+  ],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
@@ -39,26 +43,54 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 2, "w": 4, "x": 0, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  CASE WHEN MAX(ts) > NOW() - INTERVAL '5 minutes' THEN 1 ELSE 0 END as status\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'"
-      }],
+      "gridPos": {
+        "h": 2,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  CASE WHEN MAX(ts) > NOW() - INTERVAL '5 minutes' THEN 1 ELSE 0 END as status\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "#f7f7f7"}
+              {
+                "value": null,
+                "color": "#f7f7f7"
+              }
             ]
           },
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Offline", "color": "light-red"}}},
-            {"type": "value", "options": {"1": {"text": "Online", "color": "green"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Offline",
+                  "color": "light-red"
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Online",
+                  "color": "green"
+                }
+              }
+            }
           ]
         }
       },
@@ -66,7 +98,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -77,24 +114,42 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 4, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE(watts_in_sum, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 4,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE(watts_in_sum, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
           "max": 2500,
           "min": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"},
-              {"value": 1800, "color": "#EAB839"},
-              {"value": 2400, "color": "red"}
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1800,
+                "color": "#EAB839"
+              },
+              {
+                "value": 2400,
+                "color": "red"
+              }
             ]
           }
         }
@@ -102,7 +157,12 @@
       "options": {
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -113,23 +173,41 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 6, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'acInVol')::numeric, (raw_data->'inv'->>'invInVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'acInVol')::numeric, (raw_data->'inv'->>'invInVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
           "decimals": 1,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "dark-red"},
-              {"value": 190, "color": "#EAB839"},
-              {"value": 210, "color": "green"}
+              {
+                "value": null,
+                "color": "dark-red"
+              },
+              {
+                "value": 190,
+                "color": "#EAB839"
+              },
+              {
+                "value": 210,
+                "color": "green"
+              }
             ]
           }
         }
@@ -138,7 +216,12 @@
         "graphMode": "area",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -149,20 +232,32 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 8, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'acInAmp')::numeric, (raw_data->'inv'->>'invInAmp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'acInAmp')::numeric, (raw_data->'inv'->>'invInAmp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamp",
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"}
+              {
+                "value": null,
+                "color": "green"
+              }
             ]
           }
         }
@@ -171,7 +266,12 @@
         "graphMode": "area",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -182,25 +282,47 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 4, "x": 10, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  CASE\n    WHEN watts_in_sum > 0 THEN COALESCE(remain_time_min, 0)\n    ELSE 0\n  END as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 10,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  CASE\n    WHEN watts_in_sum > 0 THEN COALESCE(remain_time_min, 0)\n    ELSE 0\n  END as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "m",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "yellow"}
+              {
+                "value": null,
+                "color": "yellow"
+              }
             ]
           },
           "mappings": [
-            {"type": "range", "options": {"from": 5500, "to": 6000, "result": {"text": "∞", "color": "green"}}}
+            {
+              "type": "range",
+              "options": {
+                "from": 5500,
+                "to": 6000,
+                "result": {
+                  "text": "∞",
+                  "color": "green"
+                }
+              }
+            }
           ]
         }
       },
@@ -208,7 +330,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -219,21 +346,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 14, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'fullCap')::numeric, (raw_data->'bms_bmsStatus'->>'fullCap')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 14,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'fullCap')::numeric, (raw_data->'bms_bmsStatus'->>'fullCap')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamph",
           "decimals": 2,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "blue"}
+              {
+                "value": null,
+                "color": "blue"
+              }
             ]
           }
         }
@@ -242,7 +381,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -253,21 +397,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 16, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  ABS(COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0)) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  ABS(COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0)) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamp",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "#f7f7f7"}
+              {
+                "value": null,
+                "color": "#f7f7f7"
+              }
             ]
           }
         }
@@ -276,7 +432,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -287,21 +448,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 18, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'vol')::numeric, (raw_data->'bms_bmsStatus'->>'vol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'vol')::numeric, (raw_data->'bms_bmsStatus'->>'vol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
           "decimals": 2,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"}
+              {
+                "value": null,
+                "color": "green"
+              }
             ]
           }
         }
@@ -310,7 +483,12 @@
         "graphMode": "none",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -321,21 +499,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 20, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'minCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'minCellVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 20,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'minCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'minCellVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
           "decimals": 3,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"}
+              {
+                "value": null,
+                "color": "green"
+              }
             ]
           }
         }
@@ -344,7 +534,12 @@
         "graphMode": "none",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -355,21 +550,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 22, "y": 0},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'maxCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 22,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'maxCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
           "decimals": 3,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"}
+              {
+                "value": null,
+                "color": "green"
+              }
             ]
           }
         }
@@ -378,7 +585,12 @@
         "graphMode": "none",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -389,22 +601,40 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 2},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE(soc_percent, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 2
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE(soc_percent, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "red"},
-              {"value": 10, "color": "yellow"},
-              {"value": 30, "color": "green"}
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 10,
+                "color": "yellow"
+              },
+              {
+                "value": 30,
+                "color": "green"
+              }
             ]
           }
         }
@@ -413,7 +643,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -424,24 +659,42 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 4, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE(watts_out_sum, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 4,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE(watts_out_sum, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
           "max": 2500,
           "min": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"},
-              {"value": 1800, "color": "#EAB839"},
-              {"value": 2400, "color": "red"}
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 1800,
+                "color": "#EAB839"
+              },
+              {
+                "value": 2400,
+                "color": "red"
+              }
             ]
           }
         }
@@ -449,7 +702,12 @@
       "options": {
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -460,23 +718,41 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 6, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'invOutVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 6,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'invOutVol')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
           "decimals": 1,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "dark-red"},
-              {"value": 190, "color": "#EAB839"},
-              {"value": 210, "color": "green"}
+              {
+                "value": null,
+                "color": "dark-red"
+              },
+              {
+                "value": 190,
+                "color": "#EAB839"
+              },
+              {
+                "value": 210,
+                "color": "green"
+              }
             ]
           }
         }
@@ -485,7 +761,12 @@
         "graphMode": "area",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -496,20 +777,32 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 8, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'invOutAmp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 8,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'invOutAmp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamp",
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"}
+              {
+                "value": null,
+                "color": "green"
+              }
             ]
           }
         }
@@ -518,7 +811,12 @@
         "graphMode": "area",
         "colorMode": "none",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -529,26 +827,51 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 4, "x": 10, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  CASE\n    WHEN watts_out_sum > 0 THEN COALESCE(remain_time_min, 0)\n    ELSE 0\n  END as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 10,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  CASE\n    WHEN watts_out_sum > 0 THEN COALESCE(remain_time_min, 0)\n    ELSE 0\n  END as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "m",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "red"},
-              {"value": 10, "color": "#EAB839"}
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 10,
+                "color": "#EAB839"
+              }
             ]
           },
           "mappings": [
-            {"type": "range", "options": {"from": 5500, "to": 6000, "result": {"text": "∞", "color": "green"}}}
+            {
+              "type": "range",
+              "options": {
+                "from": 5500,
+                "to": 6000,
+                "result": {
+                  "text": "∞",
+                  "color": "green"
+                }
+              }
+            }
           ]
         }
       },
@@ -556,7 +879,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -567,21 +895,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 14, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'remainCap')::numeric, (raw_data->'bms_bmsStatus'->>'remainCap')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 14,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'remainCap')::numeric, (raw_data->'bms_bmsStatus'->>'remainCap')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamph",
           "decimals": 2,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "blue"}
+              {
+                "value": null,
+                "color": "blue"
+              }
             ]
           }
         }
@@ -590,7 +930,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -601,21 +946,33 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 16, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'cycles')::numeric, (raw_data->'bms_bmsStatus'->>'cycles')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 16,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'cycles')::numeric, (raw_data->'bms_bmsStatus'->>'cycles')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "#f7f7f7"}
+              {
+                "value": null,
+                "color": "#f7f7f7"
+              }
             ]
           }
         }
@@ -624,7 +981,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -635,23 +997,41 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 18, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'inv'->>'outTemp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 18,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE(inv_out_temp, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"},
-              {"value": 60, "color": "#EAB839"},
-              {"value": 65, "color": "red"}
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 60,
+                "color": "#EAB839"
+              },
+              {
+                "value": 65,
+                "color": "red"
+              }
             ]
           }
         }
@@ -660,7 +1040,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -671,23 +1056,41 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 20, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 20,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"},
-              {"value": 40, "color": "#EAB839"},
-              {"value": 50, "color": "red"}
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 40,
+                "color": "#EAB839"
+              },
+              {
+                "value": 50,
+                "color": "red"
+              }
             ]
           }
         }
@@ -696,7 +1099,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -707,23 +1115,41 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 4, "w": 2, "x": 22, "y": 4},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 22,
+        "y": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "green"},
-              {"value": 40, "color": "#EAB839"},
-              {"value": 50, "color": "red"}
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 40,
+                "color": "#EAB839"
+              },
+              {
+                "value": 50,
+                "color": "red"
+              }
             ]
           }
         }
@@ -732,7 +1158,12 @@
         "graphMode": "none",
         "colorMode": "value",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -743,27 +1174,67 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 2, "w": 4, "x": 0, "y": 6},
-      "targets": [{
-        "refId": "A",
-        "format": "table",
-        "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND raw_data IS NOT NULL\nORDER BY ts DESC\nLIMIT 1"
-      }],
+      "gridPos": {
+        "h": 2,
+        "w": 4,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0) as value\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\nORDER BY ts DESC\nLIMIT 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "color": {"mode": "thresholds"},
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"value": null, "color": "#f7f7f7"}
+              {
+                "value": null,
+                "color": "#f7f7f7"
+              }
             ]
           },
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "Standby", "color": "yellow"}}},
-            {"type": "range", "options": {"from": 0, "to": 1000000, "result": {"text": "Charging", "color": "green"}}},
-            {"type": "range", "options": {"from": -1000000, "to": 0, "result": {"text": "Discharging", "color": "red"}}}
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Standby",
+                  "color": "yellow"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 1000000,
+                "result": {
+                  "text": "Charging",
+                  "color": "green"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": -1000000,
+                "to": 0,
+                "result": {
+                  "text": "Discharging",
+                  "color": "red"
+                }
+              }
+            }
           ]
         }
       },
@@ -771,7 +1242,12 @@
         "graphMode": "none",
         "colorMode": "background",
         "orientation": "auto",
-        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]}
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
       }
     },
     {
@@ -782,18 +1258,27 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-      "targets": [{
-        "refId": "A",
-        "format": "time_series",
-        "rawSql": "SELECT\n  ts as time,\n  soc_percent as value,\n  'Battery Level' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND soc_percent IS NOT NULL\nORDER BY ts"
-      }],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  soc_percent as value,\n  'Battery Level' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND soc_percent IS NOT NULL\nGROUP BY 1\nORDER BY 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "min": 0,
           "max": 100,
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -806,12 +1291,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -823,23 +1314,30 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE(watts_in_sum, 0) as value,\n  'Input Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(watts_in_sum, 0) as value,\n  'Input Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE(watts_out_sum, 0) as value,\n  'Output Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(watts_out_sum, 0) as value,\n  'Output Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "bars",
             "lineWidth": 1,
@@ -850,27 +1348,54 @@
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "Input Watts"},
+            "matcher": {
+              "id": "byName",
+              "options": "Input Watts"
+            },
             "properties": [
-              {"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": {"id": "byName", "options": "Output Watts"},
+            "matcher": {
+              "id": "byName",
+              "options": "Output Watts"
+            },
             "properties": [
-              {"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}},
-              {"id": "custom.transform", "value": "negative-Y"}
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.transform",
+                "value": "negative-Y"
+              }
             ]
           }
         ]
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -882,41 +1407,57 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  CASE WHEN watts_in_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Charging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  CASE WHEN watts_in_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Charging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  CASE WHEN watts_out_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Discharging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  CASE WHEN watts_out_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Discharging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "m",
           "decimals": 0,
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "fillOpacity": 0,
             "showPoints": "auto",
-            "scaleDistribution": {"type": "log", "log": 10}
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            }
           }
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -928,23 +1469,30 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'inv'->>'acInVol')::numeric, 0) as value,\n  'Inverter In' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND (raw_data->'inv'->>'acInVol')::numeric > 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'inv'->>'acInVol')::numeric, 0) as value,\n  'Inverter In' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND (raw_data->'inv'->>'acInVol')::numeric > 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'inv'->>'invOutVol')::numeric, 0) as value,\n  'Inverter Out' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND (raw_data->'inv'->>'invOutVol')::numeric > 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'inv'->>'invOutVol')::numeric, 0) as value,\n  'Inverter Out' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND (raw_data->'inv'->>'invOutVol')::numeric > 0\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -955,12 +1503,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -972,33 +1526,40 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'inv'->>'outTemp')::numeric, 0) as value,\n  'Inverter' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND (raw_data->'inv'->>'outTemp')::numeric != 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) as value,\n  'Inverter' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND inv_out_temp != 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'temp')::numeric, (raw_data->'bms_bmsStatus'->>'temp')::numeric, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND COALESCE((raw_data->'bms'->>'temp')::numeric, (raw_data->'bms_bmsStatus'->>'temp')::numeric, 0) != 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'temp')::numeric, (raw_data->'bms_bmsStatus'->>'temp')::numeric, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE((raw_data->'bms'->>'temp')::numeric, (raw_data->'bms_bmsStatus'->>'temp')::numeric, 0) != 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) as value,\n  'Max Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) != 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) as value,\n  'Max Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE((raw_data->'bms'->>'maxCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellTemp')::numeric, 0) != 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "D",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) as value,\n  'Min Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\n  AND COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) != 0\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) as value,\n  'Min Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE((raw_data->'bms'->>'minCellTemp')::numeric, (raw_data->'bms_bmsStatus'->>'minCellTemp')::numeric, 0) != 0\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "celsius",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -1009,12 +1570,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "right",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -1026,28 +1593,35 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'inv'->>'acInAmp')::numeric, 0) as value,\n  'AC IN Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'inv'->>'acInAmp')::numeric, 0) as value,\n  'AC IN Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'inv'->>'invOutAmp')::numeric, 0) as value,\n  'Inverter OUT Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'inv'->>'invOutAmp')::numeric, 0) as value,\n  'Inverter OUT Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  ABS(COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0)) as value,\n  'BMS Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  ABS(COALESCE((raw_data->'bms'->>'amp')::numeric, (raw_data->'bms_bmsStatus'->>'amp')::numeric, 0)) as value,\n  'BMS Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "mamp",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -1058,12 +1632,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "right",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -1075,23 +1655,30 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE(usb_out_watts, 0) as value,\n  'USB' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(usb_out_watts, 0) as value,\n  'USB' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE(typec_out_watts, 0) as value,\n  'TypeC' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(typec_out_watts, 0) as value,\n  'TypeC' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -1102,12 +1689,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "right",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -1119,28 +1712,35 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
       "targets": [
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'vol')::numeric, (raw_data->'bms_bmsStatus'->>'vol')::numeric, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'vol')::numeric, (raw_data->'bms_bmsStatus'->>'vol')::numeric, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'minCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'minCellVol')::numeric, 0) as value,\n  'MIN Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'minCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'minCellVol')::numeric, 0) as value,\n  'MIN Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  ts as time,\n  COALESCE((raw_data->'bms'->>'maxCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellVol')::numeric, 0) as value,\n  'MAX Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\n  AND raw_data IS NOT NULL\nORDER BY ts"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE((raw_data->'bms'->>'maxCellVol')::numeric, (raw_data->'bms_bmsStatus'->>'maxCellVol')::numeric, 0) as value,\n  'MAX Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "mvolt",
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -1151,12 +1751,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "right",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max"
+          ]
         }
       }
     },
@@ -1168,17 +1774,26 @@
         "type": "postgres",
         "uid": "DS_POSTGRESQL"
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40},
-      "targets": [{
-        "refId": "A",
-        "format": "time_series",
-        "rawSql": "SELECT\n  ts as time,\n  COALESCE(pv_in_watts, 0) as value,\n  'Solar Power' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom()::timestamptz\n  AND ts <= $__timeTo()::timestamptz\nORDER BY ts"
-      }],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(pv_in_watts, 0) as value,\n  'Solar Power' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "watt",
           "min": 0,
-          "color": {"mode": "palette-classic"},
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "linear",
@@ -1190,12 +1805,18 @@
         }
       },
       "options": {
-        "tooltip": {"mode": "multi"},
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "bottom",
-          "calcs": ["lastNotNull", "max", "mean"]
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ]
         }
       }
     }
