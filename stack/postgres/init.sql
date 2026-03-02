@@ -48,7 +48,31 @@ CREATE TABLE IF NOT EXISTS ecoflow_measurements (
     typec_out_watts INTEGER,
     usb_out_watts INTEGER,
     pv_in_watts INTEGER,
-    raw_data JSONB
+    car_watts INTEGER,
+    usb1_watts INTEGER,
+    usb2_watts INTEGER,
+    qcusb1_watts INTEGER,
+    qcusb2_watts INTEGER,
+    typec1_watts INTEGER,
+    typec2_watts INTEGER,
+    inv_out_temp NUMERIC,
+    bms_temp NUMERIC,
+    bms_max_cell_temp NUMERIC,
+    bms_min_cell_temp NUMERIC,
+    mppt_temp NUMERIC,
+    inv_input_watts NUMERIC,
+    inv_ac_in_vol NUMERIC,
+    inv_out_vol NUMERIC,
+    inv_ac_in_amp NUMERIC,
+    inv_out_amp NUMERIC,
+    bms_amp NUMERIC,
+    bms_vol NUMERIC,
+    bms_min_cell_vol NUMERIC,
+    bms_max_cell_vol NUMERIC,
+    bms_remain_cap NUMERIC,
+    bms_full_cap NUMERIC,
+    bms_cycles INTEGER,
+    wifi_rssi INTEGER
 );
 
 -- Create indexes for EcoFlow measurements

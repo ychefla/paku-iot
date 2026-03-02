@@ -428,7 +428,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Temperature\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND (raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  bms_temp AS \"Temperature\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND bms_temp IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -508,7 +508,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ((raw_data->'params'->>'bmsMaster.vol'))::numeric AS \"Voltage\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND (raw_data->'params'->>'bmsMaster.vol') IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  bms_vol AS \"Voltage\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND bms_vol IS NOT NULL\nORDER BY ts DESC\nLIMIT 1",
           "refId": "A",
           "select": [
             [
@@ -729,7 +729,7 @@
           "group": [],
           "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ts AS \"time\",\n  ((raw_data->'params'->>'bmsMaster.temp'))::numeric AS \"Battery Temp\",\n  ((raw_data->'params'->>'bmsMaster.minCellTemp'))::numeric AS \"Min Cell Temp\",\n  ((raw_data->'params'->>'bmsMaster.maxCellTemp'))::numeric AS \"Max Cell Temp\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND ((raw_data->'params'->>'bmsMaster.temp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.minCellTemp') IS NOT NULL\n       OR (raw_data->'params'->>'bmsMaster.maxCellTemp') IS NOT NULL)\nORDER BY ts",
+          "rawSql": "SELECT\n  ts AS \"time\",\n  bms_temp AS \"Battery Temp\",\n  bms_min_cell_temp AS \"Min Cell Temp\",\n  bms_max_cell_temp AS \"Max Cell Temp\"\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND ts >= $__timeFrom() AND ts <= $__timeTo()\n  AND (bms_temp IS NOT NULL\n       OR bms_min_cell_temp IS NOT NULL\n       OR bms_max_cell_temp IS NOT NULL)\nORDER BY ts",
           "refId": "A",
           "select": [
             [
@@ -788,6 +788,6 @@
   "timezone": "",
   "title": "EcoFlow - Real-Time Overview",
   "uid": "paku-ecoflow-realtime",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

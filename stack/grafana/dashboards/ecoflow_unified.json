@@ -287,7 +287,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(bms_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(bms_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -409,7 +409,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(pv_in_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(pv_in_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -470,7 +470,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ac_out_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(ac_out_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -531,7 +531,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(inv_input_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(inv_input_watts, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -592,7 +592,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(inv_out_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(inv_out_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -653,7 +653,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(mppt_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' AND raw_data IS NOT NULL ORDER BY ts DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(mppt_temp, 0) as value FROM ecoflow_measurements WHERE device_sn = '$device_sn' ORDER BY ts DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -1175,6 +1175,6 @@
   "timezone": "",
   "title": "EcoFlow Unified Dashboard",
   "uid": "ecoflow-unified",
-  "version": 12,
+  "version": 13,
   "weekStart": ""
 }

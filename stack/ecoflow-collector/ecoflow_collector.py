@@ -192,8 +192,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             inv_out_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
             inv_input_watts, inv_ac_in_vol, inv_out_vol, inv_ac_in_amp, inv_out_amp,
             bms_amp, bms_vol, bms_min_cell_vol, bms_max_cell_vol,
-            bms_remain_cap, bms_full_cap, bms_cycles,
-            raw_data
+            bms_remain_cap, bms_full_cap, bms_cycles
         ) VALUES (
             %s, %s,
             %s, %s,
@@ -205,8 +204,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s,
             %s, %s, %s, %s,
-            %s, %s, %s,
-            %s
+            %s, %s, %s
         )
     """
 
@@ -222,8 +220,7 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
             inv_temp, bms_temp, bms_max_cell_temp, bms_min_cell_temp, mppt_temp,
             inv_input_watts, inv_ac_in_vol, inv_out_vol, inv_ac_in_amp, inv_out_amp,
             bms_amp, bms_vol, bms_min_cell_vol, bms_max_cell_vol,
-            bms_remain_cap, bms_full_cap, bms_cycles,
-            json.dumps(data)
+            bms_remain_cap, bms_full_cap, bms_cycles
         ))
         conn.commit()
 
