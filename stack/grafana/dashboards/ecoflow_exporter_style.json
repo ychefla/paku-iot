@@ -9,7 +9,7 @@
   ],
   "timezone": "",
   "schemaVersion": 39,
-  "version": 11,
+  "version": 12,
   "refresh": "30s",
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
@@ -1268,7 +1268,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  soc_percent as value,\n  'Battery Level' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND soc_percent IS NOT NULL\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(soc_percent) as value,\n  'Battery Level' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND soc_percent IS NOT NULL\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1324,12 +1324,12 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(watts_in_sum, 0) as value,\n  'Input Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(watts_in_sum, 0)) as value,\n  'Input Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(watts_out_sum, 0) as value,\n  'Output Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(watts_out_sum, 0)) as value,\n  'Output Watts' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1417,12 +1417,12 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  CASE WHEN watts_in_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Charging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(CASE WHEN watts_in_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END) as value,\n  'Charging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  CASE WHEN watts_out_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END as value,\n  'Discharging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(CASE WHEN watts_out_sum > 0 THEN ABS(COALESCE(remain_time_min, 0)) ELSE 0 END) as value,\n  'Discharging Remain Time' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1479,12 +1479,12 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_ac_in_vol, 0) as value,\n  'Inverter In' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND inv_ac_in_vol > 0\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(inv_ac_in_vol, 0)) as value,\n  'Inverter In' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND inv_ac_in_vol > 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_out_vol, 0) as value,\n  'Inverter Out' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND inv_out_vol > 0\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(inv_out_vol, 0)) as value,\n  'Inverter Out' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND inv_out_vol > 0\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1541,17 +1541,17 @@
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_temp, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_temp, 0)) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_max_cell_temp, 0) as value,\n  'Max Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_max_cell_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_max_cell_temp, 0)) as value,\n  'Max Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_max_cell_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "D",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_min_cell_temp, 0) as value,\n  'Min Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_min_cell_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_min_cell_temp, 0)) as value,\n  'Min Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND COALESCE(bms_min_cell_temp, 0) != 0\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1603,17 +1603,17 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_ac_in_amp, 0) as value,\n  'AC IN Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(inv_ac_in_amp, 0)) as value,\n  'AC IN Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_out_amp, 0) as value,\n  'Inverter OUT Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(inv_out_amp, 0)) as value,\n  'Inverter OUT Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  ABS(COALESCE(bms_amp, 0)) as value,\n  'BMS Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(ABS(COALESCE(bms_amp, 0))) as value,\n  'BMS Current' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1665,12 +1665,12 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(usb_out_watts, 0) as value,\n  'USB' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(usb_out_watts, 0)) as value,\n  'USB' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(typec_out_watts, 0) as value,\n  'TypeC' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(typec_out_watts, 0)) as value,\n  'TypeC' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1722,17 +1722,17 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_vol, 0) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_vol, 0)) as value,\n  'BMS' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "B",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_min_cell_vol, 0) as value,\n  'MIN Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_min_cell_vol, 0)) as value,\n  'MIN Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         },
         {
           "refId": "C",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(bms_max_cell_vol, 0) as value,\n  'MAX Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(bms_max_cell_vol, 0)) as value,\n  'MAX Cell' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1784,7 +1784,7 @@
         {
           "refId": "A",
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(pv_in_watts, 0) as value,\n  'Solar Power' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(pv_in_watts, 0)) as value,\n  'Solar Power' as metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1"
         }
       ],
       "fieldConfig": {

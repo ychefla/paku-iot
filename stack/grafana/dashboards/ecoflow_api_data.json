@@ -1364,7 +1364,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  soc_percent AS value,\n  'Battery SOC' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(soc_percent) AS value,\n  'Battery SOC' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1476,7 +1476,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  remain_time_min / 60.0 AS value,\n  'Runtime (hours)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND remain_time_min IS NOT NULL\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(remain_time_min) / 60.0 AS value,\n  'Runtime (hours)' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\n  AND remain_time_min IS NOT NULL\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1588,7 +1588,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  watts_in_sum AS value,\n  'Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  watts_out_sum AS value,\n  'Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(watts_in_sum) AS value,\n  'Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(watts_out_sum) AS value,\n  'Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1700,7 +1700,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (watts_in_sum - watts_out_sum) AS value,\n  'Net Power' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nORDER BY ts ASC",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (AVG(watts_in_sum) - AVG(watts_out_sum)) AS value,\n  'Net Power' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1812,7 +1812,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(pv_in_watts, 0) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(pv_in_watts, 0)) AS value,\n  'Solar' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -1924,7 +1924,7 @@
           "group": [],
           "metricColumn": "metric",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(inv_input_watts, 0) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  COALESCE(ac_out_watts, 0) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(inv_input_watts, 0)) AS value,\n  'AC Input' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nUNION ALL\nSELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(COALESCE(ac_out_watts, 0)) AS value,\n  'AC Output' AS metric\nFROM ecoflow_measurements\nWHERE device_sn = '$device_sn'\n  AND $__timeFilter(ts)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -2101,6 +2101,6 @@
   "timezone": "",
   "title": "EcoFlow API Data",
   "uid": "ecoflow-api-data",
-  "version": 11,
+  "version": 12,
   "weekStart": ""
 }
