@@ -18,6 +18,8 @@ from typing import Any, Dict, Optional
 
 import psycopg
 import requests
+import paho.mqtt.client as mqtt
+import paho.mqtt.client as mqtt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +48,15 @@ def load_config() -> Dict[str, Any]:
         "pg_user": get_env("PGUSER"),
         "pg_password": get_env("PGPASSWORD"),
         "pg_database": get_env("PGDATABASE"),
+        "mqtt_host": os.getenv("MQTT_HOST", "mosquitto"),
+        "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
+        "mqtt_user": os.getenv("MQTT_USER", ""),
+        "mqtt_password": os.getenv("MQTT_PASSWORD", ""),
         "rest_api_interval": int(os.getenv("REST_API_INTERVAL", "30")),
+        "mqtt_host": os.getenv("MQTT_HOST", "mosquitto"),
+        "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
+        "mqtt_user": os.getenv("MQTT_USER", ""),
+        "mqtt_password": os.getenv("MQTT_PASSWORD", ""),
     }
 
 
@@ -233,12 +243,14 @@ class EcoFlowCollectorApp:
         
         self.api = EcoFlowAPI(
             access_key=config["ecoflow_access_key"],
-            secret_key=config["ecoflow_secret_key"],
+            secret_key=config["eco
+        self._init_mqtt()flow_secret_key"],
             base_url=config["ecoflow_api_url"]
         )
         
         self.conn: Optional[psycopg.Connection] = None
         self._init_db_connection()
+        self._init_mqtt()
     
     def _init_db_connection(self):
         try:
@@ -249,12 +261,105 @@ class EcoFlowCollectorApp:
                 password=self.config["pg_password"],
                 dbname=self.config["pg_database"],
                 autocommit=False,
+         init_mqtt(self):
+        """Connect to local MQTT broker for publishing power data."""
+        self.mqtt_client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=f"ecoflow-collector-{self.device_sn}",
+        )
+        mqtt_user = self.config.get("mqtt_user", "")
+        mqtt_pass = self.config.get("mqtt_password", "")
+        if mqtt_user:
+            self.mqtt_client.username_pw_set(mqtt_user, mqtt_pass)
+        try:
+            self.mqtt_client.connect(
+                self.config["mqtt_host"],
+                self.config["mqtt_port"],
+                keepalive=60,
             )
+            self.mqtt_client.loop_start()
+            logger.info("MQTT connected to %s:%d", self.config["mqtt_host"], self.config["mqtt_port"])
+        except Exception as e:
+            logger.warning("MQTT connection failed (non-fatal): %s", e)
+
+    def _publish_power_mqtt(self, data: Dict[str, Any]) -> None:
+        """Publish a compact power summary to MQTT for ESP GUI consumption."""
+        if not self.mqtt_client.is_connected():
+            try:
+                self.mqtt_client.reconnect()
+            except Exception:
+                return
+        topic = f"paku/ecoflow/{self.device_sn}/power"
+        payload = json.dumps({
+            "solar_w":    data.get("mppt.inWatts", 0),
+            "ac_in_w":    data.get("inv.inputWatts", 0),
+            "ac_out_w":   data.get("inv.outputWatts", 0),
+            "dc_out_w":   (data.get("pd.carWatts", 0)
+                           + data.get("pd.usb1Watts", 0)
+                           + data.get("pd.usb2Watts", 0)
+                           + data.get("pd.qcUsb1Watts", 0)
+                           + data.get("pd.qcUsb2Watts", 0)
+                           + data.get("pd.typec1Watts", 0)
+                           + data.get("pd.typec2Watts", 0)),
+            "soc":        data.get("bmsMaster.soc", 0),
+            "watts_in":   data.get("pd.wattsInSum", 0),
+            "watts_out":  data.get("pd.wattsOutSum", 0),
+        })
+        self.mqtt_client.publish(topic, payload, qos=0, retain=True)
+
+    def _   )
             logger.info("Database connection established")
         except Exception as e:
             logger.error("Failed to connect to database: %s", e)
             raise
     
+    def _init_mqtt(self):
+        """Connect to local MQTT broker for publishing power data."""
+        self.mqtt_client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=f"ecoflow-collector-{self.device_sn}",
+        )
+        mqtt_user = self.config.get("mqtt_user", "")
+        mqtt_pass = self.config.get("mqtt_password", "")
+        if mqtt_user:
+            self.mqtt_client.username_pw_set(mqtt_user, mqtt_pass)
+        try:
+            self.mqtt_client.connect(
+                self.config["mqtt_host"],
+                self.config["mqtt_port"],
+                keepalive=60,
+            )
+            self.mqtt_client.loop_start()
+            logger.info("MQTT connected to %s:%d", self.config["mqtt_host"], self.config["mqtt_port"])
+        exceself._publish_power_mqtt(quota_data)
+            pt Exception as e:
+            logger.warning("MQTT connection failed (non-fatal): %s", e)
+
+    def _publish_power_mqtt(self, data: Dict[str, Any]) -> None:
+        """Publish a compact power summary to MQTT for ESP GUI consumption."""
+        if not self.mqtt_client.is_connected():
+            try:
+                self.mqtt_client.reconnect()
+            except Exception:
+                return
+        topic = f"paku/ecoflow/{self.device_sn}/power"
+        payload = json.dumps({
+            "solar_w":    data.get("mppt.inWatts", 0),
+            "ac_in_w":    data.get("inv.inputWatts", 0),
+            "ac_out_w":   data.get("inv.outputWatts", 0),
+            "dc_out_w":   (data.get("pd.carWatts", 0)
+                           + data.get("pd.usb1Watts", 0)
+                           + data.get("pd.usb2Watts", 0)
+                           + data.get("pd.qcUsb1Watts", 0)
+                           + data.get("pd.qcUsb2Watts", 0)
+                           + data.get("pd.typec1Watts", 0)
+                           + data.get("pd.typec2Watts", 0)),
+            "soc":        data.get("bmsMaster.soc", 0),
+            "watts_in":   data.get("pd.wattsInSum", 0),
+            "watts_out":  data.get("pd.wattsOutSum", 0),
+        })
+        self.mqtt_client.publish(topic, payload, qos=0, retain=True)
+
     def _ensure_db_connection(self):
         try:
             if self.conn and not self.conn.closed:
@@ -279,6 +384,7 @@ class EcoFlowCollectorApp:
             self._ensure_db_connection()
             
             insert_ecoflow_measurement(self.conn, self.device_sn, quota_data)
+            self._publish_power_mqtt(quota_data)
             
             # Log key metrics using summary fields
             soc = quota_data.get('bmsMaster.soc', 0)
