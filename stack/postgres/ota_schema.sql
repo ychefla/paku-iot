@@ -5,7 +5,7 @@
 -- Stores metadata for firmware artifacts
 CREATE TABLE IF NOT EXISTS firmware_releases (
     id BIGSERIAL PRIMARY KEY,
-    version TEXT NOT NULL UNIQUE,
+    version TEXT NOT NULL,
     device_model TEXT NOT NULL,
     min_version TEXT,
     file_path TEXT NOT NULL,
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS firmware_releases (
 );
 
 -- Index for querying latest firmware by model
+CREATE UNIQUE INDEX IF NOT EXISTS firmware_releases_version_model_key ON firmware_releases(version, device_model);
 CREATE INDEX IF NOT EXISTS idx_firmware_releases_model_version ON firmware_releases(device_model, version DESC);
 CREATE INDEX IF NOT EXISTS idx_firmware_releases_created ON firmware_releases(created_at DESC);
 

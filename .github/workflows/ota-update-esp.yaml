@@ -108,13 +108,13 @@ jobs:
           OTA_URL: ${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}
           DEVICE_MODEL: ${{ github.event.inputs.device_model }}
         run: |
-          echo "Checking if firmware already exists for commit: $COMMIT_HASH and model: $DEVICE_MODEL"
-          
-          # Query OTA service for existing firmware releases matching this commit hash
+          echo "Checking if firmware already exists for version: $VERSION and model: $DEVICE_MODEL"
+
+          # Query OTA service for existing firmware releases for this device model
           response=$(curl -s "${OTA_URL}/api/admin/firmware/releases?device_model=${DEVICE_MODEL}&limit=50" || echo '{"releases":[]}')
-          
-          # Check if any release version starts with this commit hash
-          existing_version=$(echo "$response" | jq -r ".releases[]? | select(.version | startswith(\"${COMMIT_HASH}-\")) | .version" | head -n1)
+
+          # Check if this exact version already exists for this model
+          existing_version=$(echo "$response" | jq -r ".releases[]? | select(.version == \"${VERSION}\") | .version" | head -n1)
           
           if [ -n "$existing_version" ]; then
             echo "Found existing firmware: $existing_version"
