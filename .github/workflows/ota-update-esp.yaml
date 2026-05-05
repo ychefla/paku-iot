@@ -13,6 +13,8 @@ name: OTA Update ESP Devices
           - lilygo-t-display-s3-heater-emu
           - lilygo-t-display-s3-cabin
           - lilygo-t-display-s3-cabin-emu
+          - waveshare-s3-touch-lcd-43
+          - waveshare-s3-touch-lcd-5
           - esp32-heater
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
