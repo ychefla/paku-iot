@@ -495,6 +495,8 @@ jobs:
           OTA_API_KEY: ${{ secrets.OTA_API_KEY }}
           MQTT_HOST: static.107.192.27.37.clients.your-server.de
           MQTT_PORT: 1883
+          MQTT_USER: ${{ secrets.MQTT_USER }}
+          MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
         run: |
           echo "Installing dependencies..."
           sudo apt-get update -qq
@@ -541,6 +543,8 @@ jobs:
             mosquitto_pub \
               -h "$MQTT_HOST" \
               -p "$MQTT_PORT" \
+              -u "$MQTT_USER" \
+              -P "$MQTT_PASSWORD" \
               -q 1 \
               -t "$topic" \
               -m "$OTA_COMMAND"
