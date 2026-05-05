@@ -316,23 +316,29 @@ async def check_firmware_update(
 
 
 @app.get("/api/firmware/download/{version}")
-async def download_firmware(version: str):
+async def download_firmware(version: str, device_model: Optional[str] = Query(None)):
     """
-    Download firmware binary by version.
-    
-    Serves the firmware file for OTA update.
+    Download firmware binary by version (and optionally device_model).
     """
-    logger.info(f"Firmware download request: version={version}")
-    
+    logger.info(f"Firmware download request: version={version}, model={device_model}")
+
     try:
         conn = get_db_connection()
-        
+
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT file_path, file_size, checksum_sha256
-                FROM firmware_releases
-                WHERE version = %(version)s
-            """, {"version": version})
+            if device_model:
+                cur.execute("""
+                    SELECT file_path, file_size, checksum_sha256
+                    FROM firmware_releases
+                    WHERE version = %(version)s AND device_model = %(device_model)s
+                """, {"version": version, "device_model": device_model})
+            else:
+                cur.execute("""
+                    SELECT file_path, file_size, checksum_sha256
+                    FROM firmware_releases
+                    WHERE version = %(version)s
+                    LIMIT 1
+                """, {"version": version})
             
             row = cur.fetchone()
             if not row:

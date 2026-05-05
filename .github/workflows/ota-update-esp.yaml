@@ -514,7 +514,7 @@ jobs:
           # Derive base model for device discovery (e.g. lilygo-t-display-s3-heater-emu → lilygo-t-display-s3)
           DEVICE_FAMILY=$(echo "$DEVICE_MODEL" | sed 's/-heater\(-emu\)\{0,1\}$//' | sed 's/-heater$//')
           echo "Device model: $DEVICE_MODEL (family: $DEVICE_FAMILY)"
-          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${DEPLOY_VERSION}"
+          FIRMWARE_URL="${{ secrets.OTA_SERVICE_URL || 'http://localhost:8080' }}/api/firmware/download/${DEPLOY_VERSION}?device_model=${DEVICE_MODEL}"
           
           # Build OTA command JSON
           OTA_COMMAND=$(cat <<EOF
@@ -541,6 +541,7 @@ jobs:
             mosquitto_pub \
               -h "$MQTT_HOST" \
               -p "$MQTT_PORT" \
+              -q 1 \
               -t "$topic" \
               -m "$OTA_COMMAND"
             
