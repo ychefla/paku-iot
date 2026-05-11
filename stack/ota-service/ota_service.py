@@ -12,7 +12,7 @@ Provides endpoints for:
 Environment variables:
     PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
     FIRMWARE_STORAGE_PATH (default: /firmware)
-    API_KEY (optional: for admin endpoints)
+    API_KEY (required: for all admin and device-reporting endpoints)
     PORT (default: 8080)
 """
 
@@ -20,6 +20,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -129,8 +130,9 @@ def get_db_connection() -> psycopg.Connection:
 # Security
 # ---------------------------------------------------------------------
 def verify_api_key(x_api_key: Optional[str] = Header(None)) -> bool:
-    """Verify API key for admin endpoints (optional)."""
-    if settings.api_key and x_api_key != settings.api_key:
+    if not settings.api_key:
+        raise HTTPException(status_code=503, detail="API key not configured")
+    if x_api_key != settings.api_key:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return True
 
@@ -373,7 +375,7 @@ async def download_firmware(version: str, device_model: Optional[str] = Query(No
 
 
 @app.post("/api/device/{device_id}/update-status")
-async def report_update_status(device_id: str, status: UpdateStatus):
+async def report_update_status(device_id: str, status: UpdateStatus, _: bool = Depends(verify_api_key)):
     """
     Report device update status.
     
@@ -472,9 +474,14 @@ async def upload_firmware(
         storage_path = Path(settings.firmware_storage_path)
         storage_path.mkdir(parents=True, exist_ok=True)
         
-        # Save firmware file
+        # Validate inputs to prevent path traversal
+        _slug = re.compile(r'^[A-Za-z0-9._-]+$')
+        if not _slug.match(device_model) or not _slug.match(version):
+            raise HTTPException(status_code=400, detail="Invalid device_model or version")
         file_name = f"{device_model}_{version}.bin"
-        file_path = storage_path / file_name
+        file_path = (storage_path / file_name).resolve()
+        if not str(file_path).startswith(str(storage_path.resolve()) + os.sep):
+            raise HTTPException(status_code=400, detail="Invalid file path")
         
         # Calculate checksum while saving
         sha256_hash = hashlib.sha256()
@@ -551,6 +558,7 @@ async def upload_firmware(
 async def list_firmware_releases(
     device_model: Optional[str] = Query(None),
     limit: int = Query(10, ge=1, le=100),
+    _: bool = Depends(verify_api_key),
 ):
     """
     List firmware releases.
@@ -662,6 +670,7 @@ async def create_rollout(
 async def list_devices(
     device_model: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=500),
+    _: bool = Depends(verify_api_key),
 ):
     """
     List registered devices.
@@ -714,6 +723,7 @@ async def get_update_status(
     device_id: Optional[str] = Query(None),
     firmware_version: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=500),
+    _: bool = Depends(verify_api_key),
 ):
     """
     Get device update status history.
