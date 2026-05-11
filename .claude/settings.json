@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pio run *)",
+      "Bash(pio device *)",
+      "Bash(mosquitto_sub *)",
+      "Bash(ioreg *)",
+      "Bash(python3 scripts/version_bump.py)"
+    ]
+  }
+}
