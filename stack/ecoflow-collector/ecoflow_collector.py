@@ -1,7 +1,10 @@
 """
-EcoFlow Collector Service - REST API Only
+EcoFlow Collector Service
 
-Fetches data from EcoFlow REST API and stores to PostgreSQL.
+Polls the EcoFlow REST API for power-station telemetry, writes a row per
+poll to PostgreSQL (`ecoflow_measurements`), and republishes a compact
+power summary to the local MQTT broker on `paku/ecoflow/{sn}/power` so
+the ESP van-display and Home Assistant dashboard tiles can render live.
 """
 
 import hashlib
@@ -16,10 +19,9 @@ import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+import paho.mqtt.client as mqtt
 import psycopg
 import requests
-import paho.mqtt.client as mqtt
-import paho.mqtt.client as mqtt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,10 +55,6 @@ def load_config() -> Dict[str, Any]:
         "mqtt_user": os.getenv("MQTT_USER", ""),
         "mqtt_password": os.getenv("MQTT_PASSWORD", ""),
         "rest_api_interval": int(os.getenv("REST_API_INTERVAL", "30")),
-        "mqtt_host": os.getenv("MQTT_HOST", "mosquitto"),
-        "mqtt_port": int(os.getenv("MQTT_PORT", "1883")),
-        "mqtt_user": os.getenv("MQTT_USER", ""),
-        "mqtt_password": os.getenv("MQTT_PASSWORD", ""),
     }
 
 
@@ -65,7 +63,7 @@ class EcoFlowAPI:
         self.access_key = access_key
         self.secret_key = secret_key
         self.base_url = base_url.rstrip('/')
-    
+
     def _generate_sign(self, params: Dict[str, str]) -> str:
         sorted_params = sorted(params.items())
         param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
@@ -75,19 +73,19 @@ class EcoFlowAPI:
             hashlib.sha256
         ).hexdigest()
         return signature
-    
+
     def _make_api_request(self, endpoint: str, method: str = "GET", body: Optional[Dict] = None) -> Dict[str, Any]:
         nonce = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
         timestamp = str(int(time.time() * 1000))
-        
+
         params = {
             "accessKey": self.access_key,
             "nonce": nonce,
             "timestamp": timestamp
         }
-        
+
         sign = self._generate_sign(params)
-        
+
         headers = {
             "accessKey": self.access_key,
             "nonce": nonce,
@@ -95,9 +93,9 @@ class EcoFlowAPI:
             "sign": sign,
             "Content-Type": "application/json"
         }
-        
+
         url = f"{self.base_url}{endpoint}"
-        
+
         try:
             if method == "GET":
                 response = requests.get(url, headers=headers, timeout=30)
@@ -105,20 +103,20 @@ class EcoFlowAPI:
                 response = requests.post(url, headers=headers, json=body or {}, timeout=30)
             else:
                 raise ValueError(f"Unsupported method: {method}")
-            
+
             response.raise_for_status()
             data = response.json()
-            
+
             if data.get("code") != "0":
                 logger.warning("API returned error code: %s, message: %s", data.get("code"), data.get("message"))
                 return {}
-            
+
             return data.get("data", {})
-            
+
         except requests.exceptions.RequestException as e:
             logger.error("API request failed: %s", e)
             return {}
-    
+
     def get_device_quota_all(self, device_sn: str) -> Dict[str, Any]:
         endpoint = f"/iot-open/sign/device/quota/all?sn={device_sn}"
         return self._make_api_request(endpoint, method="GET")
@@ -127,7 +125,7 @@ class EcoFlowAPI:
 def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: Dict[str, Any]) -> None:
     """
     Insert EcoFlow measurement into database.
-    
+
     EcoFlow API returns flat field names with dots. Key fields:
     - pd.wattsInSum: Total input power
     - pd.wattsOutSum: Total output power
@@ -139,22 +137,22 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     - bmsMaster.soc: Battery SOC %
     - pd.remainTime: Remaining time in minutes
     """
-    
+
     # Battery info
     soc = data.get('bmsMaster.soc', 0)
     remain_time = data.get('pd.remainTime', 0)  # in minutes
-    
+
     # Use EcoFlow's summary fields first, fall back to individual components
     watts_in_sum = data.get('pd.wattsInSum', 0)
     watts_out_sum = data.get('pd.wattsOutSum', 0)
-    
+
     # Individual components
     ac_in_watts = data.get('inv.inputWatts', 0)
     ac_out_watts = data.get('inv.outputWatts', 0)
     pv_in_watts = data.get('mppt.inWatts', 0)
     mppt_out_watts = data.get('mppt.outWatts', 0)
     car_watts = data.get('pd.carWatts', 0)
-    
+
     # USB/TypeC outputs
     usb1 = data.get('pd.usb1Watts', 0)
     usb2 = data.get('pd.usb2Watts', 0)
@@ -162,12 +160,12 @@ def insert_ecoflow_measurement(conn: psycopg.Connection, device_sn: str, data: D
     qcusb2 = data.get('pd.qcUsb2Watts', 0)
     typec1 = data.get('pd.typec1Watts', 0)
     typec2 = data.get('pd.typec2Watts', 0)
-    
+
     # Calculate component sums
     dc_out_watts = car_watts + usb1 + usb2 + qcusb1 + qcusb2
     typec_out_watts = typec1 + typec2
     usb_out_watts = usb1 + usb2 + qcusb1 + qcusb2
-    
+
     # Temperature & power/voltage/BMS – extracted to dedicated columns so
     # Grafana can query via index rather than scanning raw_data JSONB
     inv_temp = data.get('inv.outTemp')
@@ -240,18 +238,18 @@ class EcoFlowCollectorApp:
         self.config = config
         self.device_sn = config["ecoflow_device_sn"]
         self.rest_api_interval = config["rest_api_interval"]
-        
+
         self.api = EcoFlowAPI(
             access_key=config["ecoflow_access_key"],
-            secret_key=config["eco
-        self._init_mqtt()flow_secret_key"],
+            secret_key=config["ecoflow_secret_key"],
             base_url=config["ecoflow_api_url"]
         )
-        
+
         self.conn: Optional[psycopg.Connection] = None
+        self.mqtt_client: Optional[mqtt.Client] = None
         self._init_db_connection()
         self._init_mqtt()
-    
+
     def _init_db_connection(self):
         try:
             self.conn = psycopg.connect(
@@ -261,104 +259,11 @@ class EcoFlowCollectorApp:
                 password=self.config["pg_password"],
                 dbname=self.config["pg_database"],
                 autocommit=False,
-         init_mqtt(self):
-        """Connect to local MQTT broker for publishing power data."""
-        self.mqtt_client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"ecoflow-collector-{self.device_sn}",
-        )
-        mqtt_user = self.config.get("mqtt_user", "")
-        mqtt_pass = self.config.get("mqtt_password", "")
-        if mqtt_user:
-            self.mqtt_client.username_pw_set(mqtt_user, mqtt_pass)
-        try:
-            self.mqtt_client.connect(
-                self.config["mqtt_host"],
-                self.config["mqtt_port"],
-                keepalive=60,
             )
-            self.mqtt_client.loop_start()
-            logger.info("MQTT connected to %s:%d", self.config["mqtt_host"], self.config["mqtt_port"])
-        except Exception as e:
-            logger.warning("MQTT connection failed (non-fatal): %s", e)
-
-    def _publish_power_mqtt(self, data: Dict[str, Any]) -> None:
-        """Publish a compact power summary to MQTT for ESP GUI consumption."""
-        if not self.mqtt_client.is_connected():
-            try:
-                self.mqtt_client.reconnect()
-            except Exception:
-                return
-        topic = f"paku/ecoflow/{self.device_sn}/power"
-        payload = json.dumps({
-            "solar_w":    data.get("mppt.inWatts", 0),
-            "ac_in_w":    data.get("inv.inputWatts", 0),
-            "ac_out_w":   data.get("inv.outputWatts", 0),
-            "dc_out_w":   (data.get("pd.carWatts", 0)
-                           + data.get("pd.usb1Watts", 0)
-                           + data.get("pd.usb2Watts", 0)
-                           + data.get("pd.qcUsb1Watts", 0)
-                           + data.get("pd.qcUsb2Watts", 0)
-                           + data.get("pd.typec1Watts", 0)
-                           + data.get("pd.typec2Watts", 0)),
-            "soc":        data.get("bmsMaster.soc", 0),
-            "watts_in":   data.get("pd.wattsInSum", 0),
-            "watts_out":  data.get("pd.wattsOutSum", 0),
-        })
-        self.mqtt_client.publish(topic, payload, qos=0, retain=True)
-
-    def _   )
             logger.info("Database connection established")
         except Exception as e:
             logger.error("Failed to connect to database: %s", e)
             raise
-    
-    def _init_mqtt(self):
-        """Connect to local MQTT broker for publishing power data."""
-        self.mqtt_client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"ecoflow-collector-{self.device_sn}",
-        )
-        mqtt_user = self.config.get("mqtt_user", "")
-        mqtt_pass = self.config.get("mqtt_password", "")
-        if mqtt_user:
-            self.mqtt_client.username_pw_set(mqtt_user, mqtt_pass)
-        try:
-            self.mqtt_client.connect(
-                self.config["mqtt_host"],
-                self.config["mqtt_port"],
-                keepalive=60,
-            )
-            self.mqtt_client.loop_start()
-            logger.info("MQTT connected to %s:%d", self.config["mqtt_host"], self.config["mqtt_port"])
-        exceself._publish_power_mqtt(quota_data)
-            pt Exception as e:
-            logger.warning("MQTT connection failed (non-fatal): %s", e)
-
-    def _publish_power_mqtt(self, data: Dict[str, Any]) -> None:
-        """Publish a compact power summary to MQTT for ESP GUI consumption."""
-        if not self.mqtt_client.is_connected():
-            try:
-                self.mqtt_client.reconnect()
-            except Exception:
-                return
-        topic = f"paku/ecoflow/{self.device_sn}/power"
-        payload = json.dumps({
-            "solar_w":    data.get("mppt.inWatts", 0),
-            "ac_in_w":    data.get("inv.inputWatts", 0),
-            "ac_out_w":   data.get("inv.outputWatts", 0),
-            "dc_out_w":   (data.get("pd.carWatts", 0)
-                           + data.get("pd.usb1Watts", 0)
-                           + data.get("pd.usb2Watts", 0)
-                           + data.get("pd.qcUsb1Watts", 0)
-                           + data.get("pd.qcUsb2Watts", 0)
-                           + data.get("pd.typec1Watts", 0)
-                           + data.get("pd.typec2Watts", 0)),
-            "soc":        data.get("bmsMaster.soc", 0),
-            "watts_in":   data.get("pd.wattsInSum", 0),
-            "watts_out":  data.get("pd.wattsOutSum", 0),
-        })
-        self.mqtt_client.publish(topic, payload, qos=0, retain=True)
 
     def _ensure_db_connection(self):
         try:
@@ -368,55 +273,119 @@ class EcoFlowCollectorApp:
                 return
         except Exception:
             logger.warning("Database connection lost, reconnecting...")
-        
+
         self._init_db_connection()
-    
+
+    def _init_mqtt(self):
+        """Connect to the local MQTT broker for republishing power summaries.
+
+        MQTT is best-effort: a broker outage must not block DB collection.
+        """
+        client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            client_id=f"ecoflow-collector-{self.device_sn}",
+        )
+        user = self.config.get("mqtt_user", "")
+        password = self.config.get("mqtt_password", "")
+        if user:
+            client.username_pw_set(user, password)
+        try:
+            client.connect(
+                self.config["mqtt_host"],
+                self.config["mqtt_port"],
+                keepalive=60,
+            )
+            client.loop_start()
+            logger.info(
+                "MQTT connected to %s:%d",
+                self.config["mqtt_host"], self.config["mqtt_port"],
+            )
+        except Exception as e:
+            logger.warning("MQTT connection failed (non-fatal): %s", e)
+        self.mqtt_client = client
+
+    def _publish_power_mqtt(self, data: Dict[str, Any]) -> None:
+        """Publish a flat power summary that HA tiles and the ESP display read.
+
+        Topic: paku/ecoflow/{device_sn}/power
+        Keys (consumed by paku-ha/packages/paku.yaml and paku-core main.cpp):
+          soc, solar_w, ac_in_w, ac_out_w, dc_out_w, watts_in, watts_out
+        """
+        if self.mqtt_client is None:
+            return
+        if not self.mqtt_client.is_connected():
+            try:
+                self.mqtt_client.reconnect()
+            except Exception:
+                return
+
+        dc_out_w = (
+            data.get("pd.carWatts", 0)
+            + data.get("pd.usb1Watts", 0)
+            + data.get("pd.usb2Watts", 0)
+            + data.get("pd.qcUsb1Watts", 0)
+            + data.get("pd.qcUsb2Watts", 0)
+            + data.get("pd.typec1Watts", 0)
+            + data.get("pd.typec2Watts", 0)
+        )
+        payload = json.dumps({
+            "soc":       data.get("bmsMaster.soc", 0),
+            "solar_w":   data.get("mppt.inWatts", 0),
+            "ac_in_w":   data.get("inv.inputWatts", 0),
+            "ac_out_w":  data.get("inv.outputWatts", 0),
+            "dc_out_w":  dc_out_w,
+            "watts_in":  data.get("pd.wattsInSum", 0),
+            "watts_out": data.get("pd.wattsOutSum", 0),
+        })
+        topic = f"paku/ecoflow/{self.device_sn}/power"
+        self.mqtt_client.publish(topic, payload, qos=0, retain=True)
+
     def fetch_and_store_data(self):
         try:
             logger.info("Fetching device data for SN: %s", self.device_sn)
-            
+
             quota_data = self.api.get_device_quota_all(self.device_sn)
-            
+
             if not quota_data:
                 logger.warning("No data received from API")
                 return
-            
+
             self._ensure_db_connection()
-            
+
             insert_ecoflow_measurement(self.conn, self.device_sn, quota_data)
             self._publish_power_mqtt(quota_data)
-            
+
             # Log key metrics using summary fields
             soc = quota_data.get('bmsMaster.soc', 0)
             watts_in = quota_data.get('pd.wattsInSum', 0)
             watts_out = quota_data.get('pd.wattsOutSum', 0)
             solar = quota_data.get('mppt.inWatts', 0)
             temp = quota_data.get('bmsMaster.temp', 0)
-            
+
             logger.info(
                 "Stored: SOC=%d%%, IN=%dW, OUT=%dW, SOLAR=%dW, TEMP=%d°C",
                 soc, watts_in, watts_out, solar, temp
             )
-            
+
         except Exception as e:
             logger.error("Failed to fetch/store data: %s", e, exc_info=True)
-    
+
     def run(self):
         logger.info("Starting EcoFlow collector (REST API mode)")
         logger.info("Polling interval: %d seconds", self.rest_api_interval)
-        
+
         while True:
             try:
                 self.fetch_and_store_data()
             except Exception as e:
                 logger.error("Error in main loop: %s", e)
-            
+
             time.sleep(self.rest_api_interval)
 
 
 def main() -> None:
     logger.info("Starting EcoFlow Collector Service")
-    
+
     try:
         cfg = load_config()
         app = EcoFlowCollectorApp(cfg)

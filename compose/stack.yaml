@@ -165,6 +165,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mosquitto:
+        condition: service_started
     environment:
       ECOFLOW_ACCESS_KEY: ${ECOFLOW_ACCESS_KEY:-}
       ECOFLOW_SECRET_KEY: ${ECOFLOW_SECRET_KEY:-}
@@ -174,6 +176,10 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-paku}
       ECOFLOW_API_URL: ${ECOFLOW_API_URL:-https://api-e.ecoflow.com}
       REST_API_INTERVAL: ${REST_API_INTERVAL:-30}
 

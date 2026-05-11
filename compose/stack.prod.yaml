@@ -200,6 +200,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mosquitto:
+        condition: service_healthy
     environment:
       ECOFLOW_ACCESS_KEY: ${ECOFLOW_ACCESS_KEY:-}
       ECOFLOW_SECRET_KEY: ${ECOFLOW_SECRET_KEY:-}
@@ -210,6 +212,10 @@ services:
       PGUSER: ${POSTGRES_USER:-paku}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB:-paku}
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-paku}
+      MQTT_PASSWORD: ${MQTT_PASSWORD}
     deploy:
       resources:
         limits:
