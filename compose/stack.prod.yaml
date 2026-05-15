@@ -27,7 +27,6 @@ services:
       MQTT_PASSWORD: ${MQTT_PASSWORD}
       MQTT_CN: ${MQTT_CN:-paku-mqtt}
     ports:
-      - "1883:1883"
       - "8883:8883"
     volumes:
       - paku_mqttdata:/mosquitto/data
