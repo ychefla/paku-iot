@@ -460,6 +460,19 @@ class CollectorApp:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
+    def _ensure_connection(self) -> bool:
+        """Ensure DB connection is alive, reconnect if needed. Returns True if connected."""
+        if self.conn is not None and not self.conn.closed:
+            return True
+        logger.warning("DB connection lost, reconnecting...")
+        try:
+            self.conn = connect_to_database(self.cfg)
+            return True
+        except Exception as exc:
+            logger.error("DB reconnect failed: %s", exc)
+            self.conn = None
+            return False
+
     def start(self) -> None:
         # Connect to DB once at startup
         self.conn = connect_to_database(self.cfg)
@@ -516,7 +529,7 @@ class CollectorApp:
             logger.warning("Expected JSON object on %s, got: %r", topic, data)
             return
 
-        if self.conn is None:
+        if not self._ensure_connection():
             logger.error("No DB connection available; dropping message from %s", topic)
             return
 
@@ -566,7 +579,10 @@ class CollectorApp:
                 )
             else:
                 logger.debug("Unhandled topic type: %s (system=%s)", topic_type, system)
-                
+
+        except psycopg.OperationalError as exc:
+            logger.warning("DB connection lost while processing %s, will reconnect on next message: %s", topic, exc)
+            self.conn = None
         except Exception as exc:
             logger.exception("Failed to process message from %s: %s", topic, exc)
 
