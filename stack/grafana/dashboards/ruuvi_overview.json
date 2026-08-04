@@ -39,130 +39,6 @@
           "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
           "editorMode": "code",
           "rawQuery": true
-        },
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "DS_POSTGRESQL"
-          },
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) AS value,\n  'EcoFlow Inverter' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND inv_out_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
-          "refId": "EcoFlow_Inverter",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ],
-          "editorMode": "code"
-        },
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "DS_POSTGRESQL"
-          },
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_temp) AS value,\n  'EcoFlow BMS' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
-          "refId": "EcoFlow_BMS",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ],
-          "editorMode": "code"
-        },
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "DS_POSTGRESQL"
-          },
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_max_cell_temp) AS value,\n  'EcoFlow Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_max_cell_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
-          "refId": "EcoFlow_MaxCell",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ],
-          "editorMode": "code"
-        },
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "DS_POSTGRESQL"
-          },
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_min_cell_temp) AS value,\n  'EcoFlow Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE\n  $__timeFilter(ts)\n  AND bms_min_cell_temp IS NOT NULL\nGROUP BY 1\nORDER BY 1",
-          "refId": "EcoFlow_MinCell",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "timeColumn": "time",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ],
-          "editorMode": "code"
         }
       ],
       "options": {
@@ -491,6 +367,78 @@
       }
     },
     {
+      "id": 6,
+      "title": "EcoFlow Temperatures (°C)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) AS value,\n  'Inverter Out' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND inv_out_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_temp) AS value,\n  'BMS' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_max_cell_temp) AS value,\n  'BMS Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_max_cell_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${datasource}"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_min_cell_temp) AS value,\n  'BMS Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_min_cell_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
+          "refId": "D"
+        }
+      ]
+    },
+    {
       "id": 3,
       "type": "table",
       "title": "Recent Measurements",
@@ -502,7 +450,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 24
       },
       "targets": [
         {
