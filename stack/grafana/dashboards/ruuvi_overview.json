@@ -377,8 +377,8 @@
         "y": 16
       },
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${datasource}"
+        "type": "postgres",
+        "uid": "DS_POSTGRESQL"
       },
       "fieldConfig": {
         "defaults": {
@@ -402,8 +402,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${datasource}"
+            "type": "postgres",
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(inv_out_temp) AS value,\n  'Inverter Out' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND inv_out_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
@@ -411,8 +411,8 @@
         },
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${datasource}"
+            "type": "postgres",
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_temp) AS value,\n  'BMS' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
@@ -420,8 +420,8 @@
         },
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${datasource}"
+            "type": "postgres",
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_max_cell_temp) AS value,\n  'BMS Max Cell' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_max_cell_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
@@ -429,148 +429,14 @@
         },
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${datasource}"
+            "type": "postgres",
+            "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
           "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG(bms_min_cell_temp) AS value,\n  'BMS Min Cell' AS metric\nFROM ecoflow_measurements\nWHERE $__timeFilter(ts) AND bms_min_cell_temp IS NOT NULL\nGROUP BY 1 ORDER BY 1",
           "refId": "D"
         }
       ]
-    },
-    {
-      "id": 3,
-      "type": "table",
-      "title": "Recent Measurements",
-      "datasource": {
-        "type": "postgres",
-        "uid": "DS_POSTGRESQL"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "postgres",
-            "uid": "DS_POSTGRESQL"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  ts,\n  site_id,\n  system,\n  device_id,\n  location,\n  (metrics->>'temperature_c')::numeric AS temperature_c,\n  (metrics->>'humidity_percent')::numeric AS humidity_percent,\n  (metrics->>'pressure_hpa')::numeric AS pressure_hpa,\n  (metrics->>'battery_mv')::numeric AS battery_mv\nFROM measurements\nWHERE $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\nORDER BY ts DESC\nLIMIT 50",
-          "editorMode": "code"
-        }
-      ],
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false,
-          "reducer": [
-            "sum"
-          ],
-          "countRows": false,
-          "fields": ""
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "value": null,
-                "color": "green"
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ts"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Timestamp"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "temperature_c"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Temperature (°C)"
-              },
-              {
-                "id": "unit",
-                "value": "celsius"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "humidity_percent"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Humidity (%)"
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "pressure_hpa"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Pressure (hPa)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "battery_mv"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Battery (mV)"
-              },
-              {
-                "id": "unit",
-                "value": "mvolt"
-              }
-            ]
-          }
-        ]
-      }
     }
   ],
   "templating": {
