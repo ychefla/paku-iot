@@ -9,3 +9,12 @@ providers:
     updateIntervalSeconds: 10
     options:
       path: /etc/grafana/dashboards
+
+  - name: paku-dashboards-legacy
+    type: file
+    orgId: 1
+    folder: "EcoFlow — Legacy"
+    allowUiUpdates: false
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/dashboards_legacy
