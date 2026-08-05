@@ -82,27 +82,187 @@
 
 ## Dashboard Comparison
 
-| Dashboard | File | Panels | Status | Purpose |
-|-----------|------|--------|--------|---------|
-| Temperature and Humidity Overview | `ruuvi_overview.json` | 5 | ✅ Updated | All temperature/humidity sensors |
-| EcoFlow Power Station Overview | `ecoflow_overview.json` | 12 | 📌 Keep | Original overview |
-| EcoFlow - Real-Time Overview | `ecoflow_comprehensive.json` | 8 | 📌 Keep | Simple real-time view |
-| EcoFlow Real-Time | `ecoflow_realtime.json` | 7 | 📌 Keep | Minimal real-time |
-| EcoFlow (Exporter Style) | `ecoflow_exporter_style.json` | 30 | ⚠️ Has issues | Many zero-value panels |
-| **EcoFlow API Data** | `ecoflow_api_data.json` | 22 | ✨ New | All API-supported data |
-| **EcoFlow Unified Dashboard** | `ecoflow_unified.json` | 15 | ✨ New | Best of all dashboards |
+_Updated 2026-08-05 to reflect current state._
+
+### Active Dashboards — yhteenveto
+
+| Dashboard | File | UID | Paneelit | Tarkoitus |
+|-----------|------|-----|----------|-----------|
+| Temperature and Humidity Overview | `ruuvi_overview.json` | `paku-ruuvi` | 5 | Ruuvi-anturit + EcoFlow lämpötilat |
+| **EcoFlow — Täydellinen** | `ecoflow_full.json` | `ecoflow-full` | 26 | Kaikki EcoFlow data + historia |
+| **EcoFlow — Yleiskatsaus** | `ecoflow_overview_v2.json` | `ecoflow-overview-v2` | 14 | Tärkeimmät mittarit, 6 h näkymä |
+| Edge Devices Overview | `edge_devices.json` | `edge-devices` | 13 | ESP32-laitteet: tila, FW, RSSI |
+| Hydronic Heater Overview | `heater_overview.json` | `paku-heater` | 8 | Vedenlämmitin |
+| OTA Update Monitoring | `ota_monitoring.json` | `ota-monitoring` | 7 | OTA-päivitysten seuranta |
+
+---
+
+### Tarkka metriikat per dashboard
+
+#### Temperature and Humidity Overview (`ruuvi_overview.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Temperature (°C) | time series | `temperature_c` per laite+sijainti (Ruuvi) |
+| Humidity (%) | time series | `humidity_percent` per laite+sijainti (Ruuvi) |
+| Dew Point (°C) | time series | laskettu: Magnus-kaava (Ruuvi temp + kosteus) |
+| Absolute Humidity (g/m³) | time series | laskettu: g/m³ (Ruuvi temp + kosteus) |
+| EcoFlow Temperatures (°C) | time series | `inv_out_temp`, `bms_temp`, `bms_max_cell_temp`, `bms_min_cell_temp` |
+
+---
+
+#### EcoFlow — Täydellinen (`ecoflow_full.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Online | stat | `online` |
+| Akku | stat | `soc_percent` (%) |
+| Sisään | stat | `watts_in_sum` (W) |
+| Ulos | stat | `watts_out_sum` (W) |
+| Netto | stat | `watts_in_sum - watts_out_sum` (W) |
+| Solar | stat | `mppt_in_watts` (W) |
+| AC Sisään | stat | `ac_in_watts` (W) |
+| Jäljellä | stat | `remain_time` (h) |
+| Akku °C | stat | `bms_temp` (°C) |
+| Akkutaso & Aika jäljellä | time series | `soc_percent`, `remain_time` |
+| Tehovirta: Sisään / Ulos / Netto | time series | `watts_in_sum`, `watts_out_sum`, netto |
+| Tehon lähteet: Solar & AC | time series | `mppt_in_watts`, `ac_in_watts` |
+| Lähdöt: AC & DC | time series | `ac_out_watts`, `dc_out_watts`, `typec_out_watts`, `usb_out_watts` |
+| Lämpötilat | time series | `bms_temp`, `inv_out_temp`, `mppt_temp`, `bms_min_cell_temp`, `bms_max_cell_temp` |
+| Jännitteet | time series | `ac_in_vol`, `inv_out_vol`, `bms_vol` |
+| Virta | time series | `ac_in_amp`, `inv_out_amp`, `bms_amp` |
+| Akkujännitteet | time series | `bms_vol`, `bms_min_cell_vol`, `bms_max_cell_vol` |
+| USB Lähdöt | time series | `usb_out_watts`, `typec_out_watts` |
+| Lataussyklit | stat | `bms_cycles` |
+| Kapasiteetti | stat | `bms_design_cap` (Wh) |
+| Jäljellä kap. | stat | `bms_remain_cap` (Wh) |
+| BMS Virta | stat | `bms_amp` (A) |
+| Cell Min °C | stat | `bms_min_cell_temp` (°C) |
+| Cell Max °C | stat | `bms_max_cell_temp` (°C) |
+| Cell Min V | stat | `bms_min_cell_vol` (V) |
+| Cell Max V | stat | `bms_max_cell_vol` (V) |
+
+---
+
+#### EcoFlow — Yleiskatsaus (`ecoflow_overview_v2.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Online | stat | `online` |
+| Akku | stat | `soc_percent` (%) |
+| Sisään | stat | `watts_in_sum` (W) |
+| Ulos | stat | `watts_out_sum` (W) |
+| Solar | stat | `mppt_in_watts` (W) |
+| Jäljellä | stat | `remain_time` (h) |
+| Akku °C | stat | `bms_temp` (°C) |
+| Invertteri °C | stat | `inv_out_temp` (°C) |
+| Netto | stat | `watts_in_sum - watts_out_sum` (W) |
+| Akkutaso (%) | time series | `soc_percent` |
+| Tehovirta | time series | `watts_in_sum`, `watts_out_sum`, netto |
+| Tehon lähteet | time series | `mppt_in_watts`, `ac_in_watts` |
+| Lähdöt | time series | `ac_out_watts`, `dc_out_watts`, `typec_out_watts`, `usb_out_watts` |
+| Lämpötilat | time series | `bms_temp`, `inv_out_temp`, `mppt_temp` |
+
+---
+
+#### Edge Devices Overview (`edge_devices.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Total / Online / Up-to-Date Devices | stat | laitteiden lukumäärä |
+| Latest Firmware | stat | uusin firmware-versio |
+| Status Updates (Last Hour) | stat | viestimäärä tunnissa |
+| Device Status Overview | table | device_id, model, current_fw, latest_fw, status, last_seen, last_status, WiFi (dBm), uptime, state, update_status, registered |
+| Status Update Rate | time series | viestejä / 5 min per laite |
+| WiFi Signal Strength | time series | `signal_strength_dbm` (dBm) per laite |
+| Recent Status Updates | table | ts, device, state, WiFi (dBm), uptime, fw_version, heater_status, active_scenario |
+| Device Update History | table | started_at, device, target_version, status, duration, error_message |
+| Device Uptime Trends | time series | `uptime_seconds / 3600` (h) per laite |
+| Current Device States | stat | state + active_scenario per laite |
+| Device Uptime | stat | uptime-aika muotoiltuna per laite |
+
+---
+
+#### Hydronic Heater Overview (`heater_overview.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Heater State | stat | `heater_state` (Off/Starting/Warming/Running/ShuttingDown/Cooling) |
+| Safety | stat | `safety_ok` |
+| Battery | stat | `battery_v` (V) |
+| Coolant Temperature | gauge | `coolant_temp_c` (°C) |
+| Flow Rate | gauge | `flow_lpm` (L/min) |
+| Coolant Temperature History | time series | `coolant_temp_c`, `core_temp` |
+| Battery Voltage & Flow Rate | time series | `battery_v`, `flow_lpm` |
+| Heater State History | state-timeline | `heater_state` |
+
+---
+
+#### OTA Update Monitoring (`ota_monitoring.json`)
+
+| Paneeli | Tyyppi | Mittaussuureet |
+|---------|--------|----------------|
+| Total Devices | stat | laitteiden lukumäärä |
+| Latest Firmware | stat | uusin versio |
+| Devices Up-to-Date | stat | ajan tasalla olevien laitteiden määrä |
+| Active Updates | stat | käynnissä olevat päivitykset |
+| Device Status & Update Progress | table | device_id, model, current_version, update_progress, target_version, online, last_seen, last_update, status |
+| Recent Updates (Last 20) | table | started_at, device_id, model, from_version, to_version, status, duration |
+
+---
+
+### EcoFlow-mittareiden vertailu: Täydellinen vs Yleiskatsaus
+
+| Mittari | Täydellinen | Yleiskatsaus |
+|---------|:-----------:|:------------:|
+| online | stat | stat |
+| soc_percent | stat + ts | stat + ts |
+| watts_in_sum | stat + ts | stat + ts |
+| watts_out_sum | stat + ts | stat + ts |
+| netto (in−out) | stat + ts | stat + ts |
+| mppt_in_watts (Solar) | stat + ts | stat + ts |
+| ac_in_watts | stat + ts | ts |
+| remain_time | stat + ts | stat |
+| bms_temp | stat + ts | stat + ts |
+| inv_out_temp | ts | stat |
+| mppt_temp | ts | ts |
+| bms_min/max_cell_temp | ts + stat | — |
+| ac_in_vol / inv_out_vol / bms_vol | ts | — |
+| ac_in_amp / inv_out_amp / bms_amp | ts + stat | — |
+| bms_min/max_cell_vol | ts + stat | — |
+| usb_out_watts / typec_out_watts | ts + ts (USB) | ts |
+| ac_out_watts / dc_out_watts | ts | ts |
+| bms_cycles | stat | — |
+| bms_design_cap / remain_cap | stat | — |
+
+---
+
+### Legacy / Redundant EcoFlow Dashboards (poistoehdokkaat)
+
+| Dashboard | File | Paneelit | Huomio |
+|-----------|------|----------|--------|
+| EcoFlow Power Station Overview | `ecoflow_overview.json` | 12 | Korvattu uusilla |
+| EcoFlow - Real-Time Overview | `ecoflow_comprehensive.json` | 8 | Korvattu uusilla |
+| EcoFlow Real-Time | `ecoflow_realtime.json` | 7 | Korvattu uusilla |
+| EcoFlow (Exporter Style) | `ecoflow_exporter_style.json` | 30 | 55 % nollapaneeleita, korvattu |
+| EcoFlow API Data | `ecoflow_api_data.json` | 22 | Korvattu uusilla |
+| EcoFlow Unified Dashboard | `ecoflow_unified.json` | 15 | Korvattu uusilla |
 
 ## Recommendations for Future
 
 ### Immediate Use
-1. **Use "EcoFlow Unified Dashboard"** as the primary dashboard - it provides the best balance of current and historical data
-2. **Use "EcoFlow API Data"** when you need detailed view of specific parameters
-3. **Use "Temperature and Humidity Overview"** for all temperature monitoring
+1. **EcoFlow — Täydellinen** (`ecoflow_full.json`) — ensisijainen EcoFlow-dashboard, kaikki historia
+2. **EcoFlow — Yleiskatsaus** (`ecoflow_overview_v2.json`) — nopea tilannekuva
+3. **Temperature and Humidity Overview** — kaikki lämpötila/kosteus-seuranta
 
-### Long-Term Cleanup (Optional)
-Consider deprecating/removing redundant dashboards:
-- Keep: Unified, API Data, Temperature and Humidity Overview
-- Consider removing: Overview, Comprehensive, Realtime, Exporter Style (after user testing confirms Unified meets all needs)
+### Long-Term Cleanup
+Poista 6 legacy-dashboardia `stack/grafana/dashboards/`:
+- `ecoflow_overview.json`
+- `ecoflow_comprehensive.json`
+- `ecoflow_realtime.json`
+- `ecoflow_exporter_style.json`
+- `ecoflow_api_data.json`
+- `ecoflow_unified.json`
 
 ## Documentation Created
 
