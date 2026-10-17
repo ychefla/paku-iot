@@ -101,24 +101,26 @@ jobs:
           ENVFILE
           
           # Replace placeholders with actual values
-          sed -i "s|__POSTGRES_PASSWORD__|${POSTGRES_PASSWORD}|g" compose/.env
-          sed -i "s|__GF_SECURITY_ADMIN_PASSWORD__|${GF_SECURITY_ADMIN_PASSWORD}|g" compose/.env
-          sed -i "s|__OTA_API_KEY__|${OTA_API_KEY}|g" compose/.env
-          sed -i "s|__MQTT_USER__|${MQTT_USER:-edge}|g" compose/.env
-          sed -i "s|__MQTT_PASSWORD__|${MQTT_PASSWORD}|g" compose/.env
-          sed -i "s|__MQTT_CN__|${MQTT_CN:-paku-mqtt}|g" compose/.env
+          # Escape sed replacement metacharacters (& \ |) so secrets are inserted verbatim
+          sedesc() { printf "%s" "$1" | sed -e "s/[&\\\\|]/\\\\&/g"; }
+          sed -i "s|__POSTGRES_PASSWORD__|$(sedesc "${POSTGRES_PASSWORD}")|g" compose/.env
+          sed -i "s|__GF_SECURITY_ADMIN_PASSWORD__|$(sedesc "${GF_SECURITY_ADMIN_PASSWORD}")|g" compose/.env
+          sed -i "s|__OTA_API_KEY__|$(sedesc "${OTA_API_KEY}")|g" compose/.env
+          sed -i "s|__MQTT_USER__|$(sedesc "${MQTT_USER:-edge}")|g" compose/.env
+          sed -i "s|__MQTT_PASSWORD__|$(sedesc "${MQTT_PASSWORD}")|g" compose/.env
+          sed -i "s|__MQTT_CN__|$(sedesc "${MQTT_CN:-paku-mqtt}")|g" compose/.env
           MQTT_SITE_USERS=""
           if [ -n "${HONKARANTA_MQTT_PASSWORD}" ]; then
             MQTT_SITE_USERS="honkaranta:${HONKARANTA_MQTT_PASSWORD}"
           fi
-          sed -i "s|__MQTT_SITE_USERS__|${MQTT_SITE_USERS}|g" compose/.env
-          sed -i "s|__TELEGRAM_BOT_TOKEN__|${TELEGRAM_BOT_TOKEN}|g" compose/.env
-          sed -i "s|__TELEGRAM_CHAT_ID__|${TELEGRAM_CHAT_ID}|g" compose/.env
-          sed -i "s|__PAKU_DOMAIN__|${PAKU_DOMAIN:-:80}|g" compose/.env
-          sed -i "s|__ECOFLOW_ACCESS_KEY__|${ECOFLOW_ACCESS_KEY}|g" compose/.env
-          sed -i "s|__ECOFLOW_SECRET_KEY__|${ECOFLOW_SECRET_KEY}|g" compose/.env
-          sed -i "s|__ECOFLOW_DEVICE_SN__|${ECOFLOW_DEVICE_SN}|g" compose/.env
-          sed -i "s|__ECOFLOW_API_URL__|${ECOFLOW_API_URL}|g" compose/.env
+          sed -i "s|__MQTT_SITE_USERS__|$(sedesc "${MQTT_SITE_USERS}")|g" compose/.env
+          sed -i "s|__TELEGRAM_BOT_TOKEN__|$(sedesc "${TELEGRAM_BOT_TOKEN}")|g" compose/.env
+          sed -i "s|__TELEGRAM_CHAT_ID__|$(sedesc "${TELEGRAM_CHAT_ID}")|g" compose/.env
+          sed -i "s|__PAKU_DOMAIN__|$(sedesc "${PAKU_DOMAIN:-:80}")|g" compose/.env
+          sed -i "s|__ECOFLOW_ACCESS_KEY__|$(sedesc "${ECOFLOW_ACCESS_KEY}")|g" compose/.env
+          sed -i "s|__ECOFLOW_SECRET_KEY__|$(sedesc "${ECOFLOW_SECRET_KEY}")|g" compose/.env
+          sed -i "s|__ECOFLOW_DEVICE_SN__|$(sedesc "${ECOFLOW_DEVICE_SN}")|g" compose/.env
+          sed -i "s|__ECOFLOW_API_URL__|$(sedesc "${ECOFLOW_API_URL}")|g" compose/.env
           
           chmod 600 compose/.env
           
