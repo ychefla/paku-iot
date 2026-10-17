@@ -36,7 +36,7 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'temperature_c')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'temperature_c')::numeric) AS value,\n  site_id || ' / ' || device_id AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id IN ($site)\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND ts >= '2020-01-01'\nGROUP BY 1, site_id, device_id\nORDER BY 1",
           "editorMode": "code",
           "rawQuery": true
         }
@@ -124,7 +124,7 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'humidity_percent')::numeric) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  AVG((metrics->>'humidity_percent')::numeric) AS value,\n  site_id || ' / ' || device_id AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id IN ($site)\n  AND system = 'sensors'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, site_id, device_id\nORDER BY 1",
           "editorMode": "code",
           "rawQuery": true
         }
@@ -212,7 +212,7 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (237.7 * (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric))))\n  / (17.27 - (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric)))) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (237.7 * (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric))))\n  / (17.27 - (ln(AVG((metrics->>'humidity_percent')::numeric) / 100.0)\n    + (17.27 * AVG((metrics->>'temperature_c')::numeric))\n      / (237.7 + AVG((metrics->>'temperature_c')::numeric)))) AS value,\n  site_id || ' / ' || device_id AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id IN ($site)\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND (metrics->>'humidity_percent')::numeric > 0\n  AND ts >= '2020-01-01'\nGROUP BY 1, site_id, device_id\nORDER BY 1",
           "editorMode": "code",
           "rawQuery": true
         }
@@ -300,7 +300,7 @@
             "uid": "DS_POSTGRESQL"
           },
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (AVG((metrics->>'humidity_percent')::numeric) / 100.0\n   * 6.112\n   * exp((17.67 * AVG((metrics->>'temperature_c')::numeric))\n     / (AVG((metrics->>'temperature_c')::numeric) + 243.5))\n   * 2.1674)\n  / (273.15 + AVG((metrics->>'temperature_c')::numeric)) AS value,\n  device_id || ' (' || COALESCE(location, 'unknown') || ')' AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id = 'paku'\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, device_id, location\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroup(ts, $__interval) AS \"time\",\n  (AVG((metrics->>'humidity_percent')::numeric) / 100.0\n   * 6.112\n   * exp((17.67 * AVG((metrics->>'temperature_c')::numeric))\n     / (AVG((metrics->>'temperature_c')::numeric) + 243.5))\n   * 2.1674)\n  / (273.15 + AVG((metrics->>'temperature_c')::numeric)) AS value,\n  site_id || ' / ' || device_id AS metric\nFROM measurements\nWHERE\n  $__timeFilter(ts)\n  AND site_id IN ($site)\n  AND system = 'sensors'\n  AND metrics ? 'temperature_c'\n  AND metrics ? 'humidity_percent'\n  AND ts >= '2020-01-01'\nGROUP BY 1, site_id, device_id\nORDER BY 1",
           "editorMode": "code",
           "rawQuery": true
         }
@@ -368,7 +368,7 @@
     },
     {
       "id": 6,
-      "title": "EcoFlow Temperatures (°C)",
+      "title": "EcoFlow Temperatures (°C) (paku)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -440,7 +440,33 @@
     }
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "site",
+        "label": "Kohde",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "DS_POSTGRESQL"
+        },
+        "query": "SELECT DISTINCT site_id FROM measurements WHERE system = 'sensors' AND ts > now() - interval '30 days' ORDER BY 1",
+        "definition": "SELECT DISTINCT site_id FROM measurements WHERE system = 'sensors' AND ts > now() - interval '30 days' ORDER BY 1",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      }
+    ]
   },
   "annotations": {
     "list": [
