@@ -37,6 +37,8 @@ jobs:
           MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
           MQTT_CN: ${{ secrets.MQTT_CN }}
           HONKARANTA_MQTT_PASSWORD: ${{ secrets.HONKARANTA_MQTT_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PAKU_DOMAIN: ${{ secrets.PAKU_DOMAIN }}
           ECOFLOW_ACCESS_KEY: ${{ secrets.ECOFLOW_ACCESS_KEY }}
           ECOFLOW_SECRET_KEY: ${{ secrets.ECOFLOW_SECRET_KEY }}
@@ -81,7 +83,11 @@ jobs:
 
           GF_SECURITY_ADMIN_USER=admin
           GF_SECURITY_ADMIN_PASSWORD=__GF_SECURITY_ADMIN_PASSWORD__
-          
+
+          # Grafana alert notifications (disabled if either is empty)
+          TELEGRAM_BOT_TOKEN=__TELEGRAM_BOT_TOKEN__
+          TELEGRAM_CHAT_ID=__TELEGRAM_CHAT_ID__
+
           PAKU_DOMAIN=__PAKU_DOMAIN__
           
           # EcoFlow Configuration (optional - only used if secrets are set)
@@ -106,6 +112,8 @@ jobs:
             MQTT_SITE_USERS="honkaranta:${HONKARANTA_MQTT_PASSWORD}"
           fi
           sed -i "s|__MQTT_SITE_USERS__|${MQTT_SITE_USERS}|g" compose/.env
+          sed -i "s|__TELEGRAM_BOT_TOKEN__|${TELEGRAM_BOT_TOKEN}|g" compose/.env
+          sed -i "s|__TELEGRAM_CHAT_ID__|${TELEGRAM_CHAT_ID}|g" compose/.env
           sed -i "s|__PAKU_DOMAIN__|${PAKU_DOMAIN:-:80}|g" compose/.env
           sed -i "s|__ECOFLOW_ACCESS_KEY__|${ECOFLOW_ACCESS_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_SECRET_KEY__|${ECOFLOW_SECRET_KEY}|g" compose/.env
@@ -170,7 +178,20 @@ jobs:
           echo "Building and starting services..."
           docker compose -f compose/stack.prod.yaml pull 2>/dev/null || true
           docker compose -f compose/stack.prod.yaml build --no-cache
-          
+
+          # Apply idempotent DB migrations before anything that depends on them
+          # (e.g. Grafana alert rules) starts.
+          echo "Applying database migrations..."
+          docker compose -f compose/stack.prod.yaml up -d postgres
+          for i in $(seq 1 30); do
+            docker exec paku_postgres pg_isready -U paku >/dev/null 2>&1 && break
+            sleep 1
+          done
+          for f in $(docker exec paku_postgres sh -c 'ls /migrations/*.sql 2>/dev/null'); do
+            echo "  $f"
+            docker exec paku_postgres psql -q -v ON_ERROR_STOP=1 -U paku -d paku -f "$f"
+          done
+
           # Start services - include EcoFlow profile if credentials are set
           if [ -n "${ECOFLOW_ACCESS_KEY}" ] && [ -n "${ECOFLOW_SECRET_KEY}" ]; then
             echo "EcoFlow credentials found - starting with ecoflow profile..."
@@ -206,6 +227,8 @@ jobs:
             export MQTT_PASSWORD='${MQTT_PASSWORD}'
             export MQTT_CN='${MQTT_CN:-paku-mqtt}'
             export HONKARANTA_MQTT_PASSWORD='${HONKARANTA_MQTT_PASSWORD}'
+            export TELEGRAM_BOT_TOKEN='${TELEGRAM_BOT_TOKEN}'
+            export TELEGRAM_CHAT_ID='${TELEGRAM_CHAT_ID}'
             export PAKU_DOMAIN='${PAKU_DOMAIN:-:80}'
             export ECOFLOW_ACCESS_KEY='${ECOFLOW_ACCESS_KEY}'
             export ECOFLOW_SECRET_KEY='${ECOFLOW_SECRET_KEY}'

@@ -1,0 +1,38 @@
+# Telegram notifications for all sites.
+# Rendered by entrypoint.sh into provisioning/alerting/ at container start,
+# only when TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are set. Placeholders are
+# substituted by the script (not Grafana's $VAR expansion, which turns a
+# numeric chat id into a number and makes provisioning fail).
+apiVersion: 1
+
+templates:
+  - orgId: 1
+    name: paku-telegram
+    template: |
+      {{ define "paku.telegram" -}}
+      {{ range .Alerts.Firing }}🔴 {{ .Annotations.summary }}
+      {{ end -}}
+      {{ range .Alerts.Resolved }}✅ Palautunut: {{ .Annotations.summary }}
+      {{ end -}}
+      {{ end }}
+
+contactPoints:
+  - orgId: 1
+    name: telegram
+    receivers:
+      - uid: telegram-main
+        type: telegram
+        settings:
+          bottoken: "__TELEGRAM_BOT_TOKEN__"
+          chatid: "__TELEGRAM_CHAT_ID__"
+          parse_mode: None
+          disable_web_page_preview: true
+          message: '{{ template "paku.telegram" . }}'
+
+policies:
+  - orgId: 1
+    receiver: telegram
+    group_by: ['alertname', 'site_id']
+    group_wait: 1m
+    group_interval: 5m
+    repeat_interval: 12h

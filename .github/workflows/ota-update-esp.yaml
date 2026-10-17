@@ -18,7 +18,7 @@ name: OTA Update ESP Devices
           - esp32-heater
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
-          - honkaranta-esp32
+          - honkaranta-s3
         default: 'lilygo-t-display-s3'
       rollout_strategy:
         description: 'Rollout strategy'

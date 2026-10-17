@@ -1,0 +1,236 @@
+# Sensor alert rules for all sites.
+# Thresholds live in the alert_thresholds table (via the alert_sensor_status
+# view), so limits are tuned in the database, not here.
+# Each rule: A = margin to the limit (alert when < 0), B = reading, C = limit.
+# One alert instance per (site_id, device_id).
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: anturit
+    folder: Hälytykset
+    interval: 5m
+    rules:
+      - uid: sensor-temp-low
+        title: Jäätymisvaara
+        condition: D
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ title .Labels.site_id }} / {{ .Labels.device_id }}: lämpötila {{ printf "%.1f" .Values.B.Value }} °C (raja {{ printf "%.0f" .Values.C.Value }} °C)'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, temp_c - temp_min_c AS value
+                FROM alert_sensor_status
+                WHERE temp_c IS NOT NULL AND temp_min_c IS NOT NULL
+          - refId: B
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: B
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, temp_c AS value
+                FROM alert_sensor_status
+                WHERE temp_c IS NOT NULL AND temp_min_c IS NOT NULL
+          - refId: C
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: C
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, temp_min_c AS value
+                FROM alert_sensor_status
+                WHERE temp_c IS NOT NULL AND temp_min_c IS NOT NULL
+          - refId: D
+            datasourceUid: __expr__
+            model:
+              refId: D
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0] }
+
+      - uid: sensor-humidity-high
+        title: Korkea kosteus
+        condition: D
+        for: 2h
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ title .Labels.site_id }} / {{ .Labels.device_id }}: kosteus {{ printf "%.0f" .Values.B.Value }} % (raja {{ printf "%.0f" .Values.C.Value }} %) yli 2 h'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, humidity_max_percent - humidity_percent AS value
+                FROM alert_sensor_status
+                WHERE humidity_percent IS NOT NULL AND humidity_max_percent IS NOT NULL
+          - refId: B
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: B
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, humidity_percent AS value
+                FROM alert_sensor_status
+                WHERE humidity_percent IS NOT NULL AND humidity_max_percent IS NOT NULL
+          - refId: C
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: C
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, humidity_max_percent AS value
+                FROM alert_sensor_status
+                WHERE humidity_percent IS NOT NULL AND humidity_max_percent IS NOT NULL
+          - refId: D
+            datasourceUid: __expr__
+            model:
+              refId: D
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0] }
+
+      - uid: sensor-battery-low
+        title: Anturin paristo vähissä
+        condition: D
+        for: 1h
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ title .Labels.site_id }} / {{ .Labels.device_id }}: paristo {{ printf "%.2f" .Values.B.Value }} V (raja {{ printf "%.2f" .Values.C.Value }} V)'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 86400, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, battery_v - battery_min_v AS value
+                FROM alert_sensor_status
+                WHERE battery_v IS NOT NULL AND battery_min_v IS NOT NULL
+          - refId: B
+            relativeTimeRange: { from: 86400, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: B
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, battery_v AS value
+                FROM alert_sensor_status
+                WHERE battery_v IS NOT NULL AND battery_min_v IS NOT NULL
+          - refId: C
+            relativeTimeRange: { from: 86400, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: C
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, battery_min_v AS value
+                FROM alert_sensor_status
+                WHERE battery_v IS NOT NULL AND battery_min_v IS NOT NULL
+          - refId: D
+            datasourceUid: __expr__
+            model:
+              refId: D
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0] }
+
+      - uid: sensor-no-data
+        title: Anturi ei raportoi
+        condition: D
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ title .Labels.site_id }} / {{ .Labels.device_id }}: ei dataa {{ printf "%.0f" .Values.B.Value }} min (raja {{ printf "%.0f" .Values.C.Value }} min)'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: A
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, nodata_minutes - minutes_since_seen AS value
+                FROM alert_sensor_status
+                WHERE nodata_minutes IS NOT NULL
+          - refId: B
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: B
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, minutes_since_seen AS value
+                FROM alert_sensor_status
+                WHERE nodata_minutes IS NOT NULL
+          - refId: C
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: DS_POSTGRESQL
+            model:
+              refId: C
+              format: table
+              rawQuery: true
+              editorMode: code
+              rawSql: >-
+                SELECT site_id, device_id, nodata_minutes::float8 AS value
+                FROM alert_sensor_status
+                WHERE nodata_minutes IS NOT NULL
+          - refId: D
+            datasourceUid: __expr__
+            model:
+              refId: D
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0] }

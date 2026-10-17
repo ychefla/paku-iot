@@ -99,6 +99,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-paku}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-paku}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     # Port exposed via Caddy reverse proxy — no direct access
     # ports:
     #   - "3000:3000"
