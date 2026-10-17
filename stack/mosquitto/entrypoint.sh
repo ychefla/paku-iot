@@ -58,12 +58,40 @@ fi
 # Ensure cert files are readable by mosquitto
 chown -R mosquitto:mosquitto "$CERT_DIR"
 
-# --- Always regenerate password file from env vars ---
+# --- Always regenerate password + ACL files from env vars ---
+# MQTT_USER is the paku site user (van devices + HA bridge): paku/# and
+# homeassistant/#. MQTT_SITE_USERS adds one user per additional site, e.g.
+#   MQTT_SITE_USERS="honkaranta:secret1,koti:secret2"
+# Each site user may only touch {site}/#. ACL applies to the TLS listener
+# (8883) only; the internal plain listener (1883) is not published.
 MQTT_USER="${MQTT_USER:-edge}"
 MQTT_PASSWORD="${MQTT_PASSWORD:-changeme}"
-mosquitto_passwd -b -c /mosquitto/config/passwd "$MQTT_USER" "$MQTT_PASSWORD"
-chown mosquitto:mosquitto /mosquitto/config/passwd
-echo "=== MQTT password file updated for user: $MQTT_USER ==="
+PASSWD_FILE=/mosquitto/config/passwd
+ACL_FILE=/mosquitto/config/acl
+
+mosquitto_passwd -b -c "$PASSWD_FILE" "$MQTT_USER" "$MQTT_PASSWORD"
+cat > "$ACL_FILE" <<EOF
+user $MQTT_USER
+topic readwrite paku/#
+topic readwrite homeassistant/#
+EOF
+
+if [ -n "${MQTT_SITE_USERS:-}" ]; then
+  echo "$MQTT_SITE_USERS" | tr ',' '\n' | while IFS=: read -r site pass; do
+    [ -z "$site" ] && continue
+    if [ -z "$pass" ] || [ "$site" = "paku" ] || [ "$site" = "$MQTT_USER" ]; then
+      echo "!!! Skipping invalid MQTT_SITE_USERS entry for site '$site'"
+      continue
+    fi
+    mosquitto_passwd -b "$PASSWD_FILE" "$site" "$pass"
+    printf '\nuser %s\ntopic readwrite %s/#\n' "$site" "$site" >> "$ACL_FILE"
+    echo "=== MQTT site user added: $site ($site/#) ==="
+  done
+fi
+
+chown mosquitto:mosquitto "$PASSWD_FILE" "$ACL_FILE"
+chmod 600 "$PASSWD_FILE" "$ACL_FILE"
+echo "=== MQTT password + ACL files updated (base user: $MQTT_USER) ==="
 
 # --- Start Mosquitto ---
 exec mosquitto -c /mosquitto/config/mosquitto.conf -v

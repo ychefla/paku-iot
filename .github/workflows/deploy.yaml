@@ -36,6 +36,7 @@ jobs:
           MQTT_USER: ${{ secrets.MQTT_USER }}
           MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
           MQTT_CN: ${{ secrets.MQTT_CN }}
+          HONKARANTA_MQTT_PASSWORD: ${{ secrets.HONKARANTA_MQTT_PASSWORD }}
           PAKU_DOMAIN: ${{ secrets.PAKU_DOMAIN }}
           ECOFLOW_ACCESS_KEY: ${{ secrets.ECOFLOW_ACCESS_KEY }}
           ECOFLOW_SECRET_KEY: ${{ secrets.ECOFLOW_SECRET_KEY }}
@@ -76,7 +77,8 @@ jobs:
           MQTT_USER=__MQTT_USER__
           MQTT_PASSWORD=__MQTT_PASSWORD__
           MQTT_CN=__MQTT_CN__
-          
+          MQTT_SITE_USERS=__MQTT_SITE_USERS__
+
           GF_SECURITY_ADMIN_USER=admin
           GF_SECURITY_ADMIN_PASSWORD=__GF_SECURITY_ADMIN_PASSWORD__
           
@@ -99,6 +101,11 @@ jobs:
           sed -i "s|__MQTT_USER__|${MQTT_USER:-edge}|g" compose/.env
           sed -i "s|__MQTT_PASSWORD__|${MQTT_PASSWORD}|g" compose/.env
           sed -i "s|__MQTT_CN__|${MQTT_CN:-paku-mqtt}|g" compose/.env
+          MQTT_SITE_USERS=""
+          if [ -n "${HONKARANTA_MQTT_PASSWORD}" ]; then
+            MQTT_SITE_USERS="honkaranta:${HONKARANTA_MQTT_PASSWORD}"
+          fi
+          sed -i "s|__MQTT_SITE_USERS__|${MQTT_SITE_USERS}|g" compose/.env
           sed -i "s|__PAKU_DOMAIN__|${PAKU_DOMAIN:-:80}|g" compose/.env
           sed -i "s|__ECOFLOW_ACCESS_KEY__|${ECOFLOW_ACCESS_KEY}|g" compose/.env
           sed -i "s|__ECOFLOW_SECRET_KEY__|${ECOFLOW_SECRET_KEY}|g" compose/.env
@@ -198,6 +205,7 @@ jobs:
             export MQTT_USER='${MQTT_USER:-edge}'
             export MQTT_PASSWORD='${MQTT_PASSWORD}'
             export MQTT_CN='${MQTT_CN:-paku-mqtt}'
+            export HONKARANTA_MQTT_PASSWORD='${HONKARANTA_MQTT_PASSWORD}'
             export PAKU_DOMAIN='${PAKU_DOMAIN:-:80}'
             export ECOFLOW_ACCESS_KEY='${ECOFLOW_ACCESS_KEY}'
             export ECOFLOW_SECRET_KEY='${ECOFLOW_SECRET_KEY}'

@@ -18,6 +18,7 @@ name: OTA Update ESP Devices
           - esp32-heater
           - esp32-ch340c-30pin
           - esp8266-wired-sensors
+          - honkaranta-esp32
         default: 'lilygo-t-display-s3'
       rollout_strategy:
         description: 'Rollout strategy'
@@ -170,10 +171,30 @@ jobs:
           MQTT_CA_CERT_SECRET: ${{ secrets.MQTT_CA_CERT }}
           RUUVI_TAGS_SECRET: ${{ secrets.RUUVI_TAGS }}
           MOKO_SENSORS_SECRET: ${{ secrets.MOKO_SENSORS }}
+          HONKARANTA_MQTT_PASSWORD_SECRET: ${{ secrets.HONKARANTA_MQTT_PASSWORD }}
+          HONKARANTA_RUUVI_TAGS_SECRET: ${{ secrets.HONKARANTA_RUUVI_TAGS }}
+          DEVICE_MODEL_INPUT: ${{ github.event.inputs.device_model }}
           ADDITIONAL_SSID: ${{ github.event.inputs.additional_ssid }}
           ADDITIONAL_PASSWORD: ${{ github.event.inputs.additional_password }}
         run: |
           cd paku_core
+
+          # Site-specific credentials: each site has its own MQTT user (ACL'd
+          # to {site}/#) and its own Ruuvi tag list. SITE_ID itself comes from
+          # the PlatformIO environment's build flags.
+          case "$DEVICE_MODEL_INPUT" in
+            honkaranta-*)
+              if [ -z "$HONKARANTA_MQTT_PASSWORD_SECRET" ]; then
+                echo "::error::HONKARANTA_MQTT_PASSWORD secret is required for $DEVICE_MODEL_INPUT"
+                exit 1
+              fi
+              echo "Using honkaranta site credentials"
+              MQTT_USER_SECRET="honkaranta"
+              MQTT_PASSWORD_SECRET="$HONKARANTA_MQTT_PASSWORD_SECRET"
+              RUUVI_TAGS_SECRET="$HONKARANTA_RUUVI_TAGS_SECRET"
+              MOKO_SENSORS_SECRET=""
+              ;;
+          esac
           # Use template or inject secrets from GitHub Secrets (if provided)
           if [ -n "$WIFI_SSIDS_SECRET" ]; then
             echo "Using WiFi credentials from GitHub Secrets"

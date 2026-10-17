@@ -19,6 +19,17 @@ This document defines the MQTT topic hierarchy and payload formats for the Paku 
 3. **`{device_id}`** - Unique device identifier (e.g., `ruuvi_cabin`, `ecoflow`, `webasto`)
 4. **`{topic_type}`** - Message purpose: `data`, `control`, `status`, `config`
 
+### Sites and broker authentication
+
+| Site | Description | MQTT user (port 8883) | Allowed topics |
+|------|-------------|-----------------------|----------------|
+| `paku` | Van | `MQTT_USER` (default `edge`) | `paku/#`, `homeassistant/#` |
+| `honkaranta` | Cabin | `honkaranta` | `honkaranta/#` |
+
+- Firmware sets the site with the `SITE_ID` build flag (default `paku`), one PlatformIO env per site, e.g. `honkaranta-esp32`.
+- Extra site users come from `MQTT_SITE_USERS="site:password,..."` on the broker; deploy builds it from `<SITE>_MQTT_PASSWORD` GitHub secrets.
+- The internal plain listener (1883, not published) is unrestricted for the collector and other stack services.
+
 ---
 
 ## Topic Types

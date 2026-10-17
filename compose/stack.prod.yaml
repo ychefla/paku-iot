@@ -26,6 +26,7 @@ services:
       MQTT_USER: ${MQTT_USER:-edge}
       MQTT_PASSWORD: ${MQTT_PASSWORD}
       MQTT_CN: ${MQTT_CN:-paku-mqtt}
+      MQTT_SITE_USERS: ${MQTT_SITE_USERS:-}
     ports:
       - "8883:8883"
     volumes:
